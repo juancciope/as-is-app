@@ -1,8 +1,5 @@
 {
   "functions": {
-    "app/api/scrape/route.ts": {
-      "maxDuration": 300
-    },
     "api/scrape.py": {
       "maxDuration": 300
     }
