@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd foreclosure-scraper && npm run build",
+  "outputDirectory": "foreclosure-scraper/.next",
+  "installCommand": "cd foreclosure-scraper && npm install",
+  "functions": {
+    "foreclosure-scraper/api/scrape.py": {
+      "maxDuration": 300
+    }
+  }
+}
