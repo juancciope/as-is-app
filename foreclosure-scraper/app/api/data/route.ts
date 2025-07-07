@@ -3,6 +3,13 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
 
+interface DataRecord {
+  WITHIN_30MIN?: string;
+  CTY?: string;
+  DATE?: string;
+  [key: string]: any;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -20,7 +27,7 @@ export async function GET(request: NextRequest) {
     
     // Read and parse CSV
     const fileContent = await readFile(filePath, 'utf-8');
-    const records = parse(fileContent, {
+    const records: DataRecord[] = parse(fileContent, {
       columns: true,
       skip_empty_lines: true
     });
@@ -31,7 +38,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     
-    let filteredRecords = records;
+    let filteredRecords: DataRecord[] = records;
     
     if (withinRange === 'true') {
       filteredRecords = filteredRecords.filter(r => r.WITHIN_30MIN === 'Y');
