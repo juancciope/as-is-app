@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Scraping error:', error);
     return NextResponse.json(
-      { error: 'Failed to run scrapers', details: error.message },
+      { 
+        error: 'Failed to run scrapers', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
