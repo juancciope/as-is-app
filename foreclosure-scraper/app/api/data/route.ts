@@ -1,36 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
-import path from 'path';
-import { parse } from 'csv-parse/sync';
-
-interface DataRecord {
-  WITHIN_30MIN?: string;
-  CTY?: string;
-  DATE?: string;
-  [key: string]: any;
-}
+import { supabase, FORECLOSURE_TABLE, ForeclosureData } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get('source') || 'unified';
     
-    // Define file paths
-    const dataPath = path.join(process.cwd(), 'data', 'processed');
-    let fileName = 'unified_data.csv';
+    // Build the query
+    let query = supabase.from(FORECLOSURE_TABLE).select('*');
     
+    // Filter by source if not unified
     if (source !== 'unified') {
-      fileName = `${source}_data.csv`;
+      query = query.eq('source', source);
     }
-    
-    const filePath = path.join(dataPath, fileName);
-    
-    // Read and parse CSV
-    const fileContent = await readFile(filePath, 'utf-8');
-    const records: DataRecord[] = parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true
-    });
     
     // Apply filters if provided
     const withinRange = searchParams.get('within30min');
@@ -38,31 +20,41 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     
-    let filteredRecords: DataRecord[] = records;
-    
     if (withinRange === 'true') {
-      filteredRecords = filteredRecords.filter(r => r.WITHIN_30MIN === 'Y');
+      query = query.eq('within_30min', 'Y');
     }
     
     if (city) {
-      filteredRecords = filteredRecords.filter(r => 
-        r.CTY?.toLowerCase().includes(city.toLowerCase())
+      query = query.ilike('city', `%${city}%`);
+    }
+    
+    if (dateFrom) {
+      query = query.gte('date', dateFrom);
+    }
+    
+    if (dateTo) {
+      query = query.lte('date', dateTo);
+    }
+    
+    // Order by date descending
+    query = query.order('date', { ascending: false });
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Supabase query error:', error);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch data from database', 
+          details: error.message
+        },
+        { status: 500 }
       );
     }
     
-    if (dateFrom || dateTo) {
-      filteredRecords = filteredRecords.filter(r => {
-        if (!r.DATE) return false; // Skip records without dates
-        const recordDate = new Date(r.DATE);
-        if (dateFrom && recordDate < new Date(dateFrom)) return false;
-        if (dateTo && recordDate > new Date(dateTo)) return false;
-        return true;
-      });
-    }
-    
     return NextResponse.json({
-      data: filteredRecords,
-      total: filteredRecords.length,
+      data: data || [],
+      total: data?.length || 0,
       source,
       lastUpdated: new Date().toISOString()
     });
