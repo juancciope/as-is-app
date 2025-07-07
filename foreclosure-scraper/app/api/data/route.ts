@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     
     if (dateFrom || dateTo) {
       filteredRecords = filteredRecords.filter(r => {
+        if (!r.DATE) return false; // Skip records without dates
         const recordDate = new Date(r.DATE);
         if (dateFrom && recordDate < new Date(dateFrom)) return false;
         if (dateTo && recordDate > new Date(dateTo)) return false;
