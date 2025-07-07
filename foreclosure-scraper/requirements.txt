@@ -15,8 +15,7 @@ pytz==2024.1
 # Geocoding and location services
 geopy==2.4.1
 
-# CSV parsing
-csv-parse==5.5.3
+# CSV parsing (using pandas instead of csv-parse which is a Node.js package)
 
 # Environment variables
 python-dotenv==1.0.1
