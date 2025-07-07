@@ -1,0 +1,17 @@
+{
+  "functions": {
+    "app/api/scrape/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/data/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "PYTHON_VERSION": "3.9"
+  },
+  "buildCommand": "npm run build && pip install -r requirements.txt",
+  "outputDirectory": ".next",
+  "installCommand": "npm install && pip install -r requirements.txt",
+  "framework": "nextjs"
+}
