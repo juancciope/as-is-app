@@ -1,8 +1,14 @@
 {
+  "functions": {
+    "app/api/scrape/route.ts": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 300
+    }
+  },
   "builds": [
     {
-      "src": "package.json",
-      "use": "@vercel/next"
+      "src": "scrapers/aggregator.py",
+      "use": "@vercel/python"
     }
   ]
 }

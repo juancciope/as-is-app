@@ -1,9 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
-
-const execAsync = promisify(exec);
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,18 +12,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid scrapers selection' }, { status: 400 });
     }
 
-    // Run the aggregator script
-    const scriptPath = path.join(process.cwd(), 'foreclosure-scraper', 'scrapers', 'aggregator.py');
-    const { stdout, stderr } = await execAsync(`python3 ${scriptPath}`);
+    // Call the Python scraper endpoint
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
     
-    if (stderr) {
-      console.error('Scraper stderr:', stderr);
+    const response = await fetch(`${baseUrl}/api/scrape`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ scrapers: selectedScrapers })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Python scraper failed with status: ${response.status}`);
     }
+
+    const result = await response.json();
 
     return NextResponse.json({
       success: true,
       message: 'Scraping completed successfully',
-      output: stdout,
+      output: result.message || 'Scraping completed',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
