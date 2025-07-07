@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import subprocess
 from http.server import BaseHTTPRequestHandler
 
 # Add the scrapers directory to Python path
@@ -9,11 +10,19 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scrapers'))
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
-            # Import and run the aggregator
-            from aggregator import run_unified_pipeline
+            # Run the aggregator script directly using subprocess to avoid import issues
+            script_path = os.path.join(os.path.dirname(__file__), '..', 'scrapers', 'aggregator.py')
             
-            # Run the scraping pipeline
-            result = run_unified_pipeline()
+            # Execute the Python script
+            result = subprocess.run(
+                ['python3', script_path],
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout
+            )
+            
+            if result.returncode != 0:
+                raise Exception(f"Scraper failed with return code {result.returncode}: {result.stderr}")
             
             # Return success response
             self.send_response(200)
@@ -23,7 +32,8 @@ class handler(BaseHTTPRequestHandler):
             response = {
                 'success': True,
                 'message': 'Scraping completed successfully',
-                'timestamp': str(result) if result else None
+                'output': result.stdout,
+                'timestamp': None
             }
             
             self.wfile.write(json.dumps(response).encode())

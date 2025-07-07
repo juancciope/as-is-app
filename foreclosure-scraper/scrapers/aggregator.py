@@ -687,49 +687,16 @@ def run_unified_pipeline():
         
         final_df = combined_df[column_order].copy()
         
-        # Save results to Supabase
-        try:
-            from supabase_client import SupabaseClient
-            
-            supabase_client = SupabaseClient()
-            
-            # Test connection
-            if not supabase_client.test_connection():
-                print("❌ Failed to connect to Supabase. Falling back to CSV.")
-                # Fallback to CSV
-                import os
-                output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'processed')
-                os.makedirs(output_dir, exist_ok=True)
-                output_filename = os.path.join(output_dir, "unified_data.csv")
-                final_df.to_csv(output_filename, index=False)
-                print(f"📁 Saved to: {output_filename}")
-            else:
-                # Clear existing data and insert new data
-                print("🔄 Clearing existing data from Supabase...")
-                supabase_client.clear_existing_data()
-                
-                print("💾 Inserting new data into Supabase...")
-                success = supabase_client.insert_foreclosure_data(final_df)
-                
-                if success:
-                    record_count = supabase_client.get_data_count()
-                    print(f"✅ Successfully saved {record_count} records to Supabase!")
-                else:
-                    print("❌ Failed to save data to Supabase")
-                    
-        except Exception as e:
-            print(f"❌ Error with Supabase: {str(e)}")
-            print("📁 Falling back to CSV file...")
-            # Fallback to CSV
-            import os
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'processed')
-            os.makedirs(output_dir, exist_ok=True)
-            output_filename = os.path.join(output_dir, "unified_data.csv")
-            final_df.to_csv(output_filename, index=False)
-            print(f"📁 Saved to: {output_filename}")
+        # Save results to CSV
+        import os
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'processed')
+        os.makedirs(output_dir, exist_ok=True)
+        output_filename = os.path.join(output_dir, "unified_data.csv")
+        final_df.to_csv(output_filename, index=False)
         
         print(f"\n🎉 SUCCESS!")
         print(f"📊 Total unified records: {len(final_df)}")
+        print(f"📁 Saved to: {output_filename}")
         
         # Show comprehensive summary
         print(f"\n📋 COMPREHENSIVE SUMMARY:")

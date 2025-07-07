@@ -12,12 +12,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid scrapers selection' }, { status: 400 });
     }
 
-    // Call the Python scraper endpoint
+    // Step 1: Call the Python scraper endpoint to generate CSV
     const baseUrl = process.env.VERCEL_URL 
       ? `https://${process.env.VERCEL_URL}` 
       : 'http://localhost:3000';
     
-    const response = await fetch(`${baseUrl}/api/scrape`, {
+    console.log('Starting Python scraper...');
+    const scraperResponse = await fetch(`${baseUrl}/api/scrape`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,16 +26,35 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ scrapers: selectedScrapers })
     });
 
-    if (!response.ok) {
-      throw new Error(`Python scraper failed with status: ${response.status}`);
+    if (!scraperResponse.ok) {
+      throw new Error(`Python scraper failed with status: ${scraperResponse.status}`);
     }
 
-    const result = await response.json();
+    const scraperResult = await scraperResponse.json();
+    console.log('Python scraper completed, transferring to database...');
+
+    // Step 2: Transfer CSV data to Supabase
+    const csvToDbResponse = await fetch(`${baseUrl}/api/csv-to-db`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!csvToDbResponse.ok) {
+      const csvError = await csvToDbResponse.json();
+      throw new Error(`CSV to DB transfer failed: ${csvError.error}`);
+    }
+
+    const csvResult = await csvToDbResponse.json();
+    console.log('Data transfer completed successfully');
 
     return NextResponse.json({
       success: true,
-      message: 'Scraping completed successfully',
-      output: result.message || 'Scraping completed',
+      message: 'Scraping completed and data saved to database',
+      scraperOutput: scraperResult.output || 'Scraping completed',
+      recordsProcessed: csvResult.recordsProcessed,
+      recordsInserted: csvResult.recordsInserted,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
