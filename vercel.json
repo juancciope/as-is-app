@@ -1,17 +1,17 @@
 {
   "functions": {
-    "foreclosure-scraper/app/api/scrape/route.ts": {
+    "app/api/scrape/route.ts": {
       "maxDuration": 300
     },
-    "foreclosure-scraper/app/api/data/route.ts": {
+    "app/api/data/route.ts": {
       "maxDuration": 60
     }
   },
   "env": {
     "PYTHON_VERSION": "3.9"
   },
-  "buildCommand": "cd foreclosure-scraper && npm run build && pip install -r requirements.txt",
+  "buildCommand": "cd foreclosure-scraper && npm run build",
   "outputDirectory": "foreclosure-scraper/.next",
-  "installCommand": "cd foreclosure-scraper && npm install && pip install -r requirements.txt",
+  "installCommand": "cd foreclosure-scraper && npm install",
   "framework": "nextjs"
 }
