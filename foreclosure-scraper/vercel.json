@@ -4,7 +4,6 @@
       "maxDuration": 300
     },
     "api/scrape.py": {
-      "runtime": "@vercel/python",
       "maxDuration": 300
     }
   }
