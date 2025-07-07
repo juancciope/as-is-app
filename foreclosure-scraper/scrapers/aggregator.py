@@ -688,7 +688,10 @@ def run_unified_pipeline():
         final_df = combined_df[column_order].copy()
         
         # Save results
-        output_filename = "Auction_Info_Unified.csv"
+        import os
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'processed')
+        os.makedirs(output_dir, exist_ok=True)
+        output_filename = os.path.join(output_dir, "unified_data.csv")
         final_df.to_csv(output_filename, index=False)
         
         print(f"\n🎉 SUCCESS!")

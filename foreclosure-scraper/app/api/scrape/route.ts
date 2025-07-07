@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Run the aggregator script
-    const scriptPath = path.join(process.cwd(), 'scrapers', 'aggregator.py');
+    const scriptPath = path.join(process.cwd(), 'foreclosure-scraper', 'scrapers', 'aggregator.py');
     const { stdout, stderr } = await execAsync(`python3 ${scriptPath}`);
     
     if (stderr) {
