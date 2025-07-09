@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     
     console.log(`Initial run status: ${runStatus}`);
     
-    while (runStatus === 'RUNNING' && attempts < maxAttempts) {
+    while (runStatus === 'RUNNING' && runStatus !== 'READY' && runStatus !== 'SUCCEEDED' && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000));
       attempts++;
       
@@ -104,17 +104,23 @@ export async function POST(request: NextRequest) {
       throw new Error(`Actor run failed or timed out. Final status: ${runStatus}`);
     }
 
-    console.log(`Actor completed successfully! Fetching dataset...`);
+    console.log(`Actor completed successfully with status: ${runStatus}! Fetching dataset...`);
 
     // Give a small buffer for dataset to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));
 
+    console.log(`Fetching dataset from: https://api.apify.com/v2/datasets/${datasetId}/items`);
+    
     const datasetResponse = await fetch(
       `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
     );
 
+    console.log(`Dataset response status: ${datasetResponse.status}`);
+    
     if (!datasetResponse.ok) {
-      throw new Error('Failed to fetch dataset from Apify');
+      const errorText = await datasetResponse.text();
+      console.log(`Dataset fetch error: ${errorText}`);
+      throw new Error(`Failed to fetch dataset from Apify: ${errorText}`);
     }
 
     const apifyData: ApifyAuctionData[] = await datasetResponse.json();
