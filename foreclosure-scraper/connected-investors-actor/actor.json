@@ -1,0 +1,21 @@
+{
+  "actorSpecification": 1,
+  "name": "connected-investors-scraper",
+  "title": "Connected Investors Property Scraper",
+  "description": "Scrapes property data from Connected Investors platform and performs skip tracing for owner contact information",
+  "version": "1.0.0",
+  "meta": {
+    "templateId": "playwright-chrome"
+  },
+  "input": "./input-schema.json",
+  "dockerfile": "./Dockerfile",
+  "readme": "./README.md",
+  "categories": [
+    "REAL_ESTATE"
+  ],
+  "defaultRunOptions": {
+    "build": "latest",
+    "timeoutSecs": 3600,
+    "memoryMbytes": 2048
+  }
+}

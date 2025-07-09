@@ -76,7 +76,36 @@ interface WilsonAssociatesData {
   scraped_at: string;
 }
 
-type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | WabiPowerBiData | WilsonAssociatesData;
+interface ConnectedInvestorsData {
+  searchAddress: string;
+  address?: string;
+  price?: string;
+  beds?: string;
+  baths?: string;
+  sqft?: string;
+  lot_size?: string;
+  year_built?: string;
+  property_type?: string;
+  scraped_at: string;
+  skipTrace?: {
+    attempted_at: string;
+    method: string;
+    results: {
+      emails?: string[];
+      phones?: string[];
+      owner_info?: string;
+      detail_owner_info?: any;
+    };
+  };
+  links?: Array<{
+    url: string;
+    text: string;
+  }>;
+  extraction_method?: string;
+  raw_text?: string;
+}
+
+type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | WabiPowerBiData | WilsonAssociatesData | ConnectedInvestorsData;
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,7 +122,7 @@ export async function POST(request: NextRequest) {
       'tnledger': process.env.APIFY_ACTOR_ID_TNLEDGER!,
       'wabipowerbi': process.env.APIFY_ACTOR_ID_WABIPOWERBI!,
       'wilsonassociates': process.env.APIFY_ACTOR_ID_WILSONASSOCIATES!,
-      // Add more mappings as we create more actors
+      'connectedinvestors': process.env.APIFY_ACTOR_ID_CONNECTEDINVESTORS!,
     };
 
     const actorId = actorMapping[source];
@@ -294,6 +323,42 @@ export async function POST(request: NextRequest) {
           distance_miles: null,
           est_drive_time: null,
           geocode_method: 'google_maps'
+        };
+      } else if (source === 'connectedinvestors') {
+        const ciRecord = record as ConnectedInvestorsData;
+        
+        // For Connected Investors, we're not dealing with foreclosure auctions but investment properties
+        // We'll adapt the data to fit our schema while preserving unique skip trace information
+        const address = ciRecord.address || ciRecord.searchAddress;
+        const county = await extractCountyFromAddress(address);
+        
+        return {
+          source,
+          date: new Date().toISOString().split('T')[0], // Current date since these are listings, not auctions
+          time: '00:00:00',
+          county,
+          firm: 'Connected Investors',
+          address: cleanAddress(address),
+          city: extractCityFromAddress(address),
+          within_30min: isWithin30Minutes(county),
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: 'google_maps',
+          // Additional Connected Investors specific fields
+          property_details: {
+            price: ciRecord.price,
+            beds: ciRecord.beds,
+            baths: ciRecord.baths,
+            sqft: ciRecord.sqft,
+            lot_size: ciRecord.lot_size,
+            year_built: ciRecord.year_built,
+            property_type: ciRecord.property_type
+          },
+          skip_trace: ciRecord.skipTrace,
+          owner_emails: ciRecord.skipTrace?.results?.emails?.join(', ') || null,
+          owner_phones: ciRecord.skipTrace?.results?.phones?.join(', ') || null,
+          owner_info: ciRecord.skipTrace?.results?.owner_info || null
         };
       }
       

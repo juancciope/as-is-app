@@ -90,7 +90,8 @@ function getSourceDisplayName(source: string): string {
     'tnledger': 'TN Ledger',
     'wabipowerbi': 'WABI PowerBI',
     'wilsonassociates': 'Wilson Associates',
-    'wilson': 'Wilson Associates'
+    'wilson': 'Wilson Associates',
+    'connectedinvestors': 'Connected Investors'
   };
   return names[source] || source;
 }

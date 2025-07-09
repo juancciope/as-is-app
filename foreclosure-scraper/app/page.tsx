@@ -8,7 +8,7 @@ import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { DataTable } from '../components/dashboard/data-table';
 import { StatsCards } from '../components/dashboard/stats-cards';
-import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users } from 'lucide-react';
+import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search } from 'lucide-react';
 
 export default function Home() {
   const [isScrapingAll, setIsScrapingAll] = useState(false);
@@ -72,7 +72,7 @@ export default function Home() {
     setIsScrapingAll(true);
     setCompletedScrapers([]);
     
-    const scrapers = ['phillipjoneslaw', 'clearrecon', 'tnledger', 'wabipowerbi', 'wilsonassociates'];
+    const scrapers = ['phillipjoneslaw', 'clearrecon', 'tnledger', 'wabipowerbi', 'wilsonassociates', 'connectedinvestors'];
     
     for (const scraper of scrapers) {
       try {
@@ -249,6 +249,17 @@ export default function Home() {
               onClick={() => runApifyScraper('wilsonassociates')}
               disabled={isScrapingAll || (isScrapingSource !== null && isScrapingSource !== 'wilsonassociates')}
             />
+            
+            <ScraperButton
+              id="connectedinvestors"
+              name="Connected Investors"
+              description="Investment properties & skip trace"
+              icon={<Search className="h-4 w-4" />}
+              isActive={isScrapingSource === 'connectedinvestors'}
+              isCompleted={completedScrapers.includes('connectedinvestors')}
+              onClick={() => runApifyScraper('connectedinvestors')}
+              disabled={isScrapingAll || (isScrapingSource !== null && isScrapingSource !== 'connectedinvestors')}
+            />
           </div>
           
           {isScrapingAll && (
@@ -263,7 +274,7 @@ export default function Home() {
                 )}
               </div>
               <div className="mt-2 flex gap-2">
-                {['phillipjoneslaw', 'clearrecon', 'tnledger', 'wabipowerbi', 'wilsonassociates'].map(scraper => (
+                {['phillipjoneslaw', 'clearrecon', 'tnledger', 'wabipowerbi', 'wilsonassociates', 'connectedinvestors'].map(scraper => (
                   <div key={scraper} className={`text-xs px-2 py-1 rounded ${
                     completedScrapers.includes(scraper) 
                       ? 'bg-green-100 text-green-700' 
@@ -316,6 +327,7 @@ export default function Home() {
                   <SelectItem value="tnledger">TN Ledger</SelectItem>
                   <SelectItem value="wabipowerbi">WABI PowerBI</SelectItem>
                   <SelectItem value="wilson">Wilson Associates</SelectItem>
+                  <SelectItem value="connectedinvestors">Connected Investors</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -417,7 +429,8 @@ function getScraperDisplayName(scraper: string): string {
     'clearrecon': 'ClearRecon',
     'tnledger': 'TN Ledger',
     'wabipowerbi': 'WABI PowerBI',
-    'wilsonassociates': 'Wilson Associates'
+    'wilsonassociates': 'Wilson Associates',
+    'connectedinvestors': 'Connected Investors'
   };
   return names[scraper] || scraper;
 }
