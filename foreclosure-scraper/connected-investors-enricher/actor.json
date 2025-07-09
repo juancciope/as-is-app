@@ -1,0 +1,22 @@
+{
+  "actorSpecification": 1,
+  "name": "connected-investors-enricher",
+  "title": "Connected Investors Property Enricher",
+  "description": "Enriches foreclosure data from Supabase database with contact information from Connected Investors platform",
+  "version": "1.0.0",
+  "meta": {
+    "templateId": "playwright-chrome"
+  },
+  "input": "./input-schema.json",
+  "dockerfile": "./Dockerfile",
+  "readme": "./README.md",
+  "categories": [
+    "REAL_ESTATE",
+    "LEAD_GENERATION"
+  ],
+  "defaultRunOptions": {
+    "build": "latest",
+    "timeoutSecs": 7200,
+    "memoryMbytes": 2048
+  }
+}

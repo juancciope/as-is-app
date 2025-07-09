@@ -1,0 +1,17 @@
+{
+  "name": "connected-investors-enricher",
+  "version": "1.0.0",
+  "description": "Enriches foreclosure data with contact information from Connected Investors",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "apify": "^3.1.10",
+    "playwright": "^1.40.0",
+    "node-fetch": "^2.7.0"
+  },
+  "repository": {},
+  "author": "AI Assistant",
+  "license": "ISC"
+}
