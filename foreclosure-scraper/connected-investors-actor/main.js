@@ -118,7 +118,38 @@ async function loginToConnectedInvestors(page, username, password) {
         const initialUrl = page.url();
         console.log(`Initial URL: ${initialUrl}`);
         
-        // Click the login button to trigger OAuth redirect
+        // First, enter the username/email on the Connected Investors login page
+        const usernameSelectors = [
+            'input[name="username"]',
+            'input[name="email"]',
+            'input[type="email"]',
+            'input[type="text"][placeholder*="email" i]',
+            'input[type="text"][placeholder*="username" i]',
+            'input#username',
+            'input#email'
+        ];
+        
+        let usernameField = null;
+        for (const selector of usernameSelectors) {
+            try {
+                usernameField = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+                if (usernameField) {
+                    console.log(`Found username/email field using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!usernameField) {
+            throw new Error('Could not find username/email input field on Connected Investors login page');
+        }
+        
+        await usernameField.fill(username);
+        console.log('Username/email entered');
+        
+        // Now click the login button to trigger OAuth redirect
         const loginButtonSelectors = [
             'button:has-text("Login")',
             'button:has-text("Sign In")',
@@ -133,14 +164,12 @@ async function loginToConnectedInvestors(page, username, password) {
             '#login-button'
         ];
         
-        let loginTriggered = false;
+        let loginButton = null;
         for (const selector of loginButtonSelectors) {
             try {
-                const button = await page.$(selector);
-                if (button) {
-                    console.log(`Found login trigger button using selector: ${selector}`);
-                    await button.click();
-                    loginTriggered = true;
+                loginButton = await page.$(selector);
+                if (loginButton && await loginButton.isVisible()) {
+                    console.log(`Found login button using selector: ${selector}`);
                     break;
                 }
             } catch (e) {
@@ -148,11 +177,18 @@ async function loginToConnectedInvestors(page, username, password) {
             }
         }
         
-        if (loginTriggered) {
-            console.log('Waiting for OAuth redirect...');
-            // Wait for navigation to First American identity provider
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
+        if (!loginButton) {
+            // Try pressing Enter on username field
+            console.log('No login button found, pressing Enter on username field');
+            await usernameField.press('Enter');
+        } else {
+            await loginButton.click();
+            console.log('Clicked login button');
         }
+        
+        console.log('Waiting for OAuth redirect...');
+        // Wait for navigation to First American identity provider
+        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 })
         
         // Check if we've been redirected to First American OAuth
         await page.waitForTimeout(3000);
@@ -166,54 +202,12 @@ async function loginToConnectedInvestors(page, username, password) {
             // Wait a bit for the OAuth page to fully load
             await page.waitForTimeout(2000);
             
-            // Find and fill username/email field on OAuth page
-            const oauthUsernameSelectors = [
-                'input[name="loginfmt"]',
-                'input[name="username"]',
-                'input[name="email"]',
-                'input[type="email"]',
-                'input[placeholder*="email" i]',
-                'input[placeholder*="Email" i]',
-                'input[placeholder*="username" i]',
-                'input[placeholder*="Username" i]',
-                'input#username',
-                'input#email',
-                'input#loginfmt'
-            ];
+            // Since the username was already entered on Connected Investors page and included in login_hint,
+            // we should now be on the password page
+            console.log('Looking for password field on OAuth page...');
             
-            let usernameField = null;
-            for (const selector of oauthUsernameSelectors) {
-                try {
-                    usernameField = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
-                    if (usernameField) {
-                        console.log(`Found OAuth username field using selector: ${selector}`);
-                        break;
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            if (!usernameField) {
-                console.log('Could not find OAuth username field. Analyzing available inputs...');
-                const allInputs = await page.$$('input');
-                console.log(`Found ${allInputs.length} input fields on OAuth page`);
-                
-                for (let i = 0; i < allInputs.length; i++) {
-                    const input = allInputs[i];
-                    const type = await input.getAttribute('type');
-                    const name = await input.getAttribute('name');
-                    const id = await input.getAttribute('id');
-                    const placeholder = await input.getAttribute('placeholder');
-                    const isVisible = await input.isVisible();
-                    console.log(`Input ${i}: type=${type}, name=${name}, id=${id}, placeholder=${placeholder}, visible=${isVisible}`);
-                }
-                
-                throw new Error('Could not find OAuth username field');
-            }
-            
-            await usernameField.fill(username);
-            console.log('OAuth username entered');
+            // Wait a bit for the password field to appear
+            await page.waitForTimeout(2000);
             
             // Find and fill password field
             const oauthPasswordSelectors = [
@@ -229,7 +223,7 @@ async function loginToConnectedInvestors(page, username, password) {
             let passwordField = null;
             for (const selector of oauthPasswordSelectors) {
                 try {
-                    passwordField = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+                    passwordField = await page.waitForSelector(selector, { timeout: 10000, state: 'visible' });
                     if (passwordField) {
                         console.log(`Found OAuth password field using selector: ${selector}`);
                         break;
@@ -240,6 +234,23 @@ async function loginToConnectedInvestors(page, username, password) {
             }
             
             if (!passwordField) {
+                console.log('Could not find OAuth password field. Analyzing available inputs...');
+                const allInputs = await page.$$('input');
+                console.log(`Found ${allInputs.length} input fields on OAuth page`);
+                
+                for (let i = 0; i < allInputs.length; i++) {
+                    const input = allInputs[i];
+                    const type = await input.getAttribute('type');
+                    const name = await input.getAttribute('name');
+                    const id = await input.getAttribute('id');
+                    const placeholder = await input.getAttribute('placeholder');
+                    const isVisible = await input.isVisible();
+                    console.log(`Input ${i}: type=${type}, name=${name}, id=${id}, placeholder=${placeholder}, visible=${isVisible}`);
+                }
+                
+                // Take screenshot for debugging
+                await page.screenshot({ path: 'oauth_password_page_debug.png' });
+                
                 throw new Error('Could not find OAuth password field');
             }
             
