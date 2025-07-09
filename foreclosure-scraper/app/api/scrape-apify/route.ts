@@ -51,7 +51,17 @@ interface TnLedgerData {
   notice_date?: string;
 }
 
-type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData;
+interface WabiPowerBiData {
+  COUNTY_NAME: string;
+  SALE_DATE: string;
+  SALE_TIME: string;
+  FULL_ADDRESS: string;
+  BID_AMNT: string;
+  SourceWebsite: string;
+  scraped_at: string;
+}
+
+type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | WabiPowerBiData;
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,6 +72,7 @@ export async function POST(request: NextRequest) {
       'phillipjoneslaw': process.env.APIFY_ACTOR_ID_PJ!,
       'clearrecon': process.env.APIFY_ACTOR_ID_CLEARRECON!,
       'tnledger': process.env.APIFY_ACTOR_ID_TNLEDGER!,
+      'wabipowerbi': process.env.APIFY_ACTOR_ID_WABIPOWERBI!,
       // Add more mappings as we create more actors
     };
 
@@ -222,6 +233,25 @@ export async function POST(request: NextRequest) {
           firm: 'TN Ledger',
           address: cleanAddress(address),
           city: extractCityFromAddress(address),
+          within_30min: isWithin30Minutes(county),
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: 'google_maps'
+        };
+      } else if (source === 'wabipowerbi') {
+        const wabiRecord = record as WabiPowerBiData;
+        // Extract county from address (since WABI PowerBI has county in COUNTY_NAME field)
+        const county = wabiRecord.COUNTY_NAME || 'Unknown';
+        
+        return {
+          source,
+          date: wabiRecord.SALE_DATE,
+          time: parseTimeString(wabiRecord.SALE_TIME) || '00:00:00',
+          county,
+          firm: 'Logs.com',
+          address: cleanAddress(wabiRecord.FULL_ADDRESS),
+          city: extractCityFromAddress(wabiRecord.FULL_ADDRESS),
           within_30min: isWithin30Minutes(county),
           closest_city: null,
           distance_miles: null,

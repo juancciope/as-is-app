@@ -1,0 +1,17 @@
+{
+  "name": "wabi-powerbi-foreclosure-scraper",
+  "version": "1.0.0",
+  "description": "WABI PowerBI foreclosure scraper for logs.com data",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "apify": "^3.0.0",
+    "node-fetch": "^2.6.0",
+    "uuid": "^9.0.0"
+  },
+  "keywords": ["apify", "foreclosure", "powerbi", "scraper"],
+  "author": "Foreclosure Scraper",
+  "license": "MIT"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "tnledger-foreclosure-scraper",
+  "version": "1.0.0",
+  "description": "Smart TN Ledger foreclosure scraper that automatically determines the correct Friday date",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "apify": "^3.0.0",
+    "playwright": "^1.0.0",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "author": "Foreclosure Scraper Team",
+  "license": "MIT",
+  "apify": {
+    "actorSpecification": 1,
+    "name": "tnledger-foreclosure-scraper",
+    "title": "TN Ledger Foreclosure Scraper",
+    "description": "Intelligent scraper for Tennessee Ledger foreclosure notices that automatically determines the correct Friday date to scrape",
+    "version": "1.0.0",
+    "meta": {
+      "templateId": "javascript-node"
+    },
+    "input": "input_schema.json",
+    "dockerfile": "Dockerfile"
+  }
+}

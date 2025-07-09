@@ -1,0 +1,12 @@
+{
+  "actorSpecification": 1,
+  "name": "tnledger-foreclosure-scraper",
+  "version": "1.0",
+  "buildTag": "latest",
+  "env": null,
+  "defaultRunOptions": {
+    "build": "latest",
+    "timeoutSecs": 3600,
+    "memoryMbytes": 1024
+  }
+}

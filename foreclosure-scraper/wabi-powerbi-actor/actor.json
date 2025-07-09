@@ -1,0 +1,30 @@
+{
+  "actorSpecification": 1,
+  "name": "wabi-powerbi-foreclosure-scraper",
+  "title": "WABI PowerBI Foreclosure Scraper",
+  "description": "Scrapes foreclosure data from WABI PowerBI API (logs.com)",
+  "version": "1.0",
+  "meta": {
+    "templateId": "js-start"
+  },
+  "input": {
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+      "customHeaders": {
+        "type": "object",
+        "title": "Custom Headers",
+        "description": "Optional custom headers to override defaults",
+        "prefill": {},
+        "editor": "json"
+      },
+      "customPayload": {
+        "type": "object",
+        "title": "Custom Payload",
+        "description": "Optional custom payload to override defaults",
+        "prefill": {},
+        "editor": "json"
+      }
+    }
+  }
+}

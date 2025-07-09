@@ -1,0 +1,49 @@
+{
+  "actorSpecification": 1,
+  "name": "tnledger-foreclosure-scraper",
+  "title": "TN Ledger Foreclosure Scraper with Geolocation",
+  "description": "Scrapes Tennessee Ledger foreclosure notices, extracts auction details, geocodes addresses, and syncs to Supabase. Automatically determines the correct Friday date when run.",
+  "version": "1.0.0",
+  "meta": {
+    "templateId": "javascript-node"
+  },
+  "input": "input_schema.json",
+  "dockerfile": "Dockerfile",
+  "readme": "README.md",
+  "categories": ["SCRAPING_WEB_SCRAPING", "REAL_ESTATE"],
+  "defaultRunOptions": {
+    "build": "latest",
+    "timeoutSecs": 3600,
+    "memoryMbytes": 2048
+  },
+  "exampleRunInput": {
+    "noticesDate": "7/4/2025",
+    "supabaseUrl": "https://your-project.supabase.co",
+    "supabaseAnonKey": "your-anon-key",
+    "googleMapsApiKey": "your-google-maps-api-key",
+    "tableName": "tn_ledger_foreclosures"
+  },
+  "storages": {
+    "dataset": {
+      "actorSpecification": 1,
+      "title": "TN Ledger Foreclosure Notices",
+      "description": "Foreclosure notices with auction details and geolocation",
+      "views": {
+        "overview": {
+          "title": "Overview",
+          "transformation": {
+            "fields": [
+              "borrower_list",
+              "property_address_list",
+              "advertised_auction_date_list",
+              "auction_time",
+              "auction_location",
+              "property_lat",
+              "property_lng"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

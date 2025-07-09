@@ -188,12 +188,21 @@ export default function Home() {
           </Button>
           
           <Button
-            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
-            disabled={true}
+            onClick={() => runApifyScraper('wabipowerbi')}
+            disabled={isScrapingSource === 'wabipowerbi'}
             variant="outline"
           >
-            <Play className="mr-2 h-4 w-4" />
-            Run WABI PowerBI (Soon)
+            {isScrapingSource === 'wabipowerbi' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping WABI PowerBI...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run WABI PowerBI
+              </>
+            )}
           </Button>
           
           <Button

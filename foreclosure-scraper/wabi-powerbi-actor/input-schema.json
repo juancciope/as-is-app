@@ -1,0 +1,21 @@
+{
+  "title": "WABI PowerBI Foreclosure Scraper Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "customHeaders": {
+      "title": "Custom Headers",
+      "type": "object",
+      "description": "Optional custom headers to override defaults (e.g., for authentication)",
+      "prefill": {},
+      "editor": "json"
+    },
+    "customPayload": {
+      "title": "Custom Payload",
+      "type": "object", 
+      "description": "Optional custom PowerBI query payload to override defaults",
+      "prefill": {},
+      "editor": "json"
+    }
+  }
+}
