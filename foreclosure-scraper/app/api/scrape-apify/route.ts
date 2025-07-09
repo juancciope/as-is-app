@@ -297,13 +297,21 @@ async function extractCountyFromAddress(address: string): Promise<string> {
   };
   
   if (commonCityToCounty[city]) {
+    console.log(`Using cached county for ${city}: ${commonCityToCounty[city]}`);
     return commonCityToCounty[city];
   }
   
   // Use Google Maps Geocoding API for less common cities
+  console.log(`Attempting to geocode address: ${address} (extracted city: ${city})`);
   try {
     const county = await geocodeAddressForCounty(address);
-    return county || 'Unknown';
+    if (county) {
+      console.log(`Geocoded county for ${address}: ${county}`);
+      return county;
+    } else {
+      console.log(`No county found via geocoding for ${address}`);
+      return 'Unknown';
+    }
   } catch (error) {
     console.error('Geocoding failed for address:', address, error);
     return 'Unknown';
@@ -314,7 +322,7 @@ async function extractCountyFromAddress(address: string): Promise<string> {
 async function geocodeAddressForCounty(address: string): Promise<string | null> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    console.warn('Google Maps API key not configured, falling back to Unknown county');
+    console.warn('GOOGLE_MAPS_API_KEY not configured, falling back to Unknown county');
     return null;
   }
   
@@ -322,19 +330,23 @@ async function geocodeAddressForCounty(address: string): Promise<string | null> 
     // Clean and format the address for geocoding
     const cleanAddress = `${address}, Tennessee, USA`;
     const encodedAddress = encodeURIComponent(cleanAddress);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`;
     
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`
-    );
+    console.log(`Making geocoding request to: ${url.replace(apiKey, '***')}`);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
+      console.error(`Geocoding API HTTP error: ${response.status} ${response.statusText}`);
       throw new Error(`Geocoding API error: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log(`Geocoding response status: ${data.status}`);
     
     if (data.status === 'OK' && data.results && data.results.length > 0) {
       const result = data.results[0];
+      console.log(`Geocoding result components:`, result.address_components?.map((c: any) => `${c.long_name} (${c.types.join(', ')})`));
       
       // Look for the county in the address components
       const countyComponent = result.address_components.find((component: any) => 
@@ -347,8 +359,13 @@ async function geocodeAddressForCounty(address: string): Promise<string | null> 
         if (county.endsWith(' County')) {
           county = county.replace(' County', '');
         }
+        console.log(`Found county: ${county}`);
         return county;
+      } else {
+        console.log('No administrative_area_level_2 found in address components');
       }
+    } else {
+      console.error(`Geocoding API error: ${data.status} - ${data.error_message || 'No error message'}`);
     }
     
     return null;
