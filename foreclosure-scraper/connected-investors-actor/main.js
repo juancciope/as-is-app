@@ -119,14 +119,11 @@ async function loginToConnectedInvestors(page, username, password) {
         console.log(`Initial URL: ${initialUrl}`);
         
         // First, enter the username/email on the Connected Investors login page
+        // The input has id="v-0-1" and name="username"
         const usernameSelectors = [
+            'input#v-0-1',
             'input[name="username"]',
-            'input[name="email"]',
-            'input[type="email"]',
-            'input[type="text"][placeholder*="email" i]',
-            'input[type="text"][placeholder*="username" i]',
-            'input#username',
-            'input#email'
+            'input[type="text"][name="username"]'
         ];
         
         let usernameField = null;
@@ -203,21 +200,19 @@ async function loginToConnectedInvestors(page, username, password) {
             await page.waitForTimeout(2000);
             
             // Since the username was already entered on Connected Investors page and included in login_hint,
-            // we should now be on the password page
+            // we should now be on the password page with username pre-filled
             console.log('Looking for password field on OAuth page...');
             
             // Wait a bit for the password field to appear
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(3000);
             
-            // Find and fill password field
+            // The OAuth page has username pre-filled in input#signInName from login_hint
+            // We just need to fill the password field
             const oauthPasswordSelectors = [
-                'input[name="passwd"]',
-                'input[name="password"]',
-                'input[type="password"]',
                 'input#password',
-                'input#passwd',
-                'input[placeholder*="password" i]',
-                'input[placeholder*="Password" i]'
+                'input[name="Password"]',
+                'input[type="password"]',
+                'input[placeholder="Password"]'
             ];
             
             let passwordField = null;
@@ -258,16 +253,12 @@ async function loginToConnectedInvestors(page, username, password) {
             console.log('OAuth password entered');
             
             // Find and click OAuth submit button
+            // Based on the HTML provided, the button has id="next" and text "Sign in"
             const oauthSubmitSelectors = [
-                'input[type="submit"]',
-                'button[type="submit"]',
+                'button#next',
+                'button[type="submit"][form="localAccountForm"]',
                 'button:has-text("Sign in")',
-                'button:has-text("Sign In")',
-                'button:has-text("Login")',
-                'button:has-text("Log In")',
-                'input[value="Sign in"]',
-                'input[value="Sign In"]',
-                '#idSIButton9'
+                'button[type="submit"]'
             ];
             
             let submitButton = null;
