@@ -163,45 +163,47 @@ async function loginToConnectedInvestors(page, username, password) {
         console.log('Username/email entered');
         
         // Now click the login button to trigger OAuth redirect
+        // The button is a submit button with text "Log in"
         const loginButtonSelectors = [
-            'button:has-text("Login")',
-            'button:has-text("Sign In")',
-            'button:has-text("Log In")',
-            'a:has-text("Login")',
-            'a:has-text("Sign In")',
-            'a:has-text("Log In")',
+            'button[type="submit"]:has-text("Log in")',
+            'button:has-text("Log in")',
             'button[type="submit"]',
-            'input[type="submit"]',
-            '.login-button',
-            '[class*="login-btn"]',
-            '#login-button'
+            'form button[type="submit"]'
         ];
         
         let loginButton = null;
         for (const selector of loginButtonSelectors) {
             try {
-                loginButton = await page.$(selector);
-                if (loginButton && await loginButton.isVisible()) {
+                loginButton = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+                if (loginButton) {
                     console.log(`Found login button using selector: ${selector}`);
                     break;
                 }
             } catch (e) {
+                console.log(`Login button selector ${selector} not found, trying next...`);
                 continue;
             }
         }
         
         if (!loginButton) {
-            // Try pressing Enter on username field
+            // Try pressing Enter on username field as a fallback
             console.log('No login button found, pressing Enter on username field');
             await usernameField.press('Enter');
         } else {
+            // Small delay before clicking to ensure form is ready
+            await page.waitForTimeout(1000);
             await loginButton.click();
             console.log('Clicked login button');
         }
         
         console.log('Waiting for OAuth redirect...');
         // Wait for navigation to First American identity provider
-        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 })
+        try {
+            await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
+        } catch (navError) {
+            console.log('Navigation timeout, checking current state...');
+            await page.screenshot({ path: 'navigation_timeout.png' });
+        }
         
         // Check if we've been redirected to First American OAuth
         await page.waitForTimeout(3000);
