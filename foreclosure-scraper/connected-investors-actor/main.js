@@ -468,12 +468,45 @@ async function searchAndExtractProperties(page, address, maxProperties) {
             
         } catch (e) {
             console.log('Search dropdown did not appear, trying Enter key...');
-            await searchInput.press('Enter');
+            await page.keyboard.press('Enter');
         }
         
-        // Wait for results page to load
+        // Wait for results page to load after search
         await page.waitForTimeout(5000);
         await page.screenshot({ path: 'search_results.png' });
+        
+        // Also check if we're still on the search page - maybe need to click on dropdown results
+        const currentUrl = page.url();
+        console.log(`Current URL after search: ${currentUrl}`);
+        
+        // If we're still on the search page, try to find and click search suggestions
+        if (currentUrl.includes('property-search')) {
+            console.log('Still on search page, looking for search suggestions...');
+            
+            // Look for search suggestions that might still be visible
+            const suggestionSelectors = [
+                '.search-results li',
+                '.search-results p',
+                '[class*="suggestion"]',
+                '[class*="dropdown"] li'
+            ];
+            
+            for (const selector of suggestionSelectors) {
+                try {
+                    const suggestions = await page.$$(selector);
+                    if (suggestions.length > 0) {
+                        console.log(`Found ${suggestions.length} suggestions with selector: ${selector}`);
+                        // Click on the first suggestion
+                        await suggestions[0].click();
+                        console.log('Clicked on first suggestion');
+                        await page.waitForTimeout(3000);
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+        }
         
         // Extract property results
         const properties = await extractPropertyData(page, maxProperties);
@@ -495,15 +528,23 @@ async function extractPropertyData(page, maxProperties) {
         // Wait for results to load
         await page.waitForTimeout(3000);
         
-        // Look for property elements in search results - these appear as clickable items
+        // Look for property elements - could be in various places after search
         const propertySelectors = [
-            '.search-results li',
-            '.search-results .property-item',
+            // Property cards/results on the main page
             '[class*="property-card"]',
             '[class*="property-item"]',
-            '[class*="result-item"]',
-            '.property-result',
-            'li[class*="property"]'
+            '[class*="property-result"]',
+            '[class*="listing"]',
+            '.property',
+            '.result',
+            // Table rows if results are in a table
+            'table tr[class*="property"]',
+            'tbody tr',
+            // Generic clickable elements that might contain property info
+            '[class*="clickable"]',
+            '[role="button"]',
+            // Search results that might still be visible
+            '.search-results li'
         ];
         
         let propertyElements = [];
@@ -520,11 +561,42 @@ async function extractPropertyData(page, maxProperties) {
         }
         
         if (propertyElements.length === 0) {
-            console.log('No property elements found. Trying generic extraction...');
+            console.log('No property elements found. Analyzing page structure...');
+            
+            // Debug: Log all clickable elements
+            const clickableElements = await page.$$eval('[onclick], [role="button"], button, a, [class*="click"], [class*="button"]', 
+                els => els.map(el => ({
+                    tagName: el.tagName,
+                    className: el.className,
+                    text: el.textContent?.trim().substring(0, 100),
+                    visible: el.offsetParent !== null
+                })).filter(el => el.visible && el.text)
+            );
+            console.log('Clickable elements found:', JSON.stringify(clickableElements, null, 2));
             
             // Try to get all text content from the page for analysis
             const pageContent = await page.textContent('body');
             console.log('Page content length:', pageContent.length);
+            
+            // Check if the address appears in the page content
+            if (pageContent.toLowerCase().includes('522 acorn') || pageContent.toLowerCase().includes('acorn way')) {
+                console.log('Address found in page content - property data is available');
+                
+                // Look for any elements containing the address
+                const addressElements = await page.$$(`text=/.*522.*acorn.*way.*/i`);
+                if (addressElements.length > 0) {
+                    console.log(`Found ${addressElements.length} elements containing the address`);
+                    // Try to click on the first one
+                    try {
+                        await addressElements[0].click();
+                        console.log('Clicked on address element');
+                        await page.waitForTimeout(3000);
+                        await page.screenshot({ path: 'after_address_click.png' });
+                    } catch (e) {
+                        console.log('Could not click on address element');
+                    }
+                }
+            }
             
             // If we can't find structured data, create a basic entry
             return [{
