@@ -371,10 +371,12 @@ async function searchAndExtractProperties(page, address, maxProperties) {
         ];
         
         let searchInput = null;
+        let workingSelector = null;
         for (const selector of searchSelectors) {
             try {
-                searchInput = await page.waitForSelector(selector, { timeout: 5000 });
+                searchInput = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
                 if (searchInput) {
+                    workingSelector = selector;
                     console.log(`Found search input using selector: ${selector}`);
                     break;
                 }
@@ -383,7 +385,7 @@ async function searchAndExtractProperties(page, address, maxProperties) {
             }
         }
         
-        if (!searchInput) {
+        if (!searchInput || !workingSelector) {
             console.log('Could not find search input field. Analyzing available inputs...');
             const inputs = await page.$$eval('input', els => els.map(el => ({
                 type: el.type,
@@ -396,10 +398,27 @@ async function searchAndExtractProperties(page, address, maxProperties) {
             throw new Error('Could not find search input field');
         }
         
-        // Clear and enter address
-        await searchInput.fill('');
-        await searchInput.fill(address);
-        console.log(`Entered address: ${address}`);
+        // Wait a bit to ensure element is stable and attached
+        await page.waitForTimeout(2000);
+        
+        // Try alternative approach: click, clear, and type
+        try {
+            // Click on the input to focus it
+            await page.click(workingSelector);
+            await page.waitForTimeout(500);
+            
+            // Clear existing content
+            await page.keyboard.press('Control+A');
+            await page.keyboard.press('Delete');
+            
+            // Type the address
+            await page.type(workingSelector, address);
+            console.log(`Entered address: ${address}`);
+        } catch (typeError) {
+            console.log('Type method failed, trying fill as fallback...');
+            await page.fill(workingSelector, address);
+            console.log(`Entered address: ${address} (using fill)`);
+        }
         
         // Wait for search dropdown to appear (10 seconds as mentioned)
         console.log('Waiting for search suggestions to appear...');
