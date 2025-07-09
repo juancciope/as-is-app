@@ -170,12 +170,21 @@ export default function Home() {
           </Button>
           
           <Button
-            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
-            disabled={true}
+            onClick={() => runApifyScraper('tnledger')}
+            disabled={isScrapingSource === 'tnledger'}
             variant="outline"
           >
-            <Play className="mr-2 h-4 w-4" />
-            Run TN Ledger (Soon)
+            {isScrapingSource === 'tnledger' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping TN Ledger...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run TN Ledger
+              </>
+            )}
           </Button>
           
           <Button

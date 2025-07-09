@@ -19,7 +19,26 @@ interface ClearReconData {
   CurrentBid: string;
 }
 
-type ApifyAuctionData = PhillipJonesLawData | ClearReconData;
+interface TnLedgerData {
+  borrower_list: string;
+  property_address_list: string;
+  advertised_auction_date_list: string;
+  date_of_first_notice_list: string;
+  details_url: string;
+  borrower_detail: string;
+  address_detail: string;
+  original_trustee: string;
+  attorney: string;
+  instrument_no: string;
+  substitute_trustee: string;
+  advertised_auction_date_detail: string;
+  date_of_first_public_notice_detail: string;
+  trust_date: string;
+  tdn_no: string;
+  sale_details_text: string;
+}
+
+type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData;
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +48,7 @@ export async function POST(request: NextRequest) {
     const actorMapping: Record<string, string> = {
       'phillipjoneslaw': process.env.APIFY_ACTOR_ID_PJ!,
       'clearrecon': process.env.APIFY_ACTOR_ID_CLEARRECON!,
+      'tnledger': process.env.APIFY_ACTOR_ID_TNLEDGER!,
       // Add more mappings as we create more actors
     };
 
@@ -56,6 +76,10 @@ export async function POST(request: NextRequest) {
           ...(source === 'phillipjoneslaw' ? {
             input: {
               url: 'https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes'
+            }
+          } : source === 'tnledger' ? {
+            input: {
+              noticesDate: new Date().toLocaleDateString('en-US')
             }
           } : {})
         })
@@ -160,6 +184,28 @@ export async function POST(request: NextRequest) {
           firm: 'ClearRecon',
           address: cleanAddress(crRecord.PropertyAddress),
           city: extractCityFromAddress(crRecord.PropertyAddress),
+          within_30min: isWithin30Minutes(county),
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: 'google_maps'
+        };
+      } else if (source === 'tnledger') {
+        const tnRecord = record as TnLedgerData;
+        // Use the more detailed address if available, otherwise fall back to list address
+        const address = tnRecord.address_detail && tnRecord.address_detail !== 'Not found' 
+          ? tnRecord.address_detail 
+          : tnRecord.property_address_list;
+        
+        const county = await extractCountyFromAddress(address);
+        return {
+          source,
+          date: tnRecord.advertised_auction_date_detail || tnRecord.advertised_auction_date_list,
+          time: '00:00', // TN Ledger doesn't provide specific time
+          county,
+          firm: 'TN Ledger',
+          address: cleanAddress(address),
+          city: extractCityFromAddress(address),
           within_30min: isWithin30Minutes(county),
           closest_city: null,
           distance_miles: null,
