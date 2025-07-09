@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           time: pjRecord.SaleTime,
           pl: pjRecord.County.charAt(0).toUpperCase(), // First letter of county
           firm: 'Phillip Jones Law',
-          address: pjRecord.PropertyAddress,
+          address: toProperCase(pjRecord.PropertyAddress),
           city: extractCityFromAddress(pjRecord.PropertyAddress),
           within_30min: 'N',
           closest_city: null,
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
           time: '00:00', // ClearRecon doesn't provide time
           pl: extractStateFromAddress(crRecord.PropertyAddress), // Try to extract state
           firm: 'ClearRecon',
-          address: crRecord.PropertyAddress,
+          address: toProperCase(crRecord.PropertyAddress),
           city: extractCityFromAddress(crRecord.PropertyAddress),
           within_30min: 'N',
           closest_city: null,
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         time: '00:00',
         pl: 'TN',
         firm: 'Unknown',
-        address: fallbackRecord.PropertyAddress || '',
+        address: toProperCase(fallbackRecord.PropertyAddress || ''),
         city: extractCityFromAddress(fallbackRecord.PropertyAddress || ''),
         within_30min: 'N',
         closest_city: null,
@@ -225,6 +225,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to convert text to proper case
+function toProperCase(text: string): string {
+  return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 // Helper function to extract city from address
 function extractCityFromAddress(address: string): string {
   // Handle two formats:
@@ -237,7 +242,7 @@ function extractCityFromAddress(address: string): string {
     const cityState = parts[parts.length - 2]?.trim() || '';
     // Remove state abbreviation (2 letters) from the end
     const cityPart = cityState.replace(/\s+[A-Z]{2}$/, '').trim();
-    return cityPart || 'Unknown';
+    return cityPart ? toProperCase(cityPart) : 'Unknown';
   }
   
   // Fallback: try to extract from single string format
@@ -247,7 +252,7 @@ function extractCityFromAddress(address: string): string {
     const cityPart = match[1].trim();
     // Remove common street suffixes that might be confused with city
     const cleanCity = cityPart.replace(/^(RD|ST|AVE|DR|BLVD|LN|CT|WAY|PL)\s+/, '');
-    return cleanCity || 'Unknown';
+    return cleanCity ? toProperCase(cleanCity) : 'Unknown';
   }
   
   return 'Unknown';
