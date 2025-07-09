@@ -227,11 +227,13 @@ export async function POST(request: NextRequest) {
 
 // Helper function to extract city from address
 function extractCityFromAddress(address: string): string {
-  // Simple extraction - assumes city is after last comma
+  // Extract city from address format: "Street, City STATE, ZIP"
   const parts = address.split(',');
   if (parts.length >= 2) {
     const cityState = parts[parts.length - 2]?.trim() || '';
-    return cityState.split(' ')[0] || 'Unknown';
+    // Remove state abbreviation (2 letters) from the end
+    const cityPart = cityState.replace(/\s+[A-Z]{2}$/, '').trim();
+    return cityPart || 'Unknown';
   }
   return 'Unknown';
 }
