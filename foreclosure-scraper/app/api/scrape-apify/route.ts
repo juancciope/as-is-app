@@ -92,11 +92,8 @@ export async function POST(request: NextRequest) {
             }
           } : source === 'tnledger' ? {
             input: {
-              noticesDate: new Date().toLocaleDateString('en-US'),
-              supabaseUrl: process.env.SUPABASE_URL,
-              supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-              googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-              tableName: 'tn_ledger_foreclosures'
+              noticesDate: new Date().toLocaleDateString('en-US')
+              // Don't pass Supabase config - we'll handle data insertion in the API
             }
           } : {})
         })
@@ -214,10 +211,8 @@ export async function POST(request: NextRequest) {
           ? tnRecord.address_detail 
           : tnRecord.property_address_list;
         
-        // Use geocoded county if available, otherwise extract from address
-        const county = tnRecord.property_lat && tnRecord.property_lng 
-          ? await extractCountyFromCoordinates(tnRecord.property_lat, tnRecord.property_lng)
-          : await extractCountyFromAddress(address);
+        // Extract county from address (since the actor doesn't do Supabase integration anymore)
+        const county = await extractCountyFromAddress(address);
         
         return {
           source,
@@ -231,7 +226,7 @@ export async function POST(request: NextRequest) {
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,
-          geocode_method: tnRecord.property_lat ? 'enhanced_actor' : 'google_maps'
+          geocode_method: 'google_maps'
         };
       }
       
