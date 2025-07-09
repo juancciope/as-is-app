@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get('source') || 'unified';
+    const needsEnrichment = searchParams.get('needsEnrichment') === 'true';
     
     // Build the query
     let query = supabase.from(FORECLOSURE_TABLE).select('*');
@@ -16,6 +17,11 @@ export async function GET(request: NextRequest) {
     // Filter by source if not unified
     if (source !== 'unified') {
       query = query.eq('source', source);
+    }
+    
+    // Filter for properties that need enrichment
+    if (needsEnrichment) {
+      query = query.and('owner_emails.is.null,owner_phones.is.null');
     }
     
     // Apply filters if provided

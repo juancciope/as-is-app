@@ -17,6 +17,13 @@
       "editor": "textfield",
       "isSecret": true
     },
+    "apiBaseUrl": {
+      "title": "API Base URL",
+      "type": "string",
+      "description": "Base URL for your API (e.g., https://as-is-app.vercel.app)",
+      "default": "https://as-is-app.vercel.app",
+      "editor": "textfield"
+    },
     "batchSize": {
       "title": "Batch Size",
       "type": "integer",

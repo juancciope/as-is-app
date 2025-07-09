@@ -6,9 +6,9 @@ const BASE_URL = 'https://connectedinvestors.platlabs.com';
 const LOGIN_URL = `${BASE_URL}/login`;
 const PROPERTY_SEARCH_URL = `${BASE_URL}/find-deals/property-search`;
 
-// Supabase configuration
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+// API configuration
+const API_BASE_URL = process.env.API_BASE_URL || 'https://as-is-app.vercel.app';
+const API_KEY = process.env.API_KEY; // Optional API key for security
 
 // Main enrichment actor
 Actor.main(async () => {
@@ -27,8 +27,8 @@ Actor.main(async () => {
         throw new Error('Username and password are required!');
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-        throw new Error('Supabase configuration missing!');
+    if (!API_BASE_URL) {
+        throw new Error('API configuration missing!');
     }
 
     // Launch browser
@@ -190,39 +190,41 @@ async function loginToConnectedInvestors(page, username, password) {
     }
 }
 
-// Fetch properties from Supabase that need enrichment
+// Fetch properties from API that need enrichment
 async function fetchPropertiesForEnrichment(skipAlreadyEnriched = true) {
     try {
-        const supabaseHeaders = {
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'Content-Type': 'application/json'
+        const headers = {
+            'Content-Type': 'application/json',
         };
         
-        // Build query to fetch properties
-        let query = `${SUPABASE_URL}/rest/v1/foreclosure_data?select=*`;
-        
-        if (skipAlreadyEnriched) {
-            // Only get properties that haven't been enriched (no skip trace data)
-            query += `&and=(owner_emails.is.null,owner_phones.is.null)`;
+        if (API_KEY) {
+            headers['Authorization'] = `Bearer ${API_KEY}`;
         }
         
-        // Limit to recent properties (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        query += `&created_at=gte.${thirtyDaysAgo.toISOString()}`;
-        
-        // Order by most recent first
-        query += `&order=created_at.desc`;
-        
-        const response = await fetch(query, { headers: supabaseHeaders });
+        // Fetch properties from the API
+        const response = await fetch(`${API_BASE_URL}/api/data?needsEnrichment=true`, { 
+            headers,
+            method: 'GET'
+        });
         
         if (!response.ok) {
-            throw new Error(`Supabase query failed: ${response.status} ${response.statusText}`);
+            throw new Error(`API query failed: ${response.status} ${response.statusText}`);
         }
         
-        const properties = await response.json();
-        console.log(`Fetched ${properties.length} properties from database`);
+        const data = await response.json();
+        let properties = data.data || [];
+        
+        // Filter properties that need enrichment if requested
+        if (skipAlreadyEnriched) {
+            properties = properties.filter(p => !p.owner_emails && !p.owner_phones);
+        }
+        
+        // Filter to recent properties (last 30 days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        properties = properties.filter(p => new Date(p.created_at) >= thirtyDaysAgo);
+        
+        console.log(`Fetched ${properties.length} properties from API that need enrichment`);
         
         return properties;
         
@@ -516,16 +518,19 @@ async function extractContactInfo(page) {
     }
 }
 
-// Update property in database with skip trace data
+// Update property in database with skip trace data via API
 async function updatePropertyInDatabase(propertyId, skipTraceData) {
     try {
-        const supabaseHeaders = {
-            'apikey': SUPABASE_SERVICE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-            'Content-Type': 'application/json'
+        const headers = {
+            'Content-Type': 'application/json',
         };
         
+        if (API_KEY) {
+            headers['Authorization'] = `Bearer ${API_KEY}`;
+        }
+        
         const updateData = {
+            id: propertyId,
             owner_emails: skipTraceData.emails.join(','),
             owner_phones: skipTraceData.phones.join(','),
             owner_info: skipTraceData.owners.join(' | '),
@@ -533,24 +538,23 @@ async function updatePropertyInDatabase(propertyId, skipTraceData) {
                 attempted_at: new Date().toISOString(),
                 method: 'connected_investors_enricher',
                 results: skipTraceData
-            },
-            updated_at: new Date().toISOString()
+            }
         };
         
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/foreclosure_data?id=eq.${propertyId}`, {
-            method: 'PATCH',
-            headers: supabaseHeaders,
+        const response = await fetch(`${API_BASE_URL}/api/data/enrich`, {
+            method: 'POST',
+            headers,
             body: JSON.stringify(updateData)
         });
         
         if (!response.ok) {
-            throw new Error(`Database update failed: ${response.status} ${response.statusText}`);
+            throw new Error(`API update failed: ${response.status} ${response.statusText}`);
         }
         
-        console.log(`Updated property ${propertyId} in database`);
+        console.log(`Updated property ${propertyId} via API`);
         
     } catch (error) {
-        console.error('Error updating database:', error);
+        console.error('Error updating via API:', error);
         throw error;
     }
 }
