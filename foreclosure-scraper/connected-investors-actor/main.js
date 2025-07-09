@@ -107,10 +107,11 @@ Actor.main(async () => {
 async function loginToConnectedInvestors(page, username, password) {
     try {
         console.log('Navigating to login page...');
-        await page.goto(LOGIN_URL, { waitUntil: 'networkidle' });
+        // Use domcontentloaded instead of networkidle to avoid timeout
+        await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
         
-        // Wait for page to load
-        await page.waitForTimeout(3000);
+        // Wait for page to load and any redirects
+        await page.waitForTimeout(5000);
         
         // Take screenshot for debugging
         await page.screenshot({ path: 'login_page_initial.png' });
@@ -126,6 +127,10 @@ async function loginToConnectedInvestors(page, username, password) {
             'input[type="text"][name="username"]'
         ];
         
+        // Check current URL to ensure we're on the right page
+        const currentUrl = page.url();
+        console.log(`Current URL before username entry: ${currentUrl}`);
+        
         let usernameField = null;
         for (const selector of usernameSelectors) {
             try {
@@ -135,11 +140,22 @@ async function loginToConnectedInvestors(page, username, password) {
                     break;
                 }
             } catch (e) {
+                console.log(`Selector ${selector} not found, trying next...`);
                 continue;
             }
         }
         
         if (!usernameField) {
+            // Log all available input fields for debugging
+            const inputs = await page.$$eval('input', els => els.map(el => ({
+                id: el.id,
+                name: el.name,
+                type: el.type,
+                placeholder: el.placeholder,
+                visible: el.offsetParent !== null
+            })));
+            console.log('Available input fields:', JSON.stringify(inputs, null, 2));
+            await page.screenshot({ path: 'login_page_no_username_field.png' });
             throw new Error('Could not find username/email input field on Connected Investors login page');
         }
         
@@ -185,7 +201,7 @@ async function loginToConnectedInvestors(page, username, password) {
         
         console.log('Waiting for OAuth redirect...');
         // Wait for navigation to First American identity provider
-        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 })
+        await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 })
         
         // Check if we've been redirected to First American OAuth
         await page.waitForTimeout(3000);
@@ -285,7 +301,7 @@ async function loginToConnectedInvestors(page, username, password) {
             
             // Wait for OAuth redirect back to Connected Investors
             console.log('Waiting for redirect back to Connected Investors...');
-            await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
             await page.waitForTimeout(5000);
             
             // Take screenshot after OAuth login
