@@ -5,9 +5,9 @@ import React, { useState } from 'react';
 
 export default function TNLedgerScraperDashboard() {
   const [isRunning, setIsRunning] = useState(false);
-  const [runId, setRunId] = useState(null);
-  const [status, setStatus] = useState(null);
-  const [error, setError] = useState(null);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [noticesDate, setNoticesDate] = useState('');
 
   const triggerScraper = async () => {
@@ -43,7 +43,7 @@ export default function TNLedgerScraperDashboard() {
     }
   };
 
-  const pollStatus = async (runId) => {
+  const pollStatus = async (runId: string) => {
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`/api/scrapers/tnledger/status?runId=${runId}`);
