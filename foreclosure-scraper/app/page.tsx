@@ -12,6 +12,7 @@ import { Loader2, Play, Download, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const [isScrapingAll, setIsScrapingAll] = useState(false);
+  const [isScrapingSource, setIsScrapingSource] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [data, setData] = useState([]);
   const [stats, setStats] = useState({
@@ -85,6 +86,30 @@ export default function Home() {
     }
   };
 
+  const runApifyScraper = async (source: string) => {
+    setIsScrapingSource(source);
+    try {
+      const response = await fetch('/api/scrape-apify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        console.log(`Successfully scraped ${result.recordsInserted} records from ${source}`);
+        await fetchData();
+      } else {
+        console.error(`Failed to scrape ${source}:`, result.error);
+      }
+    } catch (error) {
+      console.error(`Scraping ${source} failed:`, error);
+    } finally {
+      setIsScrapingSource(null);
+    }
+  };
+
   const exportData = () => {
     const csv = [
       Object.keys(data[0]).join(','),
@@ -122,6 +147,24 @@ export default function Home() {
               <>
                 <Play className="mr-2 h-4 w-4" />
                 Run All Scrapers
+              </>
+            )}
+          </Button>
+          
+          <Button
+            onClick={() => runApifyScraper('phillipjoneslaw')}
+            disabled={isScrapingSource === 'phillipjoneslaw'}
+            variant="secondary"
+          >
+            {isScrapingSource === 'phillipjoneslaw' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping PJ...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run PJ (Apify)
               </>
             )}
           </Button>
