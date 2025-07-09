@@ -152,12 +152,21 @@ export default function Home() {
           </Button>
           
           <Button
-            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
-            disabled={true}
-            variant="outline"
+            onClick={() => runApifyScraper('clearrecon')}
+            disabled={isScrapingSource === 'clearrecon'}
+            variant="secondary"
           >
-            <Play className="mr-2 h-4 w-4" />
-            Run ClearRecon (Soon)
+            {isScrapingSource === 'clearrecon' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping ClearRecon...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run ClearRecon
+              </>
+            )}
           </Button>
           
           <Button

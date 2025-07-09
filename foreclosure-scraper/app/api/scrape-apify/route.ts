@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, FORECLOSURE_TABLE } from '@/lib/supabase';
 
-interface ApifyAuctionData {
+interface PhillipJonesLawData {
   SourceWebsite: string;
   CaseNumber: string;
   PropertyAddress: string;
@@ -11,6 +11,16 @@ interface ApifyAuctionData {
   Status: string;
 }
 
+interface ClearReconData {
+  SourceWebsite: string;
+  TS_Number: string;
+  PropertyAddress: string;
+  SaleDate: string;
+  CurrentBid: string;
+}
+
+type ApifyAuctionData = PhillipJonesLawData | ClearReconData;
+
 export async function POST(request: NextRequest) {
   try {
     const { source } = await request.json();
@@ -18,6 +28,7 @@ export async function POST(request: NextRequest) {
     // Map source to actor ID
     const actorMapping: Record<string, string> = {
       'phillipjoneslaw': process.env.APIFY_ACTOR_ID_PJ!,
+      'clearrecon': process.env.APIFY_ACTOR_ID_CLEARRECON!,
       // Add more mappings as we create more actors
     };
 
@@ -97,20 +108,57 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Transform and insert data into Supabase
-    const supabaseRecords = apifyData.map(record => ({
-      source,
-      date: record.SaleDate,
-      time: record.SaleTime,
-      pl: record.County.charAt(0).toUpperCase(), // First letter of county
-      firm: 'Phillip Jones Law', // Static for this source
-      address: record.PropertyAddress,
-      city: extractCityFromAddress(record.PropertyAddress),
-      within_30min: 'N', // Will be calculated by geocoding later
-      closest_city: null,
-      distance_miles: null,
-      est_drive_time: null,
-      geocode_method: null
-    }));
+    const supabaseRecords = apifyData.map(record => {
+      if (source === 'phillipjoneslaw') {
+        const pjRecord = record as PhillipJonesLawData;
+        return {
+          source,
+          date: pjRecord.SaleDate,
+          time: pjRecord.SaleTime,
+          pl: pjRecord.County.charAt(0).toUpperCase(), // First letter of county
+          firm: 'Phillip Jones Law',
+          address: pjRecord.PropertyAddress,
+          city: extractCityFromAddress(pjRecord.PropertyAddress),
+          within_30min: 'N',
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: null
+        };
+      } else if (source === 'clearrecon') {
+        const crRecord = record as ClearReconData;
+        return {
+          source,
+          date: crRecord.SaleDate,
+          time: '00:00', // ClearRecon doesn't provide time
+          pl: extractStateFromAddress(crRecord.PropertyAddress), // Try to extract state
+          firm: 'ClearRecon',
+          address: crRecord.PropertyAddress,
+          city: extractCityFromAddress(crRecord.PropertyAddress),
+          within_30min: 'N',
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: null
+        };
+      }
+      
+      // Default fallback
+      return {
+        source,
+        date: record.SaleDate || '',
+        time: '00:00',
+        pl: 'TN',
+        firm: 'Unknown',
+        address: record.PropertyAddress || '',
+        city: extractCityFromAddress(record.PropertyAddress || ''),
+        within_30min: 'N',
+        closest_city: null,
+        distance_miles: null,
+        est_drive_time: null,
+        geocode_method: null
+      };
+    });
 
     // Insert in batches
     const batchSize = 100;
@@ -162,4 +210,18 @@ function extractCityFromAddress(address: string): string {
     return cityState.split(' ')[0] || 'Unknown';
   }
   return 'Unknown';
+}
+
+// Helper function to extract state from address
+function extractStateFromAddress(address: string): string {
+  // Try to extract state abbreviation from address
+  const parts = address.split(',');
+  if (parts.length >= 2) {
+    const stateZip = parts[parts.length - 1]?.trim() || '';
+    const stateMatch = stateZip.match(/\b([A-Z]{2})\b/);
+    if (stateMatch) {
+      return stateMatch[1];
+    }
+  }
+  return 'TN'; // Default to Tennessee
 }

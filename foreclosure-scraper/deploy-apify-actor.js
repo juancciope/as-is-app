@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // Configuration
 const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN;
-const ACTOR_NAME = `pj-foreclosure-scraper-${Date.now()}`;
+const ACTOR_NAME = `clearrecon-scraper-${Date.now()}`;
 
 if (!APIFY_API_TOKEN) {
   console.error('Please set APIFY_API_TOKEN environment variable');
@@ -16,9 +16,9 @@ if (!APIFY_API_TOKEN) {
 const actorFiles = {
   '.actor/actor.json': {
     "actorSpecification": 1,
-    "name": "phillipjoneslaw-scraper",
-    "title": "Phillip Jones Law Foreclosure Scraper",
-    "description": "Scrapes foreclosure auction data from Phillip Jones Law website",
+    "name": "clearrecon-scraper",
+    "title": "ClearRecon Tennessee Foreclosure Scraper",
+    "description": "Scrapes foreclosure auction data from ClearRecon Tennessee website",
     "version": "1.0",
     "dockerfile": "./Dockerfile"
   },
@@ -29,113 +29,160 @@ const actorFiles = {
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Playwright browsers
+RUN playwright install chromium
+RUN playwright install-deps
+
 COPY . ./
 
 CMD python3 main.py`,
   
   'requirements.txt': `apify
 requests
-beautifulsoup4`,
+beautifulsoup4
+playwright`,
   
   'main.py': `import asyncio
 from apify import Actor
-import requests
+from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 
 # Configuration
-AUCTION_URL = "https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes"
-SOURCE_WEBSITE_NAME = "phillipjoneslaw.com"
+LISTINGS_URL = "https://clearrecon-tn.com/tennessee-listings/"
+SOURCE_WEBSITE_NAME = "clearrecon-tn.com"
 
 async def main():
     async with Actor:
         Actor.log.info(f"Starting scraper for {SOURCE_WEBSITE_NAME}")
 
-        # Fetch the page
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Connection': 'keep-alive'
-        }
+        async with async_playwright() as p:
+            try:
+                # Launch browser
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+                
+                # Set user agent
+                await page.set_extra_http_headers({
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                })
 
-        try:
-            Actor.log.info(f"Fetching URL: {AUCTION_URL}")
-            response = requests.get(AUCTION_URL, headers=headers, timeout=30)
-            response.raise_for_status()
-            Actor.log.info(f"Successfully fetched page (Status: {response.status_code})")
+                Actor.log.info(f"Navigating to URL: {LISTINGS_URL}")
+                await page.goto(LISTINGS_URL, wait_until='load')
+                await page.wait_for_timeout(5000)  # Wait for initial load
 
-            # Parse the HTML
-            soup = BeautifulSoup(response.text, 'html.parser')
+                # Handle disclaimer
+                try:
+                    Actor.log.info("Looking for disclaimer 'Agree' button...")
+                    agree_button = await page.wait_for_selector("//a[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'agree')]", timeout=10000)
+                    if agree_button:
+                        Actor.log.info("Found 'Agree' button, clicking...")
+                        await agree_button.click()
+                        await page.wait_for_timeout(5000)
+                        Actor.log.info("Clicked disclaimer button")
+                except Exception as e:
+                    Actor.log.info(f"No disclaimer found or error clicking: {str(e)}")
 
-            # Find the auction table
-            auction_table = soup.find('table', id='auctionTbl')
-            if not auction_table:
-                Actor.log.warning("Could not find auction table with id='auctionTbl'")
-                # Try alternative selectors
-                auction_table = soup.find('table', class_='auction-table')
-                if not auction_table:
-                    Actor.log.error("Could not find any auction table")
+                # Find table and set to show all entries
+                try:
+                    Actor.log.info("Finding table to get dynamic ID...")
+                    table_element = await page.wait_for_selector(".posts-data-table", timeout=10000)
+                    dynamic_table_id = await table_element.get_attribute("id")
+                    
+                    if dynamic_table_id:
+                        Actor.log.info(f"Found dynamic table ID: {dynamic_table_id}")
+                        
+                        # Set dropdown to show all entries
+                        select_name = f"{dynamic_table_id}_length"
+                        Actor.log.info(f"Setting dropdown '{select_name}' to show all entries...")
+                        
+                        await page.evaluate(f"""
+                            var sel = document.getElementsByName('{select_name}')[0];
+                            if (sel) {{
+                                sel.value = '-1';
+                                sel.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                            }}
+                        """)
+                        
+                        Actor.log.info("Set dropdown to 'All', waiting for table to update...")
+                        await page.wait_for_timeout(7000)
+                        
+                except Exception as e:
+                    Actor.log.warning(f"Could not find or interact with dropdown: {str(e)}")
+
+                # Wait for data rows to load
+                try:
+                    Actor.log.info("Waiting for data rows to load...")
+                    await page.wait_for_selector(".post-row", timeout=30000)
+                    Actor.log.info("Data rows found, page fully loaded")
+                except Exception as e:
+                    Actor.log.error(f"Data rows not found: {str(e)}")
                     return
 
-            Actor.log.info("Found auction table, parsing rows...")
+                # Get page content and parse
+                html_content = await page.content()
+                soup = BeautifulSoup(html_content, 'html.parser')
 
-            # Find table body or use table directly
-            table_body = auction_table.find('tbody')
-            if not table_body:
-                table_body = auction_table
+                # Parse the listings
+                listings_table = soup.find('table', class_='posts-data-table')
+                if not listings_table:
+                    Actor.log.error("Could not find listings table")
+                    return
 
-            rows = table_body.find_all('tr')
+                Actor.log.info("Found listings table, parsing data...")
+                
+                table_body = listings_table.find('tbody')
+                if not table_body:
+                    Actor.log.error("Could not find table body")
+                    return
 
-            if not rows:
-                Actor.log.error("No rows found in table")
-                return
+                rows = table_body.find_all('tr')
+                if not rows:
+                    Actor.log.error("No rows found in table")
+                    return
 
-            Actor.log.info(f"Found {len(rows)} rows")
+                Actor.log.info(f"Found {len(rows)} rows")
 
-            scraped_count = 0
-            for idx, row in enumerate(rows):
-                cells = row.find_all(['td', 'th'])
-
-                # Skip header rows
-                if cells and cells[0].name == 'th':
-                    Actor.log.info(f"Skipping header row {idx}")
-                    continue
-
-                if len(cells) == 6:
-                    try:
-                        auction_data = {
-                            'SourceWebsite': SOURCE_WEBSITE_NAME,
-                            'CaseNumber': cells[0].get_text(strip=True),
-                            'PropertyAddress': cells[1].get_text(strip=True),
-                            'County': cells[2].get_text(strip=True),
-                            'SaleDate': cells[3].get_text(strip=True),
-                            'SaleTime': cells[4].get_text(strip=True),
-                            'Status': cells[5].get_text(strip=True)
-                        }
-
-                        # Only add if we have actual data
-                        if auction_data['CaseNumber'] and auction_data['PropertyAddress']:
-                            await Actor.push_data(auction_data)
-                            scraped_count += 1
-                            Actor.log.info(f"Scraped auction: {auction_data['CaseNumber']}")
-                        else:
-                            Actor.log.info(f"Skipping empty row {idx}")
-
-                    except Exception as e:
-                        Actor.log.error(f"Error parsing row {idx}: {str(e)}")
+                scraped_count = 0
+                for idx, row in enumerate(rows):
+                    # Skip header rows
+                    if row.find('th'):
                         continue
-                else:
-                    Actor.log.debug(f"Row {idx} has {len(cells)} cells, expected 6")
 
-            Actor.log.info(f"Successfully scraped {scraped_count} auctions")
+                    cells = row.find_all('td')
+                    if len(cells) == 4:
+                        try:
+                            listing_data = {
+                                'SourceWebsite': SOURCE_WEBSITE_NAME,
+                                'TS_Number': cells[0].get_text(strip=True),
+                                'PropertyAddress': cells[1].get_text(strip=True),
+                                'SaleDate': cells[2].get_text(strip=True),
+                                'CurrentBid': cells[3].get_text(strip=True)
+                            }
 
-            if scraped_count == 0:
-                Actor.log.warning("No auction data was scraped - check if website structure changed")
+                            # Only add if we have actual data
+                            if listing_data['TS_Number'] and listing_data['PropertyAddress']:
+                                await Actor.push_data(listing_data)
+                                scraped_count += 1
+                                Actor.log.info(f"Scraped listing: {listing_data['TS_Number']}")
+                            else:
+                                Actor.log.debug(f"Skipping empty row {idx}")
 
-        except requests.RequestException as e:
-            Actor.log.error(f"Request error: {str(e)}")
-        except Exception as e:
-            Actor.log.error(f"Unexpected error during scraping: {str(e)}")
+                        except Exception as e:
+                            Actor.log.error(f"Error parsing row {idx}: {str(e)}")
+                            continue
+                    else:
+                        if any(c.get_text(strip=True) for c in cells):
+                            Actor.log.debug(f"Row {idx} has {len(cells)} cells, expected 4")
+
+                Actor.log.info(f"Successfully scraped {scraped_count} listings")
+
+                if scraped_count == 0:
+                    Actor.log.warning("No listing data was scraped - check if website structure changed")
+
+                await browser.close()
+
+            except Exception as e:
+                Actor.log.error(f"Error during scraping: {str(e)}")
 
 if __name__ == "__main__":
     asyncio.run(main())`
