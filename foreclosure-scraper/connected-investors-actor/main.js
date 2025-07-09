@@ -668,6 +668,9 @@ async function extractSingleProperty(page, element, index) {
 // Extract property details and perform skip trace from modal
 async function extractPropertyDetailsFromModal(page, propertyData) {
     try {
+        // First, save the property to "Foreclousure July" list
+        await savePropertyToList(page, "Foreclousure July");
+        
         // Look for Contact Info tab and click it
         const contactInfoSelectors = [
             'span:has-text("Contact Info")',
@@ -742,6 +745,139 @@ async function extractPropertyDetailsFromModal(page, propertyData) {
         
     } catch (error) {
         console.error('Error in modal extraction:', error.message);
+    }
+}
+
+// Save property to a specific list
+async function savePropertyToList(page, listName) {
+    try {
+        console.log(`Saving property to list: ${listName}`);
+        
+        // Look for Save/Add to List button in the modal
+        const saveButtonSelectors = [
+            'button:has-text("Save")',
+            'button:has-text("Add to List")',
+            'button:has-text("Add to")',
+            '[class*="save"]',
+            '[class*="add-to-list"]',
+            'button[class*="save"]',
+            'button[title*="save" i]',
+            'button[aria-label*="save" i]'
+        ];
+        
+        let saveButton = null;
+        for (const selector of saveButtonSelectors) {
+            try {
+                saveButton = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
+                if (saveButton) {
+                    console.log(`Found save button using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (saveButton) {
+            await saveButton.click();
+            console.log('Clicked save button');
+            await page.waitForTimeout(2000);
+            
+            // Look for list selection dropdown/modal
+            const listSelectors = [
+                `text="${listName}"`,
+                `[title="${listName}"]`,
+                `option:has-text("${listName}")`,
+                `li:has-text("${listName}")`,
+                '.list-item',
+                '[class*="list"]'
+            ];
+            
+            // Try to find and select the specific list
+            let listSelected = false;
+            for (const selector of listSelectors) {
+                try {
+                    const listElement = await page.waitForSelector(selector, { timeout: 3000 });
+                    if (listElement) {
+                        await listElement.click();
+                        console.log(`Selected list: ${listName}`);
+                        listSelected = true;
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            if (!listSelected) {
+                console.log(`Could not find list "${listName}", looking for create new list option`);
+                
+                // Look for "Create New List" or similar option
+                const createListSelectors = [
+                    'button:has-text("Create")',
+                    'button:has-text("New List")',
+                    'button:has-text("Add New")',
+                    '[class*="create"]',
+                    '[class*="new-list"]'
+                ];
+                
+                for (const selector of createListSelectors) {
+                    try {
+                        const createButton = await page.$(selector);
+                        if (createButton) {
+                            await createButton.click();
+                            console.log('Clicked create new list');
+                            await page.waitForTimeout(1000);
+                            
+                            // Enter list name
+                            const nameInput = await page.waitForSelector('input[type="text"]', { timeout: 3000 });
+                            if (nameInput) {
+                                await nameInput.fill(listName);
+                                
+                                // Submit the new list
+                                const submitButton = await page.waitForSelector('button[type="submit"], button:has-text("Create"), button:has-text("Save")', { timeout: 3000 });
+                                if (submitButton) {
+                                    await submitButton.click();
+                                    console.log(`Created new list: ${listName}`);
+                                }
+                            }
+                            break;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+            }
+            
+            // Look for final save/confirm button
+            const confirmSelectors = [
+                'button:has-text("Save")',
+                'button:has-text("Add")',
+                'button:has-text("Confirm")',
+                'button[type="submit"]'
+            ];
+            
+            for (const selector of confirmSelectors) {
+                try {
+                    const confirmButton = await page.waitForSelector(selector, { timeout: 3000 });
+                    if (confirmButton) {
+                        await confirmButton.click();
+                        console.log('Confirmed property save to list');
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            await page.waitForTimeout(2000);
+            
+        } else {
+            console.log('Could not find save button in modal');
+        }
+        
+    } catch (error) {
+        console.error('Error saving property to list:', error.message);
     }
 }
 
