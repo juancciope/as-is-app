@@ -41,7 +41,12 @@ export async function POST(request: NextRequest) {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ waitForFinish: 120 }) // Wait up to 2 minutes
+        body: JSON.stringify({ 
+          waitForFinish: 120, // Wait up to 2 minutes
+          input: {
+            url: 'https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes'
+          }
+        })
       }
     );
 
