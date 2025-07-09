@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    if (runStatus !== 'SUCCEEDED') {
+    // Accept both SUCCEEDED and READY as successful completion
+    if (runStatus !== 'SUCCEEDED' && runStatus !== 'READY') {
       throw new Error(`Actor run failed or timed out. Final status: ${runStatus}`);
     }
 
