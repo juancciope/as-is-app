@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          waitForFinish: source === 'clearrecon' ? 180 : 120, // Wait up to 3 minutes for ClearRecon, 2 for others
           ...(source === 'phillipjoneslaw' ? {
             input: {
               url: 'https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes'
@@ -70,15 +69,44 @@ export async function POST(request: NextRequest) {
 
     const runData = await runResponse.json();
     const runId = runData.data.id;
-    console.log(`Actor run started with ID: ${runId}`);
-
+    
     // Step 2: Wait for the run to complete and get the dataset
     const datasetId = runData.data.defaultDatasetId;
-    console.log(`Fetching results from dataset: ${datasetId}`);
+    console.log(`Actor run started with ID: ${runId}, dataset: ${datasetId}`);
 
-    // Wait longer for the actor to complete and data to be ready
-    const waitTime = source === 'clearrecon' ? 20000 : 10000; // 20 seconds for ClearRecon, 10 for others
-    await new Promise(resolve => setTimeout(resolve, waitTime));
+    // Poll for completion instead of using waitForFinish
+    let runStatus = runData.data.status;
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max (5 second intervals)
+    
+    console.log(`Initial run status: ${runStatus}`);
+    
+    while (runStatus === 'RUNNING' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      attempts++;
+      
+      const statusResponse = await fetch(
+        `https://api.apify.com/v2/acts/${encodedActorId}/runs/${runId}?token=${apiToken}`
+      );
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        runStatus = statusData.data.status;
+        console.log(`Run status check ${attempts}/${maxAttempts}: ${runStatus}`);
+      } else {
+        console.log(`Failed to get run status, attempt ${attempts}/${maxAttempts}`);
+        break;
+      }
+    }
+    
+    if (runStatus !== 'SUCCEEDED') {
+      throw new Error(`Actor run failed or timed out. Final status: ${runStatus}`);
+    }
+
+    console.log(`Actor completed successfully! Fetching dataset...`);
+
+    // Give a small buffer for dataset to be ready
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const datasetResponse = await fetch(
       `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
