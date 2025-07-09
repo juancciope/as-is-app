@@ -67,8 +67,8 @@ async def main():
                 })
 
                 Actor.log.info(f"Navigating to URL: {LISTINGS_URL}")
-                await page.goto(LISTINGS_URL, wait_until='load')
-                await page.wait_for_timeout(5000)  # Wait for initial load
+                await page.goto(LISTINGS_URL, wait_until='networkidle')
+                await page.wait_for_timeout(10000)  # Wait for initial load
 
                 # Handle disclaimer
                 try:
@@ -77,7 +77,7 @@ async def main():
                     if agree_button:
                         Actor.log.info("Found 'Agree' button, clicking...")
                         await agree_button.click()
-                        await page.wait_for_timeout(5000)
+                        await page.wait_for_timeout(10000)
                         Actor.log.info("Clicked disclaimer button")
                 except Exception as e:
                     Actor.log.info(f"No disclaimer found or error clicking: {str(e)}")
@@ -104,7 +104,7 @@ async def main():
                         """)
                         
                         Actor.log.info("Set dropdown to 'All', waiting for table to update...")
-                        await page.wait_for_timeout(7000)
+                        await page.wait_for_timeout(15000)
                         
                 except Exception as e:
                     Actor.log.warning(f"Could not find or interact with dropdown: {str(e)}")
@@ -112,10 +112,17 @@ async def main():
                 # Wait for data rows to load
                 try:
                     Actor.log.info("Waiting for data rows to load...")
-                    await page.wait_for_selector(".post-row", timeout=30000)
+                    await page.wait_for_selector(".post-row", timeout=45000)
                     Actor.log.info("Data rows found, page fully loaded")
+                    
+                    # Additional wait to ensure all content is loaded
+                    await page.wait_for_timeout(5000)
+                    
                 except Exception as e:
                     Actor.log.error(f"Data rows not found: {str(e)}")
+                    # Log page content for debugging
+                    content = await page.content()
+                    Actor.log.info(f"Page content snippet: {content[:1000]}")
                     return
 
                 # Get page content and parse
@@ -126,6 +133,11 @@ async def main():
                 listings_table = soup.find('table', class_='posts-data-table')
                 if not listings_table:
                     Actor.log.error("Could not find listings table")
+                    # Try alternative selectors
+                    all_tables = soup.find_all('table')
+                    Actor.log.info(f"Found {len(all_tables)} total tables on page")
+                    if all_tables:
+                        Actor.log.info(f"Table classes: {[t.get('class', []) for t in all_tables[:3]]}")
                     return
 
                 Actor.log.info("Found listings table, parsing data...")
@@ -133,11 +145,13 @@ async def main():
                 table_body = listings_table.find('tbody')
                 if not table_body:
                     Actor.log.error("Could not find table body")
+                    Actor.log.info(f"Table structure: {listings_table.prettify()[:500]}")
                     return
 
                 rows = table_body.find_all('tr')
                 if not rows:
                     Actor.log.error("No rows found in table")
+                    Actor.log.info(f"Table body content: {table_body.prettify()[:500]}")
                     return
 
                 Actor.log.info(f"Found {len(rows)} rows")

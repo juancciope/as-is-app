@@ -87,6 +87,11 @@ export async function POST(request: NextRequest) {
 
     const apifyData: ApifyAuctionData[] = await datasetResponse.json();
     console.log(`Retrieved ${apifyData.length} records from Apify`);
+    
+    // Debug: Log first record to see data structure
+    if (apifyData.length > 0) {
+      console.log(`First record structure:`, JSON.stringify(apifyData[0], null, 2));
+    }
 
     if (apifyData.length === 0) {
       return NextResponse.json({
@@ -143,15 +148,16 @@ export async function POST(request: NextRequest) {
         };
       }
       
-      // Default fallback
+      // Default fallback - should not happen but handle gracefully
+      const fallbackRecord = record as any;
       return {
         source,
-        date: record.SaleDate || '',
+        date: fallbackRecord.SaleDate || '',
         time: '00:00',
         pl: 'TN',
         firm: 'Unknown',
-        address: record.PropertyAddress || '',
-        city: extractCityFromAddress(record.PropertyAddress || ''),
+        address: fallbackRecord.PropertyAddress || '',
+        city: extractCityFromAddress(fallbackRecord.PropertyAddress || ''),
         within_30min: 'N',
         closest_city: null,
         distance_miles: null,
