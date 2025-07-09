@@ -24,7 +24,7 @@ export interface ForeclosureData {
   source: string
   date: string
   time: string
-  pl: string
+  county: string
   firm: string
   address: string
   city: string

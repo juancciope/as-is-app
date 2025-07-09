@@ -138,9 +138,9 @@ export async function POST(request: NextRequest) {
           source,
           date: pjRecord.SaleDate,
           time: pjRecord.SaleTime,
-          pl: pjRecord.County.charAt(0).toUpperCase(), // First letter of county
+          county: extractCountyFromPJData(pjRecord.County),
           firm: 'Phillip Jones Law',
-          address: toProperCase(pjRecord.PropertyAddress),
+          address: cleanAddress(pjRecord.PropertyAddress),
           city: extractCityFromAddress(pjRecord.PropertyAddress),
           within_30min: 'N',
           closest_city: null,
@@ -154,9 +154,9 @@ export async function POST(request: NextRequest) {
           source,
           date: crRecord.SaleDate,
           time: '00:00', // ClearRecon doesn't provide time
-          pl: extractStateFromAddress(crRecord.PropertyAddress), // Try to extract state
+          county: extractCountyFromAddress(crRecord.PropertyAddress),
           firm: 'ClearRecon',
-          address: toProperCase(crRecord.PropertyAddress),
+          address: cleanAddress(crRecord.PropertyAddress),
           city: extractCityFromAddress(crRecord.PropertyAddress),
           within_30min: 'N',
           closest_city: null,
@@ -172,9 +172,9 @@ export async function POST(request: NextRequest) {
         source,
         date: fallbackRecord.SaleDate || '',
         time: '00:00',
-        pl: 'TN',
+        county: 'Unknown',
         firm: 'Unknown',
-        address: toProperCase(fallbackRecord.PropertyAddress || ''),
+        address: cleanAddress(fallbackRecord.PropertyAddress || ''),
         city: extractCityFromAddress(fallbackRecord.PropertyAddress || ''),
         within_30min: 'N',
         closest_city: null,
@@ -230,6 +230,12 @@ function toProperCase(text: string): string {
   return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+// Helper function to clean and format full address
+function cleanAddress(address: string): string {
+  // Remove extra spaces and convert to proper case
+  return toProperCase(address.replace(/\s+/g, ' ').trim());
+}
+
 // Helper function to extract city from address
 function extractCityFromAddress(address: string): string {
   // Handle two formats:
@@ -258,16 +264,41 @@ function extractCityFromAddress(address: string): string {
   return 'Unknown';
 }
 
-// Helper function to extract state from address
-function extractStateFromAddress(address: string): string {
-  // Try to extract state abbreviation from address
-  const parts = address.split(',');
-  if (parts.length >= 2) {
-    const stateZip = parts[parts.length - 1]?.trim() || '';
-    const stateMatch = stateZip.match(/\b([A-Z]{2})\b/);
-    if (stateMatch) {
-      return stateMatch[1];
-    }
-  }
-  return 'TN'; // Default to Tennessee
+// Helper function to extract county from Phillip Jones Law data
+function extractCountyFromPJData(countyField: string): string {
+  // The County field from Phillip Jones Law contains county name
+  return toProperCase(countyField.trim());
+}
+
+// Helper function to extract county from address (for ClearRecon)
+function extractCountyFromAddress(address: string): string {
+  // For ClearRecon, we need to map city to county or extract from other data
+  // This is a simplified mapping - in reality you'd want a more comprehensive lookup
+  const city = extractCityFromAddress(address).toLowerCase();
+  
+  // Tennessee county mapping (partial - add more as needed)
+  const cityToCounty: Record<string, string> = {
+    'nashville': 'Davidson',
+    'memphis': 'Shelby',
+    'knoxville': 'Knox',
+    'chattanooga': 'Hamilton',
+    'clarksville': 'Montgomery',
+    'murfreesboro': 'Rutherford',
+    'columbia': 'Maury',
+    'franklin': 'Williamson',
+    'hendersonville': 'Sumner',
+    'spring hill': 'Maury',
+    'old hickory': 'Davidson',
+    'cedar hill': 'Robertson',
+    'old fort': 'Polk',
+    'piney flats': 'Sullivan',
+    'kimball': 'Marion',
+    'hartsville': 'Trousdale',
+    'lynchburg': 'Moore',
+    'lakeland': 'Shelby',
+    'georgetown': 'Meigs',
+    'dyersburg': 'Dyer'
+  };
+  
+  return cityToCounty[city] || 'Unknown';
 }

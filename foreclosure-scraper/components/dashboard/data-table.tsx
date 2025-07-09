@@ -77,6 +77,7 @@ export function DataTable({ data }: DataTableProps) {
               </div>
             </th>
             <th className="px-6 py-3">City</th>
+            <th className="px-6 py-3">County</th>
             <th className="px-6 py-3">Firm</th>
             <th 
               className="px-6 py-3 cursor-pointer hover:bg-blue-100"
@@ -106,6 +107,7 @@ export function DataTable({ data }: DataTableProps) {
                 {row.address}
               </td>
               <td className="px-6 py-4 text-gray-900">{row.city || 'N/A'}</td>
+              <td className="px-6 py-4 text-gray-900">{row.county || 'N/A'}</td>
               <td className="px-6 py-4 text-gray-900">{row.firm || 'N/A'}</td>
               <td className="px-6 py-4 text-gray-900">
                 {row.distance_miles ? `${row.distance_miles} mi` : 'N/A'}
