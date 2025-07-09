@@ -227,14 +227,29 @@ export async function POST(request: NextRequest) {
 
 // Helper function to extract city from address
 function extractCityFromAddress(address: string): string {
-  // Extract city from address format: "Street, City STATE, ZIP"
+  // Handle two formats:
+  // ClearRecon: "467 Ball Play Road, Old Fort TN, 37362"
+  // Phillip Jones: "1850 B G FORT RD. CEDAR HILL, TN 37032"
+  
   const parts = address.split(',');
+  
   if (parts.length >= 2) {
     const cityState = parts[parts.length - 2]?.trim() || '';
     // Remove state abbreviation (2 letters) from the end
     const cityPart = cityState.replace(/\s+[A-Z]{2}$/, '').trim();
     return cityPart || 'Unknown';
   }
+  
+  // Fallback: try to extract from single string format
+  // Look for pattern: "...CITY, STATE ZIP" or "...CITY STATE ZIP"
+  const match = address.match(/\b([A-Z\s]+)\s+[A-Z]{2}\s+\d{5}$/);
+  if (match) {
+    const cityPart = match[1].trim();
+    // Remove common street suffixes that might be confused with city
+    const cleanCity = cityPart.replace(/^(RD|ST|AVE|DR|BLVD|LN|CT|WAY|PL)\s+/, '');
+    return cleanCity || 'Unknown';
+  }
+  
   return 'Unknown';
 }
 
