@@ -1,6 +1,6 @@
 {
   "name": "connected-investors-scraper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Apify actor for scraping Connected Investors property data and skip tracing",
   "main": "main.js",
   "scripts": {

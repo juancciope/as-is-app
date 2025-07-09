@@ -107,8 +107,8 @@ Actor.main(async () => {
 async function loginToConnectedInvestors(page, username, password) {
     try {
         console.log('Navigating to login page...');
-        // Use domcontentloaded instead of networkidle to avoid timeout
-        await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        // Use load instead of networkidle to avoid timeout issues
+        await page.goto(LOGIN_URL, { waitUntil: 'load', timeout: 60000 });
         
         // Wait for page to load and any redirects
         await page.waitForTimeout(5000);
@@ -380,7 +380,7 @@ async function loginToConnectedInvestors(page, username, password) {
 async function searchAndExtractProperties(page, address, maxProperties) {
     try {
         console.log(`Navigating to property search page...`);
-        await page.goto(PROPERTY_SEARCH_URL, { waitUntil: 'networkidle' });
+        await page.goto(PROPERTY_SEARCH_URL, { waitUntil: 'load' });
         
         await page.waitForTimeout(3000);
         await page.screenshot({ path: 'property_search_page.png' });
@@ -651,7 +651,7 @@ async function performSkipTrace(page, property) {
                         const fullUrl = link.url.startsWith('http') ? link.url : `${BASE_URL}${link.url}`;
                         
                         console.log(`Visiting property detail page: ${fullUrl}`);
-                        await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
+                        await page.goto(fullUrl, { waitUntil: 'load', timeout: 30000 });
                         await page.waitForTimeout(2000);
                         
                         // Look for additional owner information
