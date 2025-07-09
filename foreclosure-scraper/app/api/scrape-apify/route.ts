@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
         return {
           source,
           date: tnRecord.advertised_auction_date_detail || tnRecord.advertised_auction_date_list,
-          time: tnRecord.auction_time || '00:00', // Use parsed auction time if available
+          time: parseTimeString(tnRecord.auction_time) || '00:00:00', // Parse time format
           county,
           firm: 'TN Ledger',
           address: cleanAddress(address),
@@ -292,6 +292,36 @@ export async function POST(request: NextRequest) {
 // Helper function to convert text to proper case
 function toProperCase(text: string): string {
   return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+// Helper function to parse time strings like "11:00 AM" to "11:00:00" format
+function parseTimeString(timeStr: string | undefined): string | null {
+  if (!timeStr) return null;
+  
+  try {
+    // Handle formats like "11:00 AM", "2:00 P.M.", "10:00 A.M.", etc.
+    const cleanTime = timeStr.trim().replace(/\./g, '').toUpperCase();
+    const match = cleanTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+    
+    if (!match) return null;
+    
+    let hours = parseInt(match[1]);
+    const minutes = match[2];
+    const ampm = match[3];
+    
+    // Convert to 24-hour format
+    if (ampm === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (ampm === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    // Format as HH:MM:SS
+    return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
+  } catch (error) {
+    console.error('Error parsing time string:', timeStr, error);
+    return null;
+  }
 }
 
 // Helper function to check if property is within 30 minutes based on county
