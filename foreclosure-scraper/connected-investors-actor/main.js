@@ -401,11 +401,58 @@ async function searchAndExtractProperties(page, address, maxProperties) {
         await searchInput.fill(address);
         console.log(`Entered address: ${address}`);
         
-        // Submit search
-        await searchInput.press('Enter');
-        console.log('Search submitted');
+        // Wait for search dropdown to appear (10 seconds as mentioned)
+        console.log('Waiting for search suggestions to appear...');
+        await page.waitForTimeout(10000);
         
-        // Wait for results
+        // Look for search results dropdown
+        const searchResultsSelector = '.search-results';
+        try {
+            await page.waitForSelector(searchResultsSelector, { timeout: 5000 });
+            console.log('Search results dropdown appeared');
+            await page.screenshot({ path: 'search_dropdown.png' });
+            
+            // Look for address suggestions in the dropdown
+            const addressSelectors = [
+                '.search-results li p',
+                '.search-results li',
+                '.search-results [data-v-02c92960] p'
+            ];
+            
+            let addressOption = null;
+            for (const selector of addressSelectors) {
+                try {
+                    const options = await page.$$(selector);
+                    for (const option of options) {
+                        const text = await option.textContent();
+                        if (text && text.toLowerCase().includes(address.toLowerCase().split(',')[0])) {
+                            addressOption = option;
+                            console.log(`Found matching address option: ${text}`);
+                            break;
+                        }
+                    }
+                    if (addressOption) break;
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            if (addressOption) {
+                // Click on the address option
+                await addressOption.click();
+                console.log('Clicked on address option');
+                await page.waitForTimeout(3000);
+            } else {
+                console.log('No matching address found in dropdown, trying Enter key...');
+                await searchInput.press('Enter');
+            }
+            
+        } catch (e) {
+            console.log('Search dropdown did not appear, trying Enter key...');
+            await searchInput.press('Enter');
+        }
+        
+        // Wait for results page to load
         await page.waitForTimeout(5000);
         await page.screenshot({ path: 'search_results.png' });
         
