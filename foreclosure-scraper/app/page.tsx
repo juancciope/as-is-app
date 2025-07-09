@@ -53,9 +53,9 @@ export default function Home() {
   };
 
   const updateStats = (data: any[]) => {
-    const within30 = data.filter(item => item.WITHIN_30MIN === 'Y').length;
+    const within30 = data.filter(item => item.within_30min === 'Y').length;
     const sourceCount = data.reduce((acc, item) => {
-      acc[item.SOURCE] = (acc[item.SOURCE] || 0) + 1;
+      acc[item.source] = (acc[item.source] || 0) + 1;
       return acc;
     }, {});
     
@@ -132,41 +132,59 @@ export default function Home() {
           <p className="text-muted-foreground">Monitor and analyze foreclosure auction data</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
-            onClick={runAllScrapers}
-            disabled={isScrapingAll}
+            onClick={() => runApifyScraper('phillipjoneslaw')}
+            disabled={isScrapingSource === 'phillipjoneslaw'}
             size="lg"
           >
-            {isScrapingAll ? (
+            {isScrapingSource === 'phillipjoneslaw' ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scraping...
+                Scraping Phillip Jones Law...
               </>
             ) : (
               <>
                 <Play className="mr-2 h-4 w-4" />
-                Run All Scrapers
+                Run Phillip Jones Law
               </>
             )}
           </Button>
           
           <Button
-            onClick={() => runApifyScraper('phillipjoneslaw')}
-            disabled={isScrapingSource === 'phillipjoneslaw'}
-            variant="secondary"
+            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
+            disabled={true}
+            variant="outline"
           >
-            {isScrapingSource === 'phillipjoneslaw' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scraping PJ...
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Run PJ (Apify)
-              </>
-            )}
+            <Play className="mr-2 h-4 w-4" />
+            Run ClearRecon (Soon)
+          </Button>
+          
+          <Button
+            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
+            disabled={true}
+            variant="outline"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Run TN Ledger (Soon)
+          </Button>
+          
+          <Button
+            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
+            disabled={true}
+            variant="outline"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Run WABI PowerBI (Soon)
+          </Button>
+          
+          <Button
+            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
+            disabled={true}
+            variant="outline"
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Run Wilson Associates (Soon)
           </Button>
           
           <Button

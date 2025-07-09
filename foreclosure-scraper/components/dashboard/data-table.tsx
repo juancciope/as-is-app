@@ -6,7 +6,7 @@ interface DataTableProps {
 }
 
 export function DataTable({ data }: DataTableProps) {
-  const [sortField, setSortField] = useState<string>('DATE');
+  const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   const handleSort = (field: string) => {
@@ -25,7 +25,7 @@ export function DataTable({ data }: DataTableProps) {
     if (aValue === null || aValue === undefined) return 1;
     if (bValue === null || bValue === undefined) return -1;
     
-    if (sortField === 'DATE') {
+    if (sortField === 'date') {
       const dateA = new Date(aValue);
       const dateB = new Date(bValue);
       return sortDirection === 'asc' 
@@ -33,7 +33,7 @@ export function DataTable({ data }: DataTableProps) {
         : dateB.getTime() - dateA.getTime();
     }
     
-    if (sortField === 'DISTANCE_MILES' || sortField === 'EST_DRIVE_TIME') {
+    if (sortField === 'distance_miles' || sortField === 'est_drive_time') {
       const numA = parseFloat(aValue) || 0;
       const numB = parseFloat(bValue) || 0;
       return sortDirection === 'asc' ? numA - numB : numB - numA;
@@ -59,32 +59,32 @@ export function DataTable({ data }: DataTableProps) {
           <tr>
             <th 
               className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleSort('DATE')}
+              onClick={() => handleSort('date')}
             >
               <div className="flex items-center gap-1">
                 Sale Date
-                <SortIcon field="DATE" />
+                <SortIcon field="date" />
               </div>
             </th>
             <th className="px-6 py-3">Time</th>
             <th 
               className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleSort('ADDRESS')}
+              onClick={() => handleSort('address')}
             >
               <div className="flex items-center gap-1">
                 Address
-                <SortIcon field="ADDRESS" />
+                <SortIcon field="address" />
               </div>
             </th>
             <th className="px-6 py-3">City</th>
-            <th className="px-6 py-3">County</th>
+            <th className="px-6 py-3">Firm</th>
             <th 
               className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleSort('DISTANCE_MILES')}
+              onClick={() => handleSort('distance_miles')}
             >
               <div className="flex items-center gap-1">
                 Distance
-                <SortIcon field="DISTANCE_MILES" />
+                <SortIcon field="distance_miles" />
               </div>
             </th>
             <th className="px-6 py-3">Within 30min</th>
@@ -99,33 +99,33 @@ export function DataTable({ data }: DataTableProps) {
               className="bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <td className="px-6 py-4 font-medium">
-                {new Date(row.DATE).toLocaleDateString()}
+                {new Date(row.date).toLocaleDateString()}
               </td>
-              <td className="px-6 py-4">{row.TIME || 'N/A'}</td>
-              <td className="px-6 py-4 max-w-xs truncate" title={row.ADDRESS}>
-                {row.ADDRESS}
+              <td className="px-6 py-4">{row.time || 'N/A'}</td>
+              <td className="px-6 py-4 max-w-xs truncate" title={row.address}>
+                {row.address}
               </td>
-              <td className="px-6 py-4">{row.CTY || 'N/A'}</td>
-              <td className="px-6 py-4">{row.PL || 'N/A'}</td>
+              <td className="px-6 py-4">{row.city || 'N/A'}</td>
+              <td className="px-6 py-4">{row.firm || 'N/A'}</td>
               <td className="px-6 py-4">
-                {row.DISTANCE_MILES ? `${row.DISTANCE_MILES} mi` : 'N/A'}
+                {row.distance_miles ? `${row.distance_miles} mi` : 'N/A'}
               </td>
               <td className="px-6 py-4">
                 <span className={`px-2 py-1 text-xs rounded-full ${
-                  row.WITHIN_30MIN === 'Y' 
+                  row.within_30min === 'Y' 
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                 }`}>
-                  {row.WITHIN_30MIN === 'Y' ? 'Yes' : 'No'}
+                  {row.within_30min === 'Y' ? 'Yes' : 'No'}
                 </span>
               </td>
               <td className="px-6 py-4">
-                <span className="text-xs text-gray-500">{row.SOURCE}</span>
+                <span className="text-xs text-gray-500">{row.source}</span>
               </td>
               <td className="px-6 py-4">
                 <button
                   onClick={() => {
-                    const address = encodeURIComponent(row.ADDRESS + ', ' + row.CTY + ', TN');
+                    const address = encodeURIComponent(row.address + ', ' + row.city + ', TN');
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
                   }}
                   className="text-blue-600 hover:text-blue-900 dark:text-blue-400"
