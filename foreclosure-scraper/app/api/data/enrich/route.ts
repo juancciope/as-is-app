@@ -13,6 +13,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
     // Update the property in the database
     const { data: updatedProperty, error } = await supabaseAdmin
       .from('foreclosure_data')
@@ -51,6 +58,13 @@ export async function POST(request: Request) {
 // GET endpoint to check enrichment status
 export async function GET(request: Request) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
     // Get enrichment statistics
     const { data: stats, error } = await supabaseAdmin
       .rpc('get_enrichment_stats');
