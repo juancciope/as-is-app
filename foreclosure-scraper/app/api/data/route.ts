@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     
     // Filter for properties that need enrichment
     if (needsEnrichment) {
-      query = query.and('owner_emails.is.null,owner_phones.is.null');
+      query = query.is('owner_emails', null).is('owner_phones', null);
     }
     
     // Apply filters if provided
