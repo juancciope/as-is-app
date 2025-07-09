@@ -165,8 +165,8 @@ async function loginToConnectedInvestors(page, username, password) {
         // Now click the login button to trigger OAuth redirect
         // The button is a submit button with text "Log in"
         const loginButtonSelectors = [
-            'button[type="submit"]:has-text("Log in")',
-            'button:has-text("Log in")',
+            'button[type="submit"]:text("Log in")',
+            'button:text("Log in")', 
             'button[type="submit"]',
             'form button[type="submit"]'
         ];
@@ -186,8 +186,18 @@ async function loginToConnectedInvestors(page, username, password) {
         }
         
         if (!loginButton) {
+            // Log all buttons for debugging
+            console.log('No login button found. Analyzing available buttons...');
+            const buttons = await page.$$eval('button', els => els.map(el => ({
+                text: el.textContent,
+                type: el.type,
+                className: el.className,
+                visible: el.offsetParent !== null
+            })));
+            console.log('Available buttons:', JSON.stringify(buttons, null, 2));
+            
             // Try pressing Enter on username field as a fallback
-            console.log('No login button found, pressing Enter on username field');
+            console.log('Pressing Enter on username field');
             await usernameField.press('Enter');
         } else {
             // Small delay before clicking to ensure form is ready
@@ -198,8 +208,10 @@ async function loginToConnectedInvestors(page, username, password) {
         
         console.log('Waiting for OAuth redirect...');
         // Wait for navigation to First American identity provider
+        let navigationSuccessful = false;
         try {
             await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 });
+            navigationSuccessful = true;
         } catch (navError) {
             console.log('Navigation timeout, checking current state...');
             await page.screenshot({ path: 'navigation_timeout.png' });
@@ -209,6 +221,7 @@ async function loginToConnectedInvestors(page, username, password) {
         await page.waitForTimeout(3000);
         const oauthUrl = page.url();
         console.log(`Current URL after login click: ${oauthUrl}`);
+        console.log(`Navigation successful: ${navigationSuccessful}`);
         
         if (oauthUrl.includes('login.firstam.com') || oauthUrl.includes('firstamericanidentity.onmicrosoft.com')) {
             console.log('Detected First American OAuth page');
@@ -325,47 +338,9 @@ async function loginToConnectedInvestors(page, username, password) {
             }
             
         } else {
-            // Fallback to direct login if no OAuth redirect occurred
-            console.log('No OAuth redirect detected, attempting direct login...');
-            
-            // Original login logic here as fallback
-            const usernameSelectors = [
-                'input[name="email"]',
-                'input[name="username"]',
-                'input[type="email"]',
-                'input[type="text"]'
-            ];
-            
-            let usernameField = null;
-            for (const selector of usernameSelectors) {
-                try {
-                    const field = await page.$(selector);
-                    if (field && await field.isVisible()) {
-                        usernameField = field;
-                        break;
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            if (usernameField) {
-                await usernameField.fill(username);
-                
-                const passwordField = await page.waitForSelector('input[type="password"]', { timeout: 5000 });
-                if (passwordField) {
-                    await passwordField.fill(password);
-                    await passwordField.press('Enter');
-                    
-                    await page.waitForTimeout(5000);
-                    
-                    const currentUrl = page.url();
-                    if (!currentUrl.includes('/login')) {
-                        return true;
-                    }
-                }
-            }
-            
+            console.log('No OAuth redirect detected. This may indicate a problem with the login flow.');
+            console.log('Taking screenshot for debugging...');
+            await page.screenshot({ path: 'no_oauth_redirect.png' });
             return false;
         }
         
