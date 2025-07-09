@@ -61,7 +61,22 @@ interface WabiPowerBiData {
   scraped_at: string;
 }
 
-type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | WabiPowerBiData;
+interface WilsonAssociatesData {
+  SourceWebsite: string;
+  SaleDate: string;
+  SaleTime: string;
+  PriorSaleDate: string;
+  PropertyAddress: string;
+  City: string;
+  County: string;
+  State: string;
+  ZipCode: string;
+  SaleLocation: string;
+  Auctioneer: string;
+  scraped_at: string;
+}
+
+type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | WabiPowerBiData | WilsonAssociatesData;
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,6 +88,7 @@ export async function POST(request: NextRequest) {
       'clearrecon': process.env.APIFY_ACTOR_ID_CLEARRECON!,
       'tnledger': process.env.APIFY_ACTOR_ID_TNLEDGER!,
       'wabipowerbi': process.env.APIFY_ACTOR_ID_WABIPOWERBI!,
+      'wilsonassociates': process.env.APIFY_ACTOR_ID_WILSONASSOCIATES!,
       // Add more mappings as we create more actors
     };
 
@@ -253,6 +269,23 @@ export async function POST(request: NextRequest) {
           address: cleanAddress(wabiRecord.FULL_ADDRESS),
           city: extractCityFromAddress(wabiRecord.FULL_ADDRESS),
           within_30min: isWithin30Minutes(county),
+          closest_city: null,
+          distance_miles: null,
+          est_drive_time: null,
+          geocode_method: 'google_maps'
+        };
+      } else if (source === 'wilsonassociates') {
+        const wilsonRecord = record as WilsonAssociatesData;
+        
+        return {
+          source,
+          date: parseDateString(wilsonRecord.SaleDate) || wilsonRecord.SaleDate,
+          time: parseTimeString(wilsonRecord.SaleTime) || '00:00:00',
+          county: wilsonRecord.County || 'Unknown',
+          firm: wilsonRecord.Auctioneer || 'Wilson Associates',
+          address: cleanAddress(wilsonRecord.PropertyAddress),
+          city: wilsonRecord.City || extractCityFromAddress(wilsonRecord.PropertyAddress),
+          within_30min: isWithin30Minutes(wilsonRecord.County || 'Unknown'),
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,

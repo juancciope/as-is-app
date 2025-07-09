@@ -206,12 +206,21 @@ export default function Home() {
           </Button>
           
           <Button
-            onClick={() => alert('Coming soon! This scraper is being migrated to Apify.')}
-            disabled={true}
+            onClick={() => runApifyScraper('wilsonassociates')}
+            disabled={isScrapingSource === 'wilsonassociates'}
             variant="outline"
           >
-            <Play className="mr-2 h-4 w-4" />
-            Run Wilson Associates (Soon)
+            {isScrapingSource === 'wilsonassociates' ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping Wilson Associates...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Run Wilson Associates
+              </>
+            )}
           </Button>
           
           <Button

@@ -1,0 +1,37 @@
+{
+  "actorSpecification": 1,
+  "name": "wilson-associates-foreclosure-scraper",
+  "title": "Wilson Associates Foreclosure Scraper",
+  "description": "Scrapes foreclosure auction data from Wilson Associates website",
+  "version": "1.0",
+  "meta": {
+    "templateId": "js-start"
+  },
+  "input": {
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+      "dateRangeBegin": {
+        "type": "string",
+        "title": "Date Range Begin",
+        "description": "Start date for sale search (YYYY-MM-DD format). If not provided, uses today's date.",
+        "prefill": "",
+        "editor": "textfield"
+      },
+      "dateRangeEnd": {
+        "type": "string",
+        "title": "Date Range End", 
+        "description": "End date for sale search (YYYY-MM-DD format). If not provided, uses today + 30 days.",
+        "prefill": "",
+        "editor": "textfield"
+      },
+      "state": {
+        "type": "string",
+        "title": "State",
+        "description": "State to search for sales (default: TN)",
+        "prefill": "TN",
+        "editor": "textfield"
+      }
+    }
+  }
+}
