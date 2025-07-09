@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
         
         return {
           source,
-          date: wabiRecord.SALE_DATE,
+          date: parseDateString(wabiRecord.SALE_DATE) || wabiRecord.SALE_DATE,
           time: parseTimeString(wabiRecord.SALE_TIME) || '00:00:00',
           county,
           firm: 'Logs.com',
@@ -322,6 +322,51 @@ export async function POST(request: NextRequest) {
 // Helper function to convert text to proper case
 function toProperCase(text: string): string {
   return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+// Helper function to clean and parse date strings from WABI PowerBI
+function parseDateString(dateStr: string | undefined): string | null {
+  if (!dateStr) return null;
+  
+  try {
+    // Clean the date string by removing postponement text and extra info
+    let cleanDate = dateStr.trim();
+    
+    // Handle cases like "07/24/25 Postponed Until 10/02" - take the original date
+    const postponedMatch = cleanDate.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})\s+postponed/i);
+    if (postponedMatch) {
+      cleanDate = postponedMatch[1];
+    }
+    
+    // Handle cases with extra text after the date
+    const dateMatch = cleanDate.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+    if (dateMatch) {
+      cleanDate = dateMatch[1];
+    }
+    
+    // Convert 2-digit year to 4-digit year if needed
+    const parts = cleanDate.split('/');
+    if (parts.length === 3 && parts[2].length === 2) {
+      const year = parseInt(parts[2]);
+      // Assume years 00-30 are 2000s, 31-99 are 1900s
+      parts[2] = year <= 30 ? `20${parts[2]}` : `19${parts[2]}`;
+      cleanDate = parts.join('/');
+    }
+    
+    // Parse the date and return in MM/DD/YYYY format
+    const date = new Date(cleanDate);
+    if (isNaN(date.getTime())) {
+      console.warn(`Could not parse date: ${dateStr}`);
+      return null;
+    }
+    
+    return (date.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+           date.getDate().toString().padStart(2, '0') + '/' + 
+           date.getFullYear();
+  } catch (error) {
+    console.error('Error parsing date string:', dateStr, error);
+    return null;
+  }
 }
 
 // Helper function to parse time strings like "11:00 AM" to "11:00:00" format
