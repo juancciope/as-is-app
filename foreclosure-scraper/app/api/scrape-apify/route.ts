@@ -134,15 +134,16 @@ export async function POST(request: NextRequest) {
     const supabaseRecords = await Promise.all(apifyData.map(async record => {
       if (source === 'phillipjoneslaw') {
         const pjRecord = record as PhillipJonesLawData;
+        const county = extractCountyFromPJData(pjRecord.County);
         return {
           source,
           date: pjRecord.SaleDate,
           time: pjRecord.SaleTime,
-          county: extractCountyFromPJData(pjRecord.County),
+          county,
           firm: 'Phillip Jones Law',
           address: cleanAddress(pjRecord.PropertyAddress),
           city: extractCityFromAddress(pjRecord.PropertyAddress),
-          within_30min: 'N',
+          within_30min: isWithin30Minutes(county),
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,
@@ -150,15 +151,16 @@ export async function POST(request: NextRequest) {
         };
       } else if (source === 'clearrecon') {
         const crRecord = record as ClearReconData;
+        const county = await extractCountyFromAddress(crRecord.PropertyAddress);
         return {
           source,
           date: crRecord.SaleDate,
           time: '00:00', // ClearRecon doesn't provide time
-          county: await extractCountyFromAddress(crRecord.PropertyAddress),
+          county,
           firm: 'ClearRecon',
           address: cleanAddress(crRecord.PropertyAddress),
           city: extractCityFromAddress(crRecord.PropertyAddress),
-          within_30min: 'N',
+          within_30min: isWithin30Minutes(county),
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
         firm: 'Unknown',
         address: cleanAddress(fallbackRecord.PropertyAddress || ''),
         city: extractCityFromAddress(fallbackRecord.PropertyAddress || ''),
-        within_30min: 'N',
+        within_30min: isWithin30Minutes(fallbackRecord.county || 'Unknown'),
         closest_city: null,
         distance_miles: null,
         est_drive_time: null,
@@ -228,6 +230,12 @@ export async function POST(request: NextRequest) {
 // Helper function to convert text to proper case
 function toProperCase(text: string): string {
   return text.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+// Helper function to check if property is within 30 minutes based on county
+function isWithin30Minutes(county: string): 'Y' | 'N' {
+  const targetCounties = ['Davidson', 'Wilson', 'Sumner'];
+  return targetCounties.includes(county) ? 'Y' : 'N';
 }
 
 // Helper function to clean and format full address
