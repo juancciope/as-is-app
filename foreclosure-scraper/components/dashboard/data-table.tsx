@@ -55,10 +55,10 @@ export function DataTable({ data }: DataTableProps) {
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm text-left">
-        <thead className="text-xs uppercase bg-gray-50 dark:bg-gray-800">
+        <thead className="text-xs uppercase bg-gray-50">
           <tr>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-6 py-3 cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('date')}
             >
               <div className="flex items-center gap-1">
@@ -68,7 +68,7 @@ export function DataTable({ data }: DataTableProps) {
             </th>
             <th className="px-6 py-3">Time</th>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-6 py-3 cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('address')}
             >
               <div className="flex items-center gap-1">
@@ -79,7 +79,7 @@ export function DataTable({ data }: DataTableProps) {
             <th className="px-6 py-3">City</th>
             <th className="px-6 py-3">Firm</th>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-6 py-3 cursor-pointer hover:bg-gray-100"
               onClick={() => handleSort('distance_miles')}
             >
               <div className="flex items-center gap-1">
@@ -96,7 +96,7 @@ export function DataTable({ data }: DataTableProps) {
           {sortedData.map((row, index) => (
             <tr 
               key={index}
-              className="bg-white border-b dark:bg-gray-900 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="bg-white border-b hover:bg-gray-50"
             >
               <td className="px-6 py-4 font-medium">
                 {new Date(row.date).toLocaleDateString()}
@@ -113,8 +113,8 @@ export function DataTable({ data }: DataTableProps) {
               <td className="px-6 py-4">
                 <span className={`px-2 py-1 text-xs rounded-full ${
                   row.within_30min === 'Y' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-800'
                 }`}>
                   {row.within_30min === 'Y' ? 'Yes' : 'No'}
                 </span>
@@ -128,7 +128,7 @@ export function DataTable({ data }: DataTableProps) {
                     const address = encodeURIComponent(row.address + ', ' + row.city + ', TN');
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
                   }}
-                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400"
+                  className="text-blue-600 hover:text-blue-900"
                   title="View on Google Maps"
                 >
                   <ExternalLink className="h-4 w-4" />
