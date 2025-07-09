@@ -240,25 +240,36 @@ function cleanAddress(address: string): string {
 function extractCityFromAddress(address: string): string {
   // Handle two formats:
   // ClearRecon: "467 Ball Play Road, Old Fort TN, 37362"
-  // Phillip Jones: "1850 B G FORT RD. CEDAR HILL, TN 37032"
+  // Phillip Jones: "1850 B G Fort Rd. Cedar Hill, Tn 37032"
   
   const parts = address.split(',');
   
-  if (parts.length >= 2) {
+  if (parts.length >= 3) {
+    // ClearRecon format: "Street, City STATE, ZIP"
     const cityState = parts[parts.length - 2]?.trim() || '';
-    // Remove state abbreviation (2 letters) from the end
     const cityPart = cityState.replace(/\s+[A-Z]{2}$/, '').trim();
     return cityPart ? toProperCase(cityPart) : 'Unknown';
-  }
-  
-  // Fallback: try to extract from single string format
-  // Look for pattern: "...CITY, STATE ZIP" or "...CITY STATE ZIP"
-  const match = address.match(/\b([A-Z\s]+)\s+[A-Z]{2}\s+\d{5}$/);
-  if (match) {
-    const cityPart = match[1].trim();
-    // Remove common street suffixes that might be confused with city
-    const cleanCity = cityPart.replace(/^(RD|ST|AVE|DR|BLVD|LN|CT|WAY|PL)\s+/, '');
-    return cleanCity ? toProperCase(cleanCity) : 'Unknown';
+  } else if (parts.length === 2) {
+    // Phillip Jones format: "Street City, STATE ZIP"
+    const streetPart = parts[0]?.trim() || '';
+    
+    // Try to extract city from end of street part
+    // Look for pattern: "NUMBER STREET_WORDS CITY_WORDS"
+    // Split by spaces and take the last 1-2 words as potential city
+    const words = streetPart.split(/\s+/);
+    if (words.length >= 2) {
+      // Try last 2 words first (for cities like "Cedar Hill")
+      const lastTwoWords = words.slice(-2).join(' ');
+      if (lastTwoWords.match(/^[A-Za-z\s]+$/)) {
+        return toProperCase(lastTwoWords);
+      }
+      
+      // Fallback to last word
+      const lastWord = words[words.length - 1];
+      if (lastWord.match(/^[A-Za-z]+$/)) {
+        return toProperCase(lastWord);
+      }
+    }
   }
   
   return 'Unknown';
