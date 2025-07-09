@@ -74,57 +74,37 @@ export async function POST(request: NextRequest) {
     const datasetId = runData.data.defaultDatasetId;
     console.log(`Actor run started with ID: ${runId}, dataset: ${datasetId}`);
 
-    // Poll for completion instead of using waitForFinish
-    let runStatus = runData.data.status;
+    // Instead of checking run status, poll the dataset for data
+    console.log(`Polling dataset for data...`);
+    
+    let apifyData: ApifyAuctionData[] = [];
     let attempts = 0;
     const maxAttempts = 60; // 5 minutes max (5 second intervals)
     
-    console.log(`Initial run status: ${runStatus}`);
-    
-    while (runStatus === 'RUNNING' && runStatus !== 'READY' && runStatus !== 'SUCCEEDED' && attempts < maxAttempts) {
+    while (apifyData.length === 0 && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 5000));
       attempts++;
       
-      const statusResponse = await fetch(
-        `https://api.apify.com/v2/acts/${encodedActorId}/runs/${runId}?token=${apiToken}`
-      );
+      console.log(`Dataset polling attempt ${attempts}/${maxAttempts}`);
       
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        runStatus = statusData.data.status;
-        console.log(`Run status check ${attempts}/${maxAttempts}: ${runStatus}`);
+      const datasetResponse = await fetch(
+        `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
+      );
+
+      if (datasetResponse.ok) {
+        const data = await datasetResponse.json();
+        apifyData = data;
+        console.log(`Dataset check ${attempts}: Found ${apifyData.length} records`);
       } else {
-        console.log(`Failed to get run status, attempt ${attempts}/${maxAttempts}`);
-        break;
+        console.log(`Dataset fetch failed on attempt ${attempts}`);
       }
     }
     
-    // Accept both SUCCEEDED and READY as successful completion
-    if (runStatus !== 'SUCCEEDED' && runStatus !== 'READY') {
-      throw new Error(`Actor run failed or timed out. Final status: ${runStatus}`);
+    if (apifyData.length === 0) {
+      throw new Error(`No data found in dataset after ${maxAttempts} attempts`);
     }
 
-    console.log(`Actor completed successfully with status: ${runStatus}! Fetching dataset...`);
-
-    // Give a small buffer for dataset to be ready
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    console.log(`Fetching dataset from: https://api.apify.com/v2/datasets/${datasetId}/items`);
-    
-    const datasetResponse = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
-    );
-
-    console.log(`Dataset response status: ${datasetResponse.status}`);
-    
-    if (!datasetResponse.ok) {
-      const errorText = await datasetResponse.text();
-      console.log(`Dataset fetch error: ${errorText}`);
-      throw new Error(`Failed to fetch dataset from Apify: ${errorText}`);
-    }
-
-    const apifyData: ApifyAuctionData[] = await datasetResponse.json();
-    console.log(`Retrieved ${apifyData.length} records from Apify`);
+    console.log(`Successfully retrieved ${apifyData.length} records from Apify`);
     
     // Debug: Log first record to see data structure
     if (apifyData.length > 0) {
