@@ -36,6 +36,19 @@ interface TnLedgerData {
   trust_date: string;
   tdn_no: string;
   sale_details_text: string;
+  
+  // Enhanced fields from updated actor
+  auction_time?: string;
+  auction_location?: string;
+  auction_address?: string;
+  property_lat?: number;
+  property_lng?: number;
+  property_formatted_address?: string;
+  auction_lat?: number;
+  auction_lng?: number;
+  auction_formatted_address?: string;
+  scraped_at?: string;
+  notice_date?: string;
 }
 
 type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData;
@@ -79,7 +92,11 @@ export async function POST(request: NextRequest) {
             }
           } : source === 'tnledger' ? {
             input: {
-              noticesDate: new Date().toLocaleDateString('en-US')
+              noticesDate: new Date().toLocaleDateString('en-US'),
+              supabaseUrl: process.env.SUPABASE_URL,
+              supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+              googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+              tableName: 'tn_ledger_foreclosures'
             }
           } : {})
         })
@@ -197,11 +214,15 @@ export async function POST(request: NextRequest) {
           ? tnRecord.address_detail 
           : tnRecord.property_address_list;
         
-        const county = await extractCountyFromAddress(address);
+        // Use geocoded county if available, otherwise extract from address
+        const county = tnRecord.property_lat && tnRecord.property_lng 
+          ? await extractCountyFromCoordinates(tnRecord.property_lat, tnRecord.property_lng)
+          : await extractCountyFromAddress(address);
+        
         return {
           source,
           date: tnRecord.advertised_auction_date_detail || tnRecord.advertised_auction_date_list,
-          time: '00:00', // TN Ledger doesn't provide specific time
+          time: tnRecord.auction_time || '00:00', // Use parsed auction time if available
           county,
           firm: 'TN Ledger',
           address: cleanAddress(address),
@@ -210,7 +231,7 @@ export async function POST(request: NextRequest) {
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,
-          geocode_method: 'google_maps'
+          geocode_method: tnRecord.property_lat ? 'enhanced_actor' : 'google_maps'
         };
       }
       
@@ -368,6 +389,54 @@ async function extractCountyFromAddress(address: string): Promise<string> {
     }
   } catch (error) {
     console.error('Geocoding failed for address:', address, error);
+    return 'Unknown';
+  }
+}
+
+// Helper function to extract county from coordinates using reverse geocoding
+async function extractCountyFromCoordinates(lat: number, lng: number): Promise<string> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.warn('GOOGLE_MAPS_API_KEY not configured, falling back to Unknown county');
+    return 'Unknown';
+  }
+  
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+    
+    console.log(`Making reverse geocoding request for coordinates: ${lat}, ${lng}`);
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error(`Reverse geocoding API HTTP error: ${response.status} ${response.statusText}`);
+      return 'Unknown';
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const result = data.results[0];
+      
+      // Look for the county in the address components
+      const countyComponent = result.address_components.find((component: any) => 
+        component.types.includes('administrative_area_level_2')
+      );
+      
+      if (countyComponent) {
+        // Remove " County" suffix if present
+        let county = countyComponent.long_name;
+        if (county.endsWith(' County')) {
+          county = county.replace(' County', '');
+        }
+        console.log(`Found county from coordinates: ${county}`);
+        return county;
+      }
+    }
+    
+    return 'Unknown';
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
     return 'Unknown';
   }
 }
