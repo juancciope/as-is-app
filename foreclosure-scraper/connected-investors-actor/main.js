@@ -476,16 +476,15 @@ async function extractPropertyData(page, maxProperties) {
         // Wait for results to load
         await page.waitForTimeout(3000);
         
-        // Try different selectors for property elements
+        // Look for property elements in search results - these appear as clickable items
         const propertySelectors = [
-            '.property-card',
-            '.property-item',
-            '.result-item',
-            '[class*="property"]',
-            '[class*="result"]',
-            'article[class*="property"]',
-            '.listing-item',
-            '.property-listing'
+            '.search-results li',
+            '.search-results .property-item',
+            '[class*="property-card"]',
+            '[class*="property-item"]',
+            '[class*="result-item"]',
+            '.property-result',
+            'li[class*="property"]'
         ];
         
         let propertyElements = [];
@@ -540,93 +539,191 @@ async function extractPropertyData(page, maxProperties) {
     return properties;
 }
 
-// Extract data from a single property element
+// Extract data from a single property element by clicking and opening modal
 async function extractSingleProperty(page, element, index) {
     try {
+        console.log(`Processing property ${index + 1}`);
+        
+        // Get basic info from the element before clicking
+        const elementText = await element.textContent();
+        console.log(`Property element text: ${elementText}`);
+        
+        // Click on the property to open the modal
+        await element.click();
+        console.log('Clicked on property element');
+        
+        // Wait for modal to appear
+        await page.waitForTimeout(3000);
+        await page.screenshot({ path: `property_modal_${index}.png` });
+        
         const propertyData = {
             index: index,
-            extraction_method: 'structured'
+            address: elementText, // Use the text from the search result as address
+            extraction_method: 'modal',
+            raw_text: elementText
         };
         
-        // Get all text content from the element
-        const elementText = await element.textContent();
-        propertyData.raw_text = elementText;
+        // Try to extract basic property info from modal
+        await extractPropertyDetailsFromModal(page, propertyData);
         
-        // Try to extract specific fields
-        const fieldSelectors = {
-            address: ['.address', '.property-address', '.location', '[class*="address"]'],
-            price: ['.price', '.property-price', '.asking-price', '[class*="price"]'],
-            beds: ['.beds', '.bedrooms', '.property-beds', '[class*="bed"]'],
-            baths: ['.baths', '.bathrooms', '.property-baths', '[class*="bath"]'],
-            sqft: ['.sqft', '.square-feet', '.sq-ft', '[class*="sqft"]'],
-            lot_size: ['.lot-size', '.lot', '[class*="lot"]'],
-            year_built: ['.year-built', '.built', '[class*="year"]'],
-            property_type: ['.property-type', '.type', '[class*="type"]']
-        };
+        return propertyData;
         
-        for (const [field, selectors] of Object.entries(fieldSelectors)) {
-            for (const selector of selectors) {
+    } catch (error) {
+        console.error(`Error extracting property ${index}:`, error.message);
+        return null;
+    }
+}
+
+// Extract property details and perform skip trace from modal
+async function extractPropertyDetailsFromModal(page, propertyData) {
+    try {
+        // Look for Contact Info tab and click it
+        const contactInfoSelectors = [
+            'span:has-text("Contact Info")',
+            '.tabs-item:has-text("Contact Info")',
+            '[class*="tabs-item"]:has-text("Contact Info")'
+        ];
+        
+        let contactInfoTab = null;
+        for (const selector of contactInfoSelectors) {
+            try {
+                contactInfoTab = await page.waitForSelector(selector, { timeout: 5000 });
+                if (contactInfoTab) {
+                    console.log(`Found Contact Info tab using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (contactInfoTab) {
+            await contactInfoTab.click();
+            console.log('Clicked Contact Info tab');
+            await page.waitForTimeout(2000);
+            
+            // Look for Skip Trace button
+            const skipTraceSelectors = [
+                'button:has-text("Skip Trace")',
+                '.secondary-button:has-text("Skip Trace")',
+                'button[class*="secondary-button"]:has-text("Skip Trace")'
+            ];
+            
+            let skipTraceButton = null;
+            for (const selector of skipTraceSelectors) {
                 try {
-                    const fieldElement = await element.$(selector);
-                    if (fieldElement) {
-                        const value = await fieldElement.textContent();
-                        if (value && value.trim()) {
-                            propertyData[field] = value.trim();
-                            break;
-                        }
+                    skipTraceButton = await page.waitForSelector(selector, { timeout: 5000 });
+                    if (skipTraceButton) {
+                        console.log(`Found Skip Trace button using selector: ${selector}`);
+                        break;
                     }
                 } catch (e) {
                     continue;
                 }
             }
-        }
-        
-        // Try to extract URLs or links
-        try {
-            const links = await element.$$('a');
-            const propertyLinks = [];
             
-            for (const link of links) {
-                const href = await link.getAttribute('href');
-                const linkText = await link.textContent();
+            if (skipTraceButton) {
+                await skipTraceButton.click();
+                console.log('Clicked Skip Trace button');
                 
-                if (href) {
-                    propertyLinks.push({
-                        url: href,
-                        text: linkText?.trim()
-                    });
+                // Wait for skip trace to complete
+                await page.waitForTimeout(5000);
+                
+                // Extract contact information after skip trace
+                const contactInfo = await extractContactInfo(page);
+                if (contactInfo) {
+                    propertyData.skipTrace = {
+                        attempted_at: new Date().toISOString(),
+                        method: 'modal_skip_trace',
+                        results: contactInfo
+                    };
                 }
+            } else {
+                console.log('Skip Trace button not found');
             }
-            
-            if (propertyLinks.length > 0) {
-                propertyData.links = propertyLinks;
-            }
-        } catch (e) {
-            // Continue without links
+        } else {
+            console.log('Contact Info tab not found');
         }
         
-        // If we couldn't extract structured data, use text parsing
-        if (!propertyData.address && elementText) {
-            propertyData.address = parseAddressFromText(elementText);
-        }
-        
-        if (!propertyData.price && elementText) {
-            propertyData.price = parsePriceFromText(elementText);
-        }
-        
-        return propertyData;
+        // Close modal by pressing Escape or clicking close button
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(1000);
         
     } catch (error) {
-        console.error(`Error extracting single property:`, error.message);
+        console.error('Error in modal extraction:', error.message);
+    }
+}
+
+// Extract contact information from the modal after skip trace
+async function extractContactInfo(page) {
+    try {
+        const contactInfo = {
+            emails: [],
+            phones: [],
+            owner_info: null
+        };
+        
+        // Look for email addresses
+        const emailElements = await page.$$('text=/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/');
+        for (const element of emailElements) {
+            const email = await element.textContent();
+            if (email && !contactInfo.emails.includes(email)) {
+                contactInfo.emails.push(email);
+            }
+        }
+        
+        // Look for phone numbers
+        const phoneElements = await page.$$('text=/\\(?\\d{3}\\)?[-\\.\\s]?\\d{3}[-\\.\\s]?\\d{4}/');
+        for (const element of phoneElements) {
+            const phone = await element.textContent();
+            if (phone && !contactInfo.phones.includes(phone)) {
+                contactInfo.phones.push(phone);
+            }
+        }
+        
+        // Look for owner information
+        const ownerSelectors = [
+            '[class*="owner"]',
+            '[class*="contact"]',
+            'text=/Owner:/',
+            'text=/Name:/'
+        ];
+        
+        for (const selector of ownerSelectors) {
+            try {
+                const element = await page.$(selector);
+                if (element) {
+                    const ownerText = await element.textContent();
+                    if (ownerText && ownerText.trim()) {
+                        contactInfo.owner_info = ownerText.trim();
+                        break;
+                    }
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        console.log('Extracted contact info:', contactInfo);
+        return contactInfo;
+        
+    } catch (error) {
+        console.error('Error extracting contact info:', error.message);
         return null;
     }
 }
 
-// Skip tracing function
+// Skip tracing function - now handled in modal, this is a fallback
 async function performSkipTrace(page, property) {
     try {
-        console.log('Performing skip trace...');
+        console.log('Skip trace already performed in modal');
         
+        // Return existing skip trace data if available
+        if (property.skipTrace) {
+            return property.skipTrace;
+        }
+        
+        // Fallback skip trace data
         const skipTraceData = {
             attempted_at: new Date().toISOString(),
             method: 'connected_investors_platform',
