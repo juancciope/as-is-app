@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Transform and insert data into Supabase
-    const supabaseRecords = apifyData.map(record => {
+    const supabaseRecords = await Promise.all(apifyData.map(async record => {
       if (source === 'phillipjoneslaw') {
         const pjRecord = record as PhillipJonesLawData;
         return {
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
           source,
           date: crRecord.SaleDate,
           time: '00:00', // ClearRecon doesn't provide time
-          county: extractCountyFromAddress(crRecord.PropertyAddress),
+          county: await extractCountyFromAddress(crRecord.PropertyAddress),
           firm: 'ClearRecon',
           address: cleanAddress(crRecord.PropertyAddress),
           city: extractCityFromAddress(crRecord.PropertyAddress),
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
           closest_city: null,
           distance_miles: null,
           est_drive_time: null,
-          geocode_method: null
+          geocode_method: 'google_maps'
         };
       }
       
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         est_drive_time: null,
         geocode_method: null
       };
-    });
+    }));
 
     // Insert in batches
     const batchSize = 100;
@@ -281,35 +281,79 @@ function extractCountyFromPJData(countyField: string): string {
   return toProperCase(countyField.trim());
 }
 
-// Helper function to extract county from address (for ClearRecon)
-function extractCountyFromAddress(address: string): string {
-  // For ClearRecon, we need to map city to county or extract from other data
-  // This is a simplified mapping - in reality you'd want a more comprehensive lookup
+// Helper function to extract county from address using Google Maps Geocoding API
+async function extractCountyFromAddress(address: string): Promise<string> {
+  // First try the fallback mapping for common cases to avoid API calls
   const city = extractCityFromAddress(address).toLowerCase();
   
-  // Tennessee county mapping (partial - add more as needed)
-  const cityToCounty: Record<string, string> = {
+  // Common Tennessee cities mapping for performance
+  const commonCityToCounty: Record<string, string> = {
     'nashville': 'Davidson',
     'memphis': 'Shelby',
     'knoxville': 'Knox',
     'chattanooga': 'Hamilton',
     'clarksville': 'Montgomery',
-    'murfreesboro': 'Rutherford',
-    'columbia': 'Maury',
-    'franklin': 'Williamson',
-    'hendersonville': 'Sumner',
-    'spring hill': 'Maury',
-    'old hickory': 'Davidson',
-    'cedar hill': 'Robertson',
-    'old fort': 'Polk',
-    'piney flats': 'Sullivan',
-    'kimball': 'Marion',
-    'hartsville': 'Trousdale',
-    'lynchburg': 'Moore',
-    'lakeland': 'Shelby',
-    'georgetown': 'Meigs',
-    'dyersburg': 'Dyer'
+    'murfreesboro': 'Rutherford'
   };
   
-  return cityToCounty[city] || 'Unknown';
+  if (commonCityToCounty[city]) {
+    return commonCityToCounty[city];
+  }
+  
+  // Use Google Maps Geocoding API for less common cities
+  try {
+    const county = await geocodeAddressForCounty(address);
+    return county || 'Unknown';
+  } catch (error) {
+    console.error('Geocoding failed for address:', address, error);
+    return 'Unknown';
+  }
+}
+
+// Google Maps Geocoding API helper function
+async function geocodeAddressForCounty(address: string): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    console.warn('Google Maps API key not configured, falling back to Unknown county');
+    return null;
+  }
+  
+  try {
+    // Clean and format the address for geocoding
+    const cleanAddress = `${address}, Tennessee, USA`;
+    const encodedAddress = encodeURIComponent(cleanAddress);
+    
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${apiKey}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 'OK' && data.results && data.results.length > 0) {
+      const result = data.results[0];
+      
+      // Look for the county in the address components
+      const countyComponent = result.address_components.find((component: any) => 
+        component.types.includes('administrative_area_level_2')
+      );
+      
+      if (countyComponent) {
+        // Remove " County" suffix if present
+        let county = countyComponent.long_name;
+        if (county.endsWith(' County')) {
+          county = county.replace(' County', '');
+        }
+        return county;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
 }
