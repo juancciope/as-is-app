@@ -360,16 +360,14 @@ async function searchAndExtractProperties(page, address, maxProperties) {
         await page.waitForTimeout(3000);
         await page.screenshot({ path: 'property_search_page.png' });
         
-        // Find search input
+        // Find search input - based on the specific HTML structure
         const searchSelectors = [
+            'input[placeholder="Address, city, ZIP, metro area, county, state, APN, or MLS#"]',
+            '.search-wrapper input',
+            'input[placeholder*="Address, city, ZIP" i]',
             'input[placeholder*="address" i]',
             'input[placeholder*="Address" i]',
-            'input[placeholder*="search" i]',
-            'input[placeholder*="Search" i]',
-            'input[type="search"]',
-            'input[type="text"]:first-of-type',
-            '#address-search',
-            '.search-input'
+            'input[type="text"]:first-of-type'
         ];
         
         let searchInput = null;
@@ -386,6 +384,15 @@ async function searchAndExtractProperties(page, address, maxProperties) {
         }
         
         if (!searchInput) {
+            console.log('Could not find search input field. Analyzing available inputs...');
+            const inputs = await page.$$eval('input', els => els.map(el => ({
+                type: el.type,
+                placeholder: el.placeholder,
+                className: el.className,
+                visible: el.offsetParent !== null
+            })));
+            console.log('Available input fields:', JSON.stringify(inputs, null, 2));
+            await page.screenshot({ path: 'search_input_not_found.png' });
             throw new Error('Could not find search input field');
         }
         
