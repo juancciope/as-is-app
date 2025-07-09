@@ -34,8 +34,10 @@ export async function POST(request: NextRequest) {
     console.log(`Running Apify actor ${actorId} for source: ${source}`);
 
     // Step 1: Run the Apify actor
+    // URL encode the actor ID to handle usernames with forward slashes
+    const encodedActorId = encodeURIComponent(actorId);
     const runResponse = await fetch(
-      `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiToken}`,
+      `https://api.apify.com/v2/acts/${encodedActorId}/runs?token=${apiToken}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
