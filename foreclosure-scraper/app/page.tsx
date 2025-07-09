@@ -159,7 +159,7 @@ export default function Home() {
             {isScrapingSource === 'clearrecon' ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scraping ClearRecon...
+                Scraping ClearRecon (may take 1-2 minutes)...
               </>
             ) : (
               <>

@@ -53,10 +53,12 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          waitForFinish: 120, // Wait up to 2 minutes
-          input: {
-            url: 'https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes'
-          }
+          waitForFinish: source === 'clearrecon' ? 180 : 120, // Wait up to 3 minutes for ClearRecon, 2 for others
+          ...(source === 'phillipjoneslaw' ? {
+            input: {
+              url: 'https://phillipjoneslaw.com/foreclosure-auctions.cfm?accept=yes'
+            }
+          } : {})
         })
       }
     );
@@ -75,7 +77,8 @@ export async function POST(request: NextRequest) {
     console.log(`Fetching results from dataset: ${datasetId}`);
 
     // Wait longer for the actor to complete and data to be ready
-    await new Promise(resolve => setTimeout(resolve, 10000));
+    const waitTime = source === 'clearrecon' ? 20000 : 10000; // 20 seconds for ClearRecon, 10 for others
+    await new Promise(resolve => setTimeout(resolve, waitTime));
 
     const datasetResponse = await fetch(
       `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
