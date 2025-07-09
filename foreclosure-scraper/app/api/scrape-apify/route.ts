@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
     const datasetId = runData.data.defaultDatasetId;
     console.log(`Fetching results from dataset: ${datasetId}`);
 
-    // Give it a moment to ensure data is ready
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait longer for the actor to complete and data to be ready
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
     const datasetResponse = await fetch(
       `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apiToken}&clean=true&format=json`
