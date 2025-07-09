@@ -38,7 +38,7 @@ export default function TNLedgerScraperDashboard() {
       pollStatus(data.runId);
       
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setIsRunning(false);
     }
   };
