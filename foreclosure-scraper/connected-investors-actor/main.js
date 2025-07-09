@@ -668,75 +668,21 @@ async function extractSingleProperty(page, element, index) {
 // Extract property details and perform skip trace from modal
 async function extractPropertyDetailsFromModal(page, propertyData) {
     try {
-        // First, save the property to "Foreclousure July" list
-        await savePropertyToList(page, "Foreclousure July");
+        // First, save the property to "Foreclousure Scraping" list
+        await savePropertyToList(page, "Foreclousure Scraping");
         
-        // Look for Contact Info tab and click it
-        const contactInfoSelectors = [
-            'span:has-text("Contact Info")',
-            '.tabs-item:has-text("Contact Info")',
-            '[class*="tabs-item"]:has-text("Contact Info")'
-        ];
+        // Skip trace is now handled in the save process
+        // Wait for skip trace results to load
+        await page.waitForTimeout(5000);
         
-        let contactInfoTab = null;
-        for (const selector of contactInfoSelectors) {
-            try {
-                contactInfoTab = await page.waitForSelector(selector, { timeout: 5000 });
-                if (contactInfoTab) {
-                    console.log(`Found Contact Info tab using selector: ${selector}`);
-                    break;
-                }
-            } catch (e) {
-                continue;
-            }
-        }
-        
-        if (contactInfoTab) {
-            await contactInfoTab.click();
-            console.log('Clicked Contact Info tab');
-            await page.waitForTimeout(2000);
-            
-            // Look for Skip Trace button
-            const skipTraceSelectors = [
-                'button:has-text("Skip Trace")',
-                '.secondary-button:has-text("Skip Trace")',
-                'button[class*="secondary-button"]:has-text("Skip Trace")'
-            ];
-            
-            let skipTraceButton = null;
-            for (const selector of skipTraceSelectors) {
-                try {
-                    skipTraceButton = await page.waitForSelector(selector, { timeout: 5000 });
-                    if (skipTraceButton) {
-                        console.log(`Found Skip Trace button using selector: ${selector}`);
-                        break;
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            if (skipTraceButton) {
-                await skipTraceButton.click();
-                console.log('Clicked Skip Trace button');
-                
-                // Wait for skip trace to complete
-                await page.waitForTimeout(5000);
-                
-                // Extract contact information after skip trace
-                const contactInfo = await extractContactInfo(page);
-                if (contactInfo) {
-                    propertyData.skipTrace = {
-                        attempted_at: new Date().toISOString(),
-                        method: 'modal_skip_trace',
-                        results: contactInfo
-                    };
-                }
-            } else {
-                console.log('Skip Trace button not found');
-            }
-        } else {
-            console.log('Contact Info tab not found');
+        // Extract contact information after skip trace
+        const contactInfo = await extractContactInfo(page);
+        if (contactInfo) {
+            propertyData.skipTrace = {
+                attempted_at: new Date().toISOString(),
+                method: 'save_and_skip_trace',
+                results: contactInfo
+            };
         }
         
         // Close modal by pressing Escape or clicking close button
@@ -753,16 +699,14 @@ async function savePropertyToList(page, listName) {
     try {
         console.log(`Saving property to list: ${listName}`);
         
-        // Look for Save/Add to List button in the modal
+        // Look for the star/save button on the property card (based on recording)
         const saveButtonSelectors = [
+            'div.sticky button.z-\\[1\\] > span',
+            'button.z-\\[1\\] > span',
+            '[class*="sticky"] button > span',
+            'button[class*="z-"] > span',
             'button:has-text("Save")',
-            'button:has-text("Add to List")',
-            'button:has-text("Add to")',
-            '[class*="save"]',
-            '[class*="add-to-list"]',
-            'button[class*="save"]',
-            'button[title*="save" i]',
-            'button[aria-label*="save" i]'
+            '[class*="save"]'
         ];
         
         let saveButton = null;
@@ -783,14 +727,55 @@ async function savePropertyToList(page, listName) {
             console.log('Clicked save button');
             await page.waitForTimeout(2000);
             
-            // Look for list selection dropdown/modal
+            // Click "use existing list" button (from recording)
+            const useExistingSelectors = [
+                'button:has-text("use existing list")',
+                'header button',
+                '[aria-label*="use existing"]'
+            ];
+            
+            let useExistingButton = null;
+            for (const selector of useExistingSelectors) {
+                try {
+                    useExistingButton = await page.waitForSelector(selector, { timeout: 3000 });
+                    if (useExistingButton) {
+                        await useExistingButton.click();
+                        console.log('Clicked use existing list');
+                        await page.waitForTimeout(1000);
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            // Click on the dropdown button to show list options
+            const dropdownSelectors = [
+                '#headlessui-portal-root > div:nth-of-type(2) main button',
+                'main button[class*="headlessui"]',
+                'main button'
+            ];
+            
+            for (const selector of dropdownSelectors) {
+                try {
+                    const dropdownButton = await page.waitForSelector(selector, { timeout: 3000 });
+                    if (dropdownButton) {
+                        await dropdownButton.click();
+                        console.log('Clicked dropdown button');
+                        await page.waitForTimeout(1000);
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            // Look for the specific list option
             const listSelectors = [
+                `[aria-label="${listName}"]`,
                 `text="${listName}"`,
-                `[title="${listName}"]`,
-                `option:has-text("${listName}")`,
                 `li:has-text("${listName}")`,
-                '.list-item',
-                '[class*="list"]'
+                `option:has-text("${listName}")`
             ];
             
             // Try to find and select the specific list
@@ -802,6 +787,7 @@ async function savePropertyToList(page, listName) {
                         await listElement.click();
                         console.log(`Selected list: ${listName}`);
                         listSelected = true;
+                        await page.waitForTimeout(1000);
                         break;
                     }
                 } catch (e) {
@@ -849,11 +835,12 @@ async function savePropertyToList(page, listName) {
                 }
             }
             
-            // Look for final save/confirm button
+            // Look for "Save Property" button (from recording)
             const confirmSelectors = [
+                'button:has-text("Save Property")',
+                'footer > button.rounded > span',
+                'button.rounded > span',
                 'button:has-text("Save")',
-                'button:has-text("Add")',
-                'button:has-text("Confirm")',
                 'button[type="submit"]'
             ];
             
@@ -862,7 +849,30 @@ async function savePropertyToList(page, listName) {
                     const confirmButton = await page.waitForSelector(selector, { timeout: 3000 });
                     if (confirmButton) {
                         await confirmButton.click();
-                        console.log('Confirmed property save to list');
+                        console.log('Clicked Save Property button');
+                        await page.waitForTimeout(2000);
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            // Now look for "Skip Trace This Property" button (from recording)
+            const skipTraceSelectors = [
+                'button:has-text("Skip Trace This Property")',
+                '#headlessui-portal-root > div:nth-of-type(2) button.rounded > span',
+                'button.rounded > span',
+                'button:has-text("Skip Trace")'
+            ];
+            
+            for (const selector of skipTraceSelectors) {
+                try {
+                    const skipTraceButton = await page.waitForSelector(selector, { timeout: 3000 });
+                    if (skipTraceButton) {
+                        await skipTraceButton.click();
+                        console.log('Clicked Skip Trace This Property button');
+                        await page.waitForTimeout(3000);
                         break;
                     }
                 } catch (e) {
