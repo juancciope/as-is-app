@@ -80,6 +80,10 @@ type ApifyAuctionData = PhillipJonesLawData | ClearReconData | TnLedgerData | Wa
 
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+    
     const { source } = await request.json();
     
     // Map source to actor ID

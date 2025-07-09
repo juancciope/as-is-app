@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, MapPin, Calendar, Clock } from 'lucide-react';
 
 interface DataTableProps {
   data: any[];
@@ -53,76 +53,110 @@ export function DataTable({ data }: DataTableProps) {
   };
   
   return (
-    <div className="relative overflow-x-auto bg-white">
+    <div className="relative overflow-x-auto bg-white rounded-lg border border-gray-200">
       <table className="w-full text-sm text-left text-gray-900 bg-white">
-        <thead className="text-xs uppercase bg-blue-50 text-blue-900">
+        <thead className="text-xs uppercase bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900">
           <tr>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-blue-100"
+              className="px-6 py-4 cursor-pointer hover:bg-blue-100 transition-colors"
               onClick={() => handleSort('date')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
                 Sale Date
                 <SortIcon field="date" />
               </div>
             </th>
-            <th className="px-6 py-3">Time</th>
+            <th className="px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Time
+              </div>
+            </th>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-blue-100"
+              className="px-6 py-4 cursor-pointer hover:bg-blue-100 transition-colors"
               onClick={() => handleSort('address')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
                 Address
                 <SortIcon field="address" />
               </div>
             </th>
-            <th className="px-6 py-3">City</th>
-            <th className="px-6 py-3">County</th>
-            <th className="px-6 py-3">Firm</th>
+            <th className="px-6 py-4">City</th>
+            <th className="px-6 py-4">County</th>
+            <th className="px-6 py-4">Firm</th>
             <th 
-              className="px-6 py-3 cursor-pointer hover:bg-blue-100"
+              className="px-6 py-4 cursor-pointer hover:bg-blue-100 transition-colors"
               onClick={() => handleSort('distance_miles')}
             >
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 Distance
                 <SortIcon field="distance_miles" />
               </div>
             </th>
-            <th className="px-6 py-3">Within 30min</th>
-            <th className="px-6 py-3">Source</th>
-            <th className="px-6 py-3">Actions</th>
+            <th className="px-6 py-4">Within 30min</th>
+            <th className="px-6 py-4">Source</th>
+            <th className="px-6 py-4">Actions</th>
           </tr>
         </thead>
         <tbody>
           {sortedData.map((row, index) => (
             <tr 
               key={index}
-              className="bg-white border-b border-gray-200 hover:bg-blue-50"
+              className="bg-white border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-150"
             >
               <td className="px-6 py-4 font-medium text-gray-900">
-                {new Date(row.date).toLocaleDateString()}
+                <div className="flex flex-col">
+                  <span>{new Date(row.date).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(row.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                  </span>
+                </div>
               </td>
-              <td className="px-6 py-4 text-gray-900">{row.time || 'N/A'}</td>
-              <td className="px-6 py-4 max-w-xs truncate text-gray-900" title={row.address}>
-                {row.address}
-              </td>
-              <td className="px-6 py-4 text-gray-900">{row.city || 'N/A'}</td>
-              <td className="px-6 py-4 text-gray-900">{row.county || 'N/A'}</td>
-              <td className="px-6 py-4 text-gray-900">{row.firm || 'N/A'}</td>
               <td className="px-6 py-4 text-gray-900">
-                {row.distance_miles ? `${row.distance_miles} mi` : 'N/A'}
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                  {row.time || 'N/A'}
+                </span>
+              </td>
+              <td className="px-6 py-4 max-w-xs text-gray-900" title={row.address}>
+                <div className="truncate font-medium">{row.address}</div>
+              </td>
+              <td className="px-6 py-4 text-gray-900">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                  {row.city || 'N/A'}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-gray-900">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                  {row.county || 'N/A'}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-gray-900">
+                <span className="text-sm font-medium">{row.firm || 'N/A'}</span>
+              </td>
+              <td className="px-6 py-4 text-gray-900">
+                {row.distance_miles ? (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                    {row.distance_miles} mi
+                  </span>
+                ) : (
+                  <span className="text-gray-500">N/A</span>
+                )}
               </td>
               <td className="px-6 py-4">
-                <span className={`px-2 py-1 text-xs rounded-full ${
+                <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${
                   row.within_30min === 'Y' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-green-100 text-green-800 ring-1 ring-green-600/20' 
+                    : 'bg-red-100 text-red-800 ring-1 ring-red-600/20'
                 }`}>
-                  {row.within_30min === 'Y' ? 'Yes' : 'No'}
+                  {row.within_30min === 'Y' ? '✓ Yes' : '✗ No'}
                 </span>
               </td>
               <td className="px-6 py-4">
-                <span className="text-xs text-gray-900 font-medium">{row.source}</span>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 font-medium">
+                  {getSourceDisplayName(row.source)}
+                </span>
               </td>
               <td className="px-6 py-4">
                 <button
@@ -130,10 +164,11 @@ export function DataTable({ data }: DataTableProps) {
                     const address = encodeURIComponent(row.address + ', ' + row.city + ', TN');
                     window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
                   }}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
                   title="View on Google Maps"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Maps
                 </button>
               </td>
             </tr>
@@ -142,10 +177,26 @@ export function DataTable({ data }: DataTableProps) {
       </table>
       
       {sortedData.length === 0 && (
-        <div className="text-center py-8 text-gray-900 bg-white">
-          No data available. Run scrapers to collect data.
+        <div className="text-center py-12 text-gray-500 bg-white">
+          <div className="flex flex-col items-center gap-2">
+            <MapPin className="h-12 w-12 text-gray-300" />
+            <h3 className="text-lg font-medium text-gray-900">No Properties Found</h3>
+            <p className="text-sm">Run scrapers to collect foreclosure data</p>
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+function getSourceDisplayName(source: string): string {
+  const names: Record<string, string> = {
+    'phillipjoneslaw': 'PJ Law',
+    'clearrecon': 'ClearRecon',
+    'tnledger': 'TN Ledger',
+    'wabipowerbi': 'WABI',
+    'wilsonassociates': 'Wilson',
+    'wilson': 'Wilson'
+  };
+  return names[source] || source;
 }
