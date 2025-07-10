@@ -285,7 +285,9 @@ async function loginToConnectedInvestors(page, username, password) {
 async function performSkipTrace(page, address) {
     try {
         // Navigate to property search page
+        console.log(`Navigating to property search page: ${PROPERTY_SEARCH_URL}`);
         await page.goto(PROPERTY_SEARCH_URL, { waitUntil: 'load' });
+        console.log(`Successfully navigated to: ${page.url()}`);
         await page.waitForTimeout(3000);
         
         // Close any modals or overlays that might be present
