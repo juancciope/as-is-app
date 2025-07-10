@@ -288,6 +288,9 @@ async function performSkipTrace(page, address) {
         await page.goto(PROPERTY_SEARCH_URL, { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         
+        // Close any modals or overlays that might be present
+        await dismissModalsAndOverlays(page);
+        
         // Search for the property
         const skipTraceData = await searchAndEnrichProperty(page, address);
         
@@ -296,6 +299,66 @@ async function performSkipTrace(page, address) {
     } catch (error) {
         console.error(`Error performing skip trace for ${address}:`, error.message);
         return null;
+    }
+}
+
+// Function to dismiss modals and overlays
+async function dismissModalsAndOverlays(page) {
+    try {
+        console.log('Checking for modals and overlays...');
+        
+        // Check for headlessui portal (common modal framework)
+        const portalRoot = await page.$('#headlessui-portal-root');
+        if (portalRoot) {
+            console.log('Found headlessui portal, attempting to dismiss...');
+            
+            // Try clicking close buttons
+            const closeSelectors = [
+                'button[aria-label="Close"]',
+                'button:has-text("×")',
+                'button:has-text("Close")',
+                'button:has-text("Skip")',
+                'button:has-text("No thanks")',
+                'button:has-text("Later")',
+                '[data-headlessui-state] button:last-child',
+                '.modal button:last-child'
+            ];
+            
+            for (const selector of closeSelectors) {
+                try {
+                    const element = await page.$(selector);
+                    if (element) {
+                        await element.click();
+                        console.log(`Clicked close button: ${selector}`);
+                        await page.waitForTimeout(1000);
+                        break;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            
+            // If close buttons don't work, try pressing Escape
+            await page.keyboard.press('Escape');
+            console.log('Pressed Escape key');
+            await page.waitForTimeout(1000);
+            
+            // If still present, try clicking outside the modal
+            try {
+                await page.click('body', { position: { x: 10, y: 10 } });
+                console.log('Clicked outside modal');
+                await page.waitForTimeout(1000);
+            } catch (e) {
+                // Ignore click errors
+            }
+        }
+        
+        // Wait a bit more to ensure modals are gone
+        await page.waitForTimeout(2000);
+        
+    } catch (error) {
+        console.log('Error dismissing modals:', error.message);
+        // Continue anyway, as modals might not be present
     }
 }
 
