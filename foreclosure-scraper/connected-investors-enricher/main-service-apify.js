@@ -450,49 +450,78 @@ async function searchAndEnrichProperty(page, address) {
         await page.type(workingSelector, address);
         console.log(`Entered address: ${address}`);
         
-        // Wait for search suggestions
-        await page.waitForTimeout(10000);
+        // Wait for search suggestions - shorter wait time
+        await page.waitForTimeout(3000);
         
-        // Look for search results dropdown
+        // Look for search results dropdown with multiple possible selectors
         try {
-            await page.waitForSelector('.search-results', { timeout: 5000 });
-            console.log('Search results dropdown appeared');
+            // Try different selectors for the dropdown
+            const dropdownSelectors = [
+                'div.py-4 ol li p',  // From Chrome recording
+                '.search-results li p',
+                'section ol li p',
+                '[role="listbox"] li',
+                'div[data-headlessui-state] li p'
+            ];
             
-            // Find and click on matching address
-            const addressOptions = await page.$$('.search-results li p');
-            for (const option of addressOptions) {
-                const text = await option.textContent();
-                if (text && text.toLowerCase().includes(address.toLowerCase().split(',')[0])) {
-                    await option.click();
-                    console.log(`Clicked on matching address: ${text}`);
+            let foundDropdown = false;
+            for (const selector of dropdownSelectors) {
+                const results = await page.$$(selector);
+                if (results.length > 0) {
+                    console.log(`Found ${results.length} search results using selector: ${selector}`);
+                    
+                    // Click on the first result (usually the best match)
+                    await results[0].click();
+                    const text = await results[0].textContent();
+                    console.log(`Clicked on address result: ${text}`);
+                    foundDropdown = true;
                     break;
                 }
             }
+            
+            if (!foundDropdown) {
+                console.log('No dropdown results found, trying to press Enter');
+                await page.keyboard.press('Enter');
+            }
         } catch (e) {
-            console.log('No dropdown appeared, pressing Enter');
+            console.log('Error with dropdown selection:', e.message);
             await page.keyboard.press('Enter');
         }
         
         // Wait for property results
         await page.waitForTimeout(5000);
         
-        // Look for property cards
-        const propertyCards = await page.$$('[class*="property-card"]');
+        // Look for property modal/dialog (it opens automatically after clicking address)
+        const modalSelectors = [
+            'div.sticky button.z-\\[1\\] > span',  // Save button from Chrome recording
+            '[id*="headlessui-dialog-panel"]',
+            'div[role="dialog"]',
+            'main > div > div.sticky'
+        ];
         
-        if (propertyCards.length > 0) {
-            console.log(`Found ${propertyCards.length} property cards`);
-            
-            // Click on first property card
-            await propertyCards[0].click();
-            console.log('Clicked on property card');
-            await page.waitForTimeout(3000);
+        let propertyModalFound = false;
+        for (const selector of modalSelectors) {
+            try {
+                const element = await page.$(selector);
+                if (element) {
+                    console.log(`Found property modal using selector: ${selector}`);
+                    propertyModalFound = true;
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (propertyModalFound) {
+            console.log('Property details modal is open');
             
             // Save to list and skip trace
             const skipTraceData = await saveAndSkipTrace(page, "Foreclousure Scraping");
             
             return skipTraceData;
         } else {
-            console.log('No property cards found');
+            console.log('No property modal found');
             return null;
         }
         
