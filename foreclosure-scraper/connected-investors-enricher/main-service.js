@@ -1,96 +1,147 @@
 const { Actor } = require('apify');
 const { chromium } = require('playwright');
+const express = require('express');
 
 // Constants
 const BASE_URL = 'https://connectedinvestors.platlabs.com';
 const LOGIN_URL = `${BASE_URL}/login`;
 const PROPERTY_SEARCH_URL = `${BASE_URL}/find-deals/property-search`;
 
-// API configuration
-const API_KEY = process.env.API_KEY; // Optional API key for security
+// Service configuration
+const PORT = process.env.PORT || 3000;
+const SERVICE_TOKEN = process.env.SERVICE_TOKEN || 'your-secret-token';
 
-// Main enrichment actor
+// Global browser and page instance
+let browser = null;
+let page = null;
+let isLoggedIn = false;
+
+// Express app for receiving requests
+const app = express();
+app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'healthy', 
+        isLoggedIn,
+        ready: isLoggedIn && page !== null 
+    });
+});
+
+// Skip trace endpoint
+app.post('/skip-trace', async (req, res) => {
+    try {
+        // Verify token
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (token !== SERVICE_TOKEN) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        if (!isLoggedIn || !page) {
+            return res.status(503).json({ error: 'Service not ready. Please wait for login.' });
+        }
+
+        const { propertyId, address } = req.body;
+        
+        if (!propertyId || !address) {
+            return res.status(400).json({ error: 'Property ID and address are required' });
+        }
+
+        console.log(`Processing skip trace request for property ${propertyId}: ${address}`);
+        
+        // Perform skip trace
+        const skipTraceData = await performSkipTrace(page, address);
+        
+        if (skipTraceData) {
+            res.json({
+                success: true,
+                propertyId,
+                data: skipTraceData
+            });
+        } else {
+            res.json({
+                success: false,
+                propertyId,
+                error: 'No skip trace data found'
+            });
+        }
+        
+    } catch (error) {
+        console.error('Skip trace error:', error);
+        res.status(500).json({ 
+            error: 'Skip trace failed', 
+            message: error.message 
+        });
+    }
+});
+
+// Main actor function
 Actor.main(async () => {
-    console.log('Starting Connected Investors Property Enricher...');
+    console.log('Starting Connected Investors Skip Trace Service...');
     
     const input = await Actor.getInput();
-    const {
-        username,
-        password,
-        apiBaseUrl = 'https://as-is-app.vercel.app',
-        batchSize = 10,
-        maxRetries = 3,
-        skipAlreadyEnriched = true
-    } = input;
+    const { username, password } = input;
 
     if (!username || !password) {
         throw new Error('Username and password are required!');
     }
 
-    if (!apiBaseUrl) {
-        throw new Error('API configuration missing!');
-    }
-
-    // Launch browser
-    const browser = await chromium.launch({
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-blink-features=AutomationControlled'
-        ]
-    });
-
-    const context = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        viewport: { width: 1366, height: 768 }
-    });
-
-    const page = await context.newPage();
-    
     try {
-        // Step 1: Login to Connected Investors
-        console.log('Logging in to Connected Investors...');
-        const loginSuccess = await loginToConnectedInvestors(page, username, password);
+        // Launch browser
+        browser = await chromium.launch({
+            headless: true,
+            args: [
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-blink-features=AutomationControlled'
+            ]
+        });
+
+        const context = await browser.newContext({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport: { width: 1366, height: 768 }
+        });
+
+        page = await context.newPage();
         
-        if (!loginSuccess) {
+        // Login to Connected Investors
+        console.log('Logging in to Connected Investors...');
+        isLoggedIn = await loginToConnectedInvestors(page, username, password);
+        
+        if (!isLoggedIn) {
             throw new Error('Login failed. Please check your credentials.');
         }
         
-        console.log('Login successful!');
+        console.log('Login successful! Service is ready.');
         
-        // Step 2: Fetch properties from Supabase that need enrichment
-        console.log('Fetching properties from database...');
-        const propertiesToEnrich = await fetchPropertiesForEnrichment(apiBaseUrl, skipAlreadyEnriched);
+        // Start Express server
+        const server = app.listen(PORT, () => {
+            console.log(`Skip trace service listening on port ${PORT}`);
+        });
         
-        if (propertiesToEnrich.length === 0) {
-            console.log('No properties found that need enrichment.');
-            return;
-        }
-        
-        console.log(`Found ${propertiesToEnrich.length} properties to enrich`);
-        
-        // Step 3: Process properties in batches
-        const enrichedCount = await processPropertiesInBatches(
-            page, 
-            propertiesToEnrich, 
-            batchSize, 
-            maxRetries,
-            apiBaseUrl
-        );
-        
-        console.log(`Enrichment complete! Successfully enriched ${enrichedCount} properties.`);
+        // Keep the actor running
+        await new Promise((resolve) => {
+            // This will keep the actor running until it's stopped
+            process.on('SIGTERM', () => {
+                console.log('Received SIGTERM, shutting down...');
+                server.close();
+                resolve();
+            });
+        });
         
     } catch (error) {
-        console.error('Error in enrichment process:', error);
+        console.error('Service error:', error);
         throw error;
     } finally {
-        await browser.close();
-        console.log('Browser closed. Enrichment completed.');
+        if (browser) {
+            await browser.close();
+            console.log('Browser closed. Service stopped.');
+        }
     }
 });
 
-// Login function (reused from original scraper)
+// Login function
 async function loginToConnectedInvestors(page, username, password) {
     try {
         console.log('Navigating to login page...');
@@ -267,126 +318,25 @@ async function loginToConnectedInvestors(page, username, password) {
     }
 }
 
-// Fetch properties from API that need enrichment
-async function fetchPropertiesForEnrichment(apiBaseUrl, skipAlreadyEnriched = true) {
+// Perform skip trace for a single property
+async function performSkipTrace(page, address) {
     try {
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-        
-        if (API_KEY) {
-            headers['Authorization'] = `Bearer ${API_KEY}`;
-        }
-        
-        // Fetch properties from the API
-        const response = await fetch(`${apiBaseUrl}/api/data?needsEnrichment=true`, { 
-            headers,
-            method: 'GET'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API query failed: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        let properties = data.data || [];
-        
-        // Filter properties that need enrichment if requested
-        if (skipAlreadyEnriched) {
-            properties = properties.filter(p => !p.owner_emails && !p.owner_phones);
-        }
-        
-        // Filter to recent properties (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        properties = properties.filter(p => new Date(p.created_at) >= thirtyDaysAgo);
-        
-        console.log(`Fetched ${properties.length} properties from API that need enrichment`);
-        
-        return properties;
-        
-    } catch (error) {
-        console.error('Error fetching properties:', error);
-        throw error;
-    }
-}
-
-// Process properties in batches
-async function processPropertiesInBatches(page, properties, batchSize, maxRetries, apiBaseUrl) {
-    let enrichedCount = 0;
-    
-    for (let i = 0; i < properties.length; i += batchSize) {
-        const batch = properties.slice(i, i + batchSize);
-        console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(properties.length / batchSize)}`);
-        
-        for (const property of batch) {
-            let retries = 0;
-            let success = false;
-            
-            while (retries < maxRetries && !success) {
-                try {
-                    const enriched = await enrichSingleProperty(page, property, apiBaseUrl);
-                    if (enriched) {
-                        enrichedCount++;
-                        success = true;
-                    } else {
-                        retries++;
-                    }
-                } catch (error) {
-                    console.error(`Error enriching property ${property.id}:`, error.message);
-                    retries++;
-                    
-                    if (retries < maxRetries) {
-                        console.log(`Retrying... (${retries}/${maxRetries})`);
-                        await page.waitForTimeout(2000);
-                    }
-                }
-            }
-            
-            if (!success) {
-                console.log(`Failed to enrich property ${property.id} after ${maxRetries} retries`);
-            }
-        }
-        
-        // Wait between batches to avoid overwhelming the server
-        if (i + batchSize < properties.length) {
-            console.log('Waiting between batches...');
-            await page.waitForTimeout(5000);
-        }
-    }
-    
-    return enrichedCount;
-}
-
-// Enrich a single property
-async function enrichSingleProperty(page, property, apiBaseUrl) {
-    try {
-        console.log(`Enriching property: ${property.address}`);
-        
         // Navigate to property search page
         await page.goto(PROPERTY_SEARCH_URL, { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         
         // Search for the property
-        const skipTraceData = await searchAndEnrichProperty(page, property.address);
+        const skipTraceData = await searchAndEnrichProperty(page, address);
         
-        if (skipTraceData) {
-            // Update the property in the database
-            await updatePropertyInDatabase(property.id, skipTraceData, apiBaseUrl);
-            console.log(`Successfully enriched property ${property.id}`);
-            return true;
-        } else {
-            console.log(`No skip trace data found for property ${property.id}`);
-            return false;
-        }
+        return skipTraceData;
         
     } catch (error) {
-        console.error(`Error enriching property ${property.id}:`, error.message);
-        return false;
+        console.error(`Error performing skip trace for ${address}:`, error.message);
+        return null;
     }
 }
 
-// Search and enrich property (reused from original scraper)
+// Search and enrich property
 async function searchAndEnrichProperty(page, address) {
     try {
         // Find search input
@@ -592,46 +542,5 @@ async function extractContactInfo(page) {
     } catch (error) {
         console.error('Error extracting contact info:', error.message);
         return null;
-    }
-}
-
-// Update property in database with skip trace data via API
-async function updatePropertyInDatabase(propertyId, skipTraceData, apiBaseUrl) {
-    try {
-        const headers = {
-            'Content-Type': 'application/json',
-        };
-        
-        if (API_KEY) {
-            headers['Authorization'] = `Bearer ${API_KEY}`;
-        }
-        
-        const updateData = {
-            id: propertyId,
-            owner_emails: skipTraceData.emails.join(','),
-            owner_phones: skipTraceData.phones.join(','),
-            owner_info: skipTraceData.owners.join(' | '),
-            skip_trace: {
-                attempted_at: new Date().toISOString(),
-                method: 'connected_investors_enricher',
-                results: skipTraceData
-            }
-        };
-        
-        const response = await fetch(`${apiBaseUrl}/api/data/enrich`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(updateData)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`API update failed: ${response.status} ${response.statusText}`);
-        }
-        
-        console.log(`Updated property ${propertyId} via API`);
-        
-    } catch (error) {
-        console.error('Error updating via API:', error);
-        throw error;
     }
 }

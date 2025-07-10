@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, MapPin, Calendar, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, MapPin, Calendar, Clock, Search, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DataTableProps {
   data: any[];
@@ -8,6 +8,7 @@ interface DataTableProps {
 export function DataTable({ data }: DataTableProps) {
   const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [skipTracingIds, setSkipTracingIds] = useState<Set<string>>(new Set());
   
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -15,6 +16,43 @@ export function DataTable({ data }: DataTableProps) {
     } else {
       setSortField(field);
       setSortDirection('asc');
+    }
+  };
+  
+  const handleSkipTrace = async (propertyId: string) => {
+    setSkipTracingIds(prev => new Set(prev).add(propertyId));
+    
+    try {
+      const response = await fetch('/api/skip-trace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the property in the data with the new contact info
+        const updatedData = data.map(item => 
+          item.id === propertyId 
+            ? { ...item, owner_emails: result.data.emails.join(','), owner_phones: result.data.phones.join(',') }
+            : item
+        );
+        // You might want to trigger a data refresh here
+        window.location.reload(); // Simple refresh for now
+      } else {
+        console.error('Skip trace failed:', result.error);
+        alert('Skip trace failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Skip trace error:', error);
+      alert('Skip trace failed. Please try again.');
+    } finally {
+      setSkipTracingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(propertyId);
+        return newSet;
+      });
     }
   };
   
@@ -97,6 +135,7 @@ export function DataTable({ data }: DataTableProps) {
             </th>
             <th className="px-6 py-4">Within 30min</th>
             <th className="px-6 py-4">Source</th>
+            <th className="px-6 py-4">Contact Info</th>
             <th className="px-6 py-4">Actions</th>
           </tr>
         </thead>
@@ -157,6 +196,33 @@ export function DataTable({ data }: DataTableProps) {
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 font-medium">
                   {getSourceDisplayName(row.source)}
                 </span>
+              </td>
+              <td className="px-6 py-4">
+                {row.owner_emails || row.owner_phones ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">Enriched</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleSkipTrace(row.id)}
+                    disabled={skipTracingIds.has(row.id)}
+                    className="inline-flex items-center px-3 py-1 text-xs font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Run skip trace to find contact information"
+                  >
+                    {skipTracingIds.has(row.id) ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Tracing...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-1" />
+                        Skip Trace
+                      </>
+                    )}
+                  </button>
+                )}
               </td>
               <td className="px-6 py-4">
                 <button

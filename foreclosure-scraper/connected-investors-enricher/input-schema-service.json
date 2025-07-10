@@ -1,0 +1,22 @@
+{
+  "title": "Connected Investors Skip Trace Service",
+  "description": "Long-running service that accepts skip trace requests for individual properties",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "username": {
+      "title": "Username or Email",
+      "type": "string",
+      "description": "Your Connected Investors username or email",
+      "editor": "textfield"
+    },
+    "password": {
+      "title": "Login Password",
+      "type": "string",
+      "description": "Your Connected Investors login password",
+      "editor": "textfield",
+      "isSecret": true
+    }
+  },
+  "required": ["username", "password"]
+}
