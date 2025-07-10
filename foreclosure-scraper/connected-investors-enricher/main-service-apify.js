@@ -760,9 +760,28 @@ async function extractContactInfo(page) {
         // Wait for skip trace results to load
         await page.waitForTimeout(3000);
         
+        // Get the page content for extraction
+        const pageContent = await page.textContent('body');
+        
+        // Log the content around emails and phones to help debug name extraction
+        console.log('=== SKIP TRACE CONTENT SAMPLE ===');
+        const contentLines = pageContent.split('\n');
+        for (let i = 0; i < contentLines.length; i++) {
+            const line = contentLines[i].trim();
+            if (line.includes('@') || /\d{3}.*\d{3}.*\d{4}/.test(line)) {
+                // Log this line and surrounding lines
+                console.log(`Line ${i-2}: ${contentLines[i-2]?.trim() || ''}`);
+                console.log(`Line ${i-1}: ${contentLines[i-1]?.trim() || ''}`);
+                console.log(`Line ${i}: ${line} <-- CONTACT INFO`);
+                console.log(`Line ${i+1}: ${contentLines[i+1]?.trim() || ''}`);
+                console.log(`Line ${i+2}: ${contentLines[i+2]?.trim() || ''}`);
+                console.log('---');
+            }
+        }
+        console.log('=== END SKIP TRACE CONTENT ===');
+        
         // Extract emails
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-        const pageContent = await page.textContent('body');
         const emails = pageContent.match(emailRegex) || [];
         
         // Remove duplicates and filter out common false positives
@@ -782,12 +801,19 @@ async function extractContactInfo(page) {
         
         contactInfo.phones = uniquePhones;
         
-        // Extract owner information
+        // Extract owner information from the entire page content
+        console.log('Extracting owner names from page content...');
+        
+        // First try specific selectors
         const ownerSelectors = [
             'text=/Owner:/',
             'text=/Name:/',
             '[class*="owner"]',
-            '[class*="contact"]'
+            '[class*="contact"]',
+            '[class*="person"]',
+            'h3', 'h4', 'h5',  // Often names are in headings
+            '.font-bold', '.font-semibold',  // Bold text often contains names
+            'strong', 'b'
         ];
         
         for (const selector of ownerSelectors) {
@@ -803,6 +829,31 @@ async function extractContactInfo(page) {
                 continue;
             }
         }
+        
+        // Also try to extract names from the page content using patterns
+        const namePatterns = [
+            /Owner:\s*([A-Za-z\s,&]+)(?=\n|Email|Phone|$)/gi,
+            /Name:\s*([A-Za-z\s,&]+)(?=\n|Email|Phone|$)/gi,
+            /Contact:\s*([A-Za-z\s,&]+)(?=\n|Email|Phone|$)/gi,
+            // Look for patterns like "John Doe" (capital letters followed by space and another capital letter)
+            /\b[A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g
+        ];
+        
+        for (const pattern of namePatterns) {
+            const matches = pageContent.matchAll(pattern);
+            for (const match of matches) {
+                const name = match[1] || match[0];
+                if (name && name.length > 3 && name.length < 50) {
+                    // Filter out common false positives
+                    const cleanName = name.trim();
+                    if (!cleanName.match(/^(Email|Phone|Address|Property|Contact|Owner|Name|Skip|Trace|This|Property|More|Info|Details|Show|Hide|Close|Cancel|Save|Edit|Update|Delete|Add|Remove|Search|Filter|Sort|View|Print|Export|Import|Help|About|Privacy|Terms|Login|Logout|Register|Sign|In|Up|Out|Home|Back|Next|Previous|First|Last|Page|of|and|or|the|a|an|to|for|with|by|from|at|on|in|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|could|should|may|might|can|must|shall|ought)$/i)) {
+                        contactInfo.owners.push(cleanName);
+                    }
+                }
+            }
+        }
+        
+        console.log('Found owner names:', contactInfo.owners);
         
         // Remove duplicates from owners
         contactInfo.owners = [...new Set(contactInfo.owners)];
