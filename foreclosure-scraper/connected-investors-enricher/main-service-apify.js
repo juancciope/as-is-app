@@ -310,11 +310,13 @@ async function searchAndEnrichProperty(page, address) {
         ];
         
         let searchInput = null;
+        let workingSelector = null;
         for (const selector of searchSelectors) {
             try {
                 searchInput = await page.waitForSelector(selector, { timeout: 5000, state: 'visible' });
                 if (searchInput) {
                     console.log(`Found search input using selector: ${selector}`);
+                    workingSelector = selector;
                     break;
                 }
             } catch (e) {
@@ -322,16 +324,16 @@ async function searchAndEnrichProperty(page, address) {
             }
         }
         
-        if (!searchInput) {
+        if (!searchInput || !workingSelector) {
             throw new Error('Could not find search input');
         }
         
         // Clear and enter address
         await page.waitForTimeout(2000);
-        await page.click(searchSelectors[0]);
+        await page.click(workingSelector);
         await page.keyboard.press('Control+A');
         await page.keyboard.press('Delete');
-        await page.type(searchSelectors[0], address);
+        await page.type(workingSelector, address);
         console.log(`Entered address: ${address}`);
         
         // Wait for search suggestions
