@@ -2,9 +2,10 @@
   "name": "connected-investors-skip-trace-service",
   "version": "2.0.0",
   "description": "Skip trace service for individual properties via Connected Investors",
-  "main": "main-service.js",
+  "main": "main-service-apify.js",
   "scripts": {
-    "start": "node main-service.js",
+    "start": "node main-service-apify.js",
+    "start-webhook": "node main-service.js",
     "start-batch": "node main.js"
   },
   "dependencies": {

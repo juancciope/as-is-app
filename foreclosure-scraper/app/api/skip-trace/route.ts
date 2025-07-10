@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { ApifyApi } from 'apify-client';
+
+// Initialize Apify client
+const apifyClient = new ApifyApi({
+  token: process.env.APIFY_API_TOKEN,
+});
 
 // This endpoint triggers skip trace for a specific property
 export async function POST(request: Request) {
@@ -17,6 +23,13 @@ export async function POST(request: Request) {
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.APIFY_API_TOKEN) {
+      return NextResponse.json(
+        { error: 'Apify API token not configured' },
         { status: 500 }
       );
     }
@@ -48,79 +61,88 @@ export async function POST(request: Request) {
       });
     }
 
-    // Get the Apify actor webhook URL from environment variables
-    const APIFY_WEBHOOK_URL = process.env.APIFY_SKIP_TRACE_WEBHOOK;
-    const SERVICE_TOKEN = process.env.APIFY_SERVICE_TOKEN;
+    // Get the Connected Investors actor ID
+    const actorId = process.env.APIFY_ACTOR_ID_SKIP_TRACE || 'connected-investors-skip-trace-service';
 
-    if (!APIFY_WEBHOOK_URL || !SERVICE_TOKEN) {
-      return NextResponse.json(
-        { error: 'Skip trace service not configured' },
-        { status: 500 }
-      );
-    }
-
-    // Send skip trace request to Apify actor
-    const skipTraceResponse = await fetch(`${APIFY_WEBHOOK_URL}/skip-trace`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SERVICE_TOKEN}`
-      },
-      body: JSON.stringify({
+    try {
+      // Run the actor with skip trace request
+      const run = await apifyClient.actor(actorId).call({
+        username: process.env.CONNECTED_INVESTORS_USERNAME,
+        password: process.env.CONNECTED_INVESTORS_PASSWORD,
         propertyId: property.id,
         address: property.address
-      })
-    });
+      });
 
-    if (!skipTraceResponse.ok) {
-      const errorText = await skipTraceResponse.text();
-      console.error('Skip trace service error:', errorText);
-      return NextResponse.json(
-        { error: 'Skip trace service failed' },
-        { status: 500 }
-      );
-    }
+      // Wait for the run to complete
+      const finishedRun = await apifyClient.run(run.id).waitForFinish();
 
-    const skipTraceResult = await skipTraceResponse.json();
-
-    if (skipTraceResult.success && skipTraceResult.data) {
-      // Update property with skip trace data
-      const { data: updatedProperty, error: updateError } = await supabaseAdmin
-        .from('foreclosure_data')
-        .update({
-          owner_emails: skipTraceResult.data.emails.join(','),
-          owner_phones: skipTraceResult.data.phones.join(','),
-          owner_info: skipTraceResult.data.owners.join(' | '),
-          skip_trace: {
-            attempted_at: new Date().toISOString(),
-            method: 'connected_investors_manual',
-            results: skipTraceResult.data
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', propertyId)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating property:', updateError);
+      if (finishedRun.status !== 'SUCCEEDED') {
+        console.error('Actor run failed:', finishedRun.status);
         return NextResponse.json(
-          { error: 'Failed to update property' },
+          { error: 'Skip trace failed' },
           { status: 500 }
         );
       }
 
-      return NextResponse.json({
-        success: true,
-        message: 'Skip trace completed successfully',
-        data: skipTraceResult.data
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: 'No skip trace data found',
-        error: skipTraceResult.error
-      });
+      // Get the results from the actor run
+      const { items } = await apifyClient.dataset(finishedRun.defaultDatasetId).listItems();
+
+      if (items.length === 0) {
+        return NextResponse.json({
+          success: false,
+          message: 'No skip trace data found'
+        });
+      }
+
+      const result = items[0];
+
+      if (result.success && result.data) {
+        // Update property with skip trace data
+        const { data: updatedProperty, error: updateError } = await supabaseAdmin
+          .from('foreclosure_data')
+          .update({
+            owner_emails: result.data.emails.join(','),
+            owner_phones: result.data.phones.join(','),
+            owner_info: result.data.owners.join(' | '),
+            skip_trace: {
+              attempted_at: new Date().toISOString(),
+              method: 'connected_investors_api',
+              results: result.data,
+              runId: run.id
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', propertyId)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating property:', updateError);
+          return NextResponse.json(
+            { error: 'Failed to update property' },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Skip trace completed successfully',
+          data: result.data
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          message: 'No skip trace data found',
+          error: result.error
+        });
+      }
+
+    } catch (apifyError) {
+      console.error('Apify API error:', apifyError);
+      return NextResponse.json(
+        { error: 'Failed to run skip trace actor' },
+        { status: 500 }
+      );
     }
 
   } catch (error) {

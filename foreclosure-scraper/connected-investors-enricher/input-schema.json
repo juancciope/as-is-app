@@ -1,6 +1,6 @@
 {
   "title": "Connected Investors Skip Trace Service",
-  "description": "Long-running service that accepts skip trace requests for individual properties",
+  "description": "Skip trace service for individual properties via Connected Investors",
   "type": "object",
   "schemaVersion": 1,
   "properties": {
@@ -16,6 +16,18 @@
       "description": "Your Connected Investors login password",
       "editor": "textfield",
       "isSecret": true
+    },
+    "propertyId": {
+      "title": "Property ID",
+      "type": "string",
+      "description": "Unique property ID for skip trace (optional - leave empty for service mode)",
+      "editor": "textfield"
+    },
+    "address": {
+      "title": "Property Address",
+      "type": "string",
+      "description": "Property address to skip trace (optional - leave empty for service mode)",
+      "editor": "textfield"
     }
   },
   "required": ["username", "password"]

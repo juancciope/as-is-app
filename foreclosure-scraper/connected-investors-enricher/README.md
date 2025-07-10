@@ -1,16 +1,17 @@
 # Connected Investors Skip Trace Service
 
-This actor provides a long-running service that performs on-demand skip tracing for individual properties through Connected Investors.
+This actor performs on-demand skip tracing for individual properties through Connected Investors via Apify's API.
 
 ## How it works
 
-1. The actor starts up and logs into Connected Investors
-2. It runs an Express server that listens for skip trace requests
-3. When a request is received, it searches for the property and performs skip tracing
-4. Returns contact information (emails, phones, owner names) immediately
+1. Each run logs into Connected Investors fresh
+2. Searches for the specific property by address
+3. Performs skip tracing and extracts contact information
+4. Returns results via Apify dataset
 
 ## Input
 
+### Service Mode (no property specified)
 ```json
 {
   "username": "your_connected_investors_username",
@@ -18,53 +19,70 @@ This actor provides a long-running service that performs on-demand skip tracing 
 }
 ```
 
-## API Endpoints
-
-- `GET /health` - Health check endpoint
-- `POST /skip-trace` - Submit a property for skip tracing
-
-### Skip Trace Request Format
-
+### Skip Trace Mode (specific property)
 ```json
 {
+  "username": "your_connected_investors_username", 
+  "password": "your_connected_investors_password",
   "propertyId": "unique_property_id",
   "address": "123 Main St, Nashville, TN"
 }
 ```
 
-### Response Format
+## Output
+
+Results are saved to the actor's dataset:
 
 ```json
 {
   "success": true,
   "propertyId": "unique_property_id",
+  "address": "123 Main St, Nashville, TN",
   "data": {
     "emails": ["email1@example.com", "email2@example.com"],
     "phones": ["615-555-1234", "615-555-5678"],
     "owners": ["John Doe", "Jane Doe"]
-  }
+  },
+  "processedAt": "2024-01-01T12:00:00.000Z"
 }
 ```
 
 ## Features
 
-- Persistent login session
-- Real-time skip tracing
-- Automatic retry on failures
-- Concurrent request handling
 - OAuth authentication support
+- Address matching with autocomplete
+- Contact extraction (emails, phones, owners)
+- Automatic property saving to lists
+- Comprehensive error handling
+- Fresh login for each request
 
-## Usage
+## API Integration
 
-1. Deploy this actor to Apify
-2. Run the actor with your Connected Investors credentials
-3. Get the webhook URL from the running actor
-4. Send POST requests to `{webhook_url}/skip-trace` with property details
-5. Receive contact information immediately
+The actor is designed to be called via Apify's API:
+
+```javascript
+const run = await apifyClient.actor('your-actor-id').call({
+  username: 'your_username',
+  password: 'your_password', 
+  propertyId: 'property123',
+  address: '123 Main St, Nashville, TN'
+});
+
+const result = await apifyClient.run(run.id).waitForFinish();
+const { items } = await apifyClient.dataset(result.defaultDatasetId).listItems();
+```
+
+## Environment Variables Needed
+
+For your Next.js app, configure:
+- `APIFY_API_TOKEN`: Your Apify API token
+- `CONNECTED_INVESTORS_USERNAME`: CI username
+- `CONNECTED_INVESTORS_PASSWORD`: CI password
+- `APIFY_ACTOR_ID_SKIP_TRACE`: This actor's ID (optional)
 
 ## Notes
 
-- The actor stays running continuously to maintain the login session
-- Each skip trace request takes approximately 10-20 seconds
+- Each run takes approximately 30-60 seconds including login
 - Properties are automatically saved to the "Foreclousure Scraping" list
-- The service includes automatic error handling and retries
+- The actor handles OAuth redirects automatically
+- Results are cached in Apify datasets for later retrieval

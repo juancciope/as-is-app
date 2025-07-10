@@ -1,9 +1,9 @@
 {
   "actorSpecification": 1,
-  "name": "connected-investors-enricher",
-  "title": "Connected Investors Property Enricher",
-  "description": "Enriches foreclosure data from Supabase database with contact information from Connected Investors platform",
-  "version": "1.0.0",
+  "name": "connected-investors-skip-trace-service",
+  "title": "Connected Investors Skip Trace Service",
+  "description": "On-demand skip trace service for individual properties via Connected Investors platform",
+  "version": "2.0",
   "meta": {
     "templateId": "playwright-chrome"
   },
