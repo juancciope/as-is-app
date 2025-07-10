@@ -74,13 +74,28 @@ export async function POST(request: Request) {
         phones.push(...property.owner_phones.split(','));
       }
       
+      // Collect owner names
+      const parsedOwners = [];
+      for (let i = 1; i <= 2; i++) {
+        const firstName = property[`owner_${i}_first_name`];
+        const lastName = property[`owner_${i}_last_name`];
+        if (firstName || lastName) {
+          parsedOwners.push({
+            firstName: firstName || '',
+            lastName: lastName || '',
+            fullName: `${firstName || ''} ${lastName || ''}`.trim()
+          });
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         message: 'Property already has contact information',
         data: {
           emails: emails,
           phones: phones,
-          owners: property.owner_info?.split(' | ') || []
+          owners: property.owner_info?.split(' | ') || [],
+          parsedOwners: parsedOwners
         }
       });
     }
@@ -147,6 +162,20 @@ export async function POST(request: Request) {
           }
         }
 
+        // Add owner names (up to 2 owners)
+        if (result.data.parsedOwners && Array.isArray(result.data.parsedOwners)) {
+          for (let i = 0; i < 2; i++) {
+            const owner = result.data.parsedOwners[i];
+            if (owner) {
+              updateData[`owner_${i + 1}_first_name`] = owner.firstName || null;
+              updateData[`owner_${i + 1}_last_name`] = owner.lastName || null;
+            } else {
+              updateData[`owner_${i + 1}_first_name`] = null;
+              updateData[`owner_${i + 1}_last_name`] = null;
+            }
+          }
+        }
+
         // Keep legacy columns for backward compatibility
         updateData.owner_emails = result.data.emails?.join(',') || '';
         updateData.owner_phones = result.data.phones?.join(',') || '';
@@ -170,7 +199,12 @@ export async function POST(request: Request) {
         return NextResponse.json({
           success: true,
           message: 'Skip trace completed successfully',
-          data: result.data
+          data: {
+            emails: result.data.emails || [],
+            phones: result.data.phones || [],
+            owners: result.data.owners || [],
+            parsedOwners: result.data.parsedOwners || []
+          }
         });
       } else {
         return NextResponse.json({

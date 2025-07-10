@@ -679,7 +679,8 @@ async function extractExistingContactInfo(page) {
         const contactInfo = {
             emails: [],
             phones: [],
-            owners: []
+            owners: [],
+            parsedOwners: []
         };
         
         console.log('Extracting existing contact information from property modal...');
@@ -732,6 +733,9 @@ async function extractExistingContactInfo(page) {
             
             // Remove duplicates from owners
             contactInfo.owners = [...new Set(contactInfo.owners)];
+            
+            // Parse owner names into first and last names
+            contactInfo.parsedOwners = parseOwnerNames(contactInfo.owners);
         }
         
         console.log('Extracted existing contact info:', contactInfo);
@@ -749,7 +753,8 @@ async function extractContactInfo(page) {
         const contactInfo = {
             emails: [],
             phones: [],
-            owners: []
+            owners: [],
+            parsedOwners: []
         };
         
         // Wait for skip trace results to load
@@ -802,6 +807,9 @@ async function extractContactInfo(page) {
         // Remove duplicates from owners
         contactInfo.owners = [...new Set(contactInfo.owners)];
         
+        // Parse owner names into first and last names
+        contactInfo.parsedOwners = parseOwnerNames(contactInfo.owners);
+        
         console.log('Extracted contact info:', contactInfo);
         return contactInfo;
         
@@ -809,4 +817,60 @@ async function extractContactInfo(page) {
         console.error('Error extracting contact info:', error.message);
         return null;
     }
+}
+
+// Parse owner names from text into structured first/last name format
+function parseOwnerNames(ownerStrings) {
+    const parsedOwners = [];
+    
+    for (const ownerString of ownerStrings) {
+        if (!ownerString || ownerString.trim().length === 0) continue;
+        
+        // Clean up the owner string
+        let cleanName = ownerString.trim()
+            .replace(/^(Owner:|Name:|Contact:)/i, '')  // Remove prefixes
+            .replace(/[,&]+/g, ' ')  // Replace commas and ampersands with spaces
+            .replace(/\s+/g, ' ')    // Normalize whitespace
+            .trim();
+        
+        // Split by common separators for multiple owners
+        const nameParts = cleanName.split(/\s+(and|&|\+)\s+/i);
+        
+        for (const namePart of nameParts) {
+            if (namePart.toLowerCase() === 'and' || namePart === '&' || namePart === '+') continue;
+            
+            const trimmedName = namePart.trim();
+            if (trimmedName.length < 2) continue;
+            
+            // Parse individual name
+            const words = trimmedName.split(/\s+/);
+            
+            if (words.length >= 2) {
+                // Standard "First Last" or "First Middle Last" format
+                const firstName = words[0];
+                const lastName = words[words.length - 1];
+                
+                parsedOwners.push({
+                    firstName: firstName,
+                    lastName: lastName,
+                    fullName: trimmedName
+                });
+            } else if (words.length === 1) {
+                // Single word - assume it's a last name
+                parsedOwners.push({
+                    firstName: '',
+                    lastName: words[0],
+                    fullName: trimmedName
+                });
+            }
+            
+            // Only take first 2 owners
+            if (parsedOwners.length >= 2) break;
+        }
+        
+        // Only take first 2 owners total
+        if (parsedOwners.length >= 2) break;
+    }
+    
+    return parsedOwners.slice(0, 2); // Ensure max 2 owners
 }
