@@ -94,9 +94,10 @@ export async function POST(request: Request) {
         });
       }
 
-      const result = items[0];
+      const result = items[0] as any;
 
-      if (result.success && result.data) {
+      if (result.success && result.data && 
+          result.data.emails && result.data.phones && result.data.owners) {
         // Update property with skip trace data
         const { data: updatedProperty, error: updateError } = await supabaseAdmin
           .from('foreclosure_data')
