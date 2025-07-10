@@ -312,6 +312,22 @@ async function dismissModalsAndOverlays(page) {
         if (portalRoot) {
             console.log('Found headlessui portal, attempting to dismiss...');
             
+            // First, let's capture the modal content to understand what it contains
+            try {
+                const modalContent = await portalRoot.textContent();
+                console.log('=== MODAL CONTENT START ===');
+                console.log(modalContent);
+                console.log('=== MODAL CONTENT END ===');
+                
+                // Also get the HTML structure
+                const modalHTML = await portalRoot.innerHTML();
+                console.log('=== MODAL HTML START ===');
+                console.log(modalHTML.substring(0, 1000) + (modalHTML.length > 1000 ? '...' : ''));
+                console.log('=== MODAL HTML END ===');
+            } catch (e) {
+                console.log('Could not extract modal content:', e.message);
+            }
+            
             // Try clicking close buttons
             const closeSelectors = [
                 'button[aria-label="Close"]',
@@ -320,6 +336,9 @@ async function dismissModalsAndOverlays(page) {
                 'button:has-text("Skip")',
                 'button:has-text("No thanks")',
                 'button:has-text("Later")',
+                'button:has-text("Dismiss")',
+                'button:has-text("Cancel")',
+                'button:has-text("Continue")',
                 '[data-headlessui-state] button:last-child',
                 '.modal button:last-child'
             ];
@@ -355,6 +374,20 @@ async function dismissModalsAndOverlays(page) {
         
         // Wait a bit more to ensure modals are gone
         await page.waitForTimeout(2000);
+        
+        // Check if modal is still present after dismissal attempts
+        const stillPresent = await page.$('#headlessui-portal-root');
+        if (stillPresent) {
+            console.log('WARNING: Modal is still present after dismissal attempts!');
+            try {
+                const remainingContent = await stillPresent.textContent();
+                console.log('Remaining modal content:', remainingContent);
+            } catch (e) {
+                console.log('Could not read remaining modal content');
+            }
+        } else {
+            console.log('Modal successfully dismissed or was not present');
+        }
         
     } catch (error) {
         console.log('Error dismissing modals:', error.message);
