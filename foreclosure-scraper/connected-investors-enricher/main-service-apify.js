@@ -328,7 +328,23 @@ async function dismissModalsAndOverlays(page) {
                 console.log('Could not extract modal content:', e.message);
             }
             
-            // Try clicking close buttons
+            // Check if this is the session conflict modal and handle it specifically
+            if (modalContent && modalContent.includes('someone else is already digging for gold')) {
+                console.log('Detected session conflict modal - clicking "Kick Them Out"');
+                try {
+                    const kickButton = await page.$('button:has-text("Kick Them Out")');
+                    if (kickButton) {
+                        await kickButton.click();
+                        console.log('Clicked "Kick Them Out" button');
+                        await page.waitForTimeout(3000);
+                        return; // Exit early since we handled the specific modal
+                    }
+                } catch (e) {
+                    console.log('Could not click "Kick Them Out" button:', e.message);
+                }
+            }
+            
+            // Try clicking close buttons for other modals
             const closeSelectors = [
                 'button[aria-label="Close"]',
                 'button:has-text("×")',
@@ -337,7 +353,6 @@ async function dismissModalsAndOverlays(page) {
                 'button:has-text("No thanks")',
                 'button:has-text("Later")',
                 'button:has-text("Dismiss")',
-                'button:has-text("Cancel")',
                 'button:has-text("Continue")',
                 '[data-headlessui-state] button:last-child',
                 '.modal button:last-child'
