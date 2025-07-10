@@ -117,14 +117,21 @@ export async function POST(request: Request) {
 
       if (finishedRun.status !== 'SUCCEEDED') {
         console.error('Actor run failed:', finishedRun.status);
+        console.error('Run details:', finishedRun);
         return NextResponse.json(
-          { error: 'Skip trace failed' },
+          { 
+            error: 'Skip trace failed',
+            status: finishedRun.status,
+            details: finishedRun.statusMessage || 'Actor run did not complete successfully'
+          },
           { status: 500 }
         );
       }
 
       // Get the results from the actor run
       const { items } = await apifyClient.dataset(finishedRun.defaultDatasetId).listItems();
+
+      console.log('Actor run items:', JSON.stringify(items, null, 2));
 
       if (items.length === 0) {
         return NextResponse.json({
@@ -134,6 +141,7 @@ export async function POST(request: Request) {
       }
 
       const result = items[0] as any;
+      console.log('Processing result:', JSON.stringify(result, null, 2));
 
       if (result.success && result.data) {
         // Prepare update object with individual email and phone columns
@@ -190,8 +198,13 @@ export async function POST(request: Request) {
 
         if (updateError) {
           console.error('Error updating property:', updateError);
+          console.error('Update data that failed:', JSON.stringify(updateData, null, 2));
           return NextResponse.json(
-            { error: 'Failed to update property' },
+            { 
+              error: 'Failed to update property', 
+              details: updateError.message,
+              code: updateError.code 
+            },
             { status: 500 }
           );
         }

@@ -31,18 +31,33 @@ export function DataTable({ data }: DataTableProps) {
       
       const result = await response.json();
       
+      if (!response.ok) {
+        // Handle HTTP error responses
+        console.error('Skip trace API error:', result);
+        const errorMessage = result.details || result.error || 'Unknown error occurred';
+        alert(`Skip trace failed: ${errorMessage}`);
+        return;
+      }
+      
       if (result.success) {
         // Update the property in the data with the new contact info
         const updatedData = data.map(item => 
           item.id === propertyId 
-            ? { ...item, owner_emails: result.data.emails.join(','), owner_phones: result.data.phones.join(',') }
+            ? { 
+                ...item, 
+                owner_emails: result.data.emails?.join(',') || '',
+                owner_phones: result.data.phones?.join(',') || '',
+                owner_email_1: result.data.emails?.[0] || null,
+                owner_phone_1: result.data.phones?.[0] || null
+              }
             : item
         );
         // You might want to trigger a data refresh here
         window.location.reload(); // Simple refresh for now
       } else {
-        console.error('Skip trace failed:', result.error);
-        alert('Skip trace failed. Please try again.');
+        console.error('Skip trace failed:', result);
+        const errorMessage = result.details || result.error || 'Skip trace failed for unknown reason';
+        alert(`Skip trace failed: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Skip trace error:', error);
