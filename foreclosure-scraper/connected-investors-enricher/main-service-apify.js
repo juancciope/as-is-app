@@ -546,14 +546,60 @@ async function saveAndSkipTrace(page, listName) {
         console.log('Clicked use existing list');
         await page.waitForTimeout(1000);
         
-        // Click dropdown
-        const dropdownButton = await page.waitForSelector('main button', { timeout: 3000 });
+        // Click dropdown - it's within the portal root
+        const dropdownSelectors = [
+            '#headlessui-portal-root > div:nth-of-type(2) main button',
+            '#headlessui-portal-root main button',
+            'main button[aria-haspopup="listbox"]',
+            'button[id*="headlessui-listbox-button"]'
+        ];
+        
+        let dropdownButton = null;
+        for (const selector of dropdownSelectors) {
+            try {
+                dropdownButton = await page.waitForSelector(selector, { timeout: 2000 });
+                if (dropdownButton) {
+                    console.log(`Found dropdown using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!dropdownButton) {
+            throw new Error('Could not find dropdown button');
+        }
+        
         await dropdownButton.click();
         console.log('Clicked dropdown');
         await page.waitForTimeout(1000);
         
-        // Select list
-        const listOption = await page.waitForSelector(`[aria-label="${listName}"]`, { timeout: 3000 });
+        // Select list - try multiple selectors
+        const listSelectors = [
+            `[aria-label="${listName}"]`,
+            `#headlessui-listbox-option-[id*="${listName}"]`,
+            `span:has-text("${listName}")`,
+            `[id*="headlessui-listbox-option"]:has-text("${listName}")`
+        ];
+        
+        let listOption = null;
+        for (const selector of listSelectors) {
+            try {
+                listOption = await page.waitForSelector(selector, { timeout: 2000 });
+                if (listOption) {
+                    console.log(`Found list option using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!listOption) {
+            throw new Error(`Could not find list option: ${listName}`);
+        }
+        
         await listOption.click();
         console.log(`Selected list: ${listName}`);
         await page.waitForTimeout(1000);
@@ -564,8 +610,34 @@ async function saveAndSkipTrace(page, listName) {
         console.log('Clicked Save Property');
         await page.waitForTimeout(2000);
         
-        // Click Skip Trace This Property
-        const skipTraceButton = await page.waitForSelector('button:has-text("Skip Trace This Property")', { timeout: 3000 });
+        // Click Skip Trace This Property - it appears in the same footer after saving
+        // Try multiple selectors from the Chrome recordings
+        const skipTraceSelectors = [
+            '#headlessui-portal-root > div:nth-of-type(2) button.rounded > span:has-text("Skip Trace This")',
+            'footer > button.rounded:has-text("Skip Trace")',
+            'button:has-text("Skip Trace This Property")',
+            'button.rounded:has-text("Skip Trace")',
+            '#headlessui-portal-root button:has-text("Skip Trace")',
+            'footer button:last-child'  // Often the skip trace button is the last button in footer
+        ];
+        
+        let skipTraceButton = null;
+        for (const selector of skipTraceSelectors) {
+            try {
+                skipTraceButton = await page.waitForSelector(selector, { timeout: 2000 });
+                if (skipTraceButton) {
+                    console.log(`Found skip trace button using selector: ${selector}`);
+                    break;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+        
+        if (!skipTraceButton) {
+            throw new Error('Could not find Skip Trace button');
+        }
+        
         await skipTraceButton.click();
         console.log('Clicked Skip Trace This Property');
         await page.waitForTimeout(5000);
