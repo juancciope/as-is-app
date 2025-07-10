@@ -139,15 +139,7 @@ export async function POST(request: Request) {
 
       if (result.success && result.data) {
         // Prepare update object with individual email and phone columns
-        const updateData: any = {
-          skip_trace: {
-            attempted_at: new Date().toISOString(),
-            method: 'connected_investors_api',
-            results: result.data,
-            runId: run.id
-          },
-          updated_at: new Date().toISOString()
-        };
+        const updateData: any = {};
 
         // Add up to 5 emails
         if (result.data.emails && Array.isArray(result.data.emails)) {
