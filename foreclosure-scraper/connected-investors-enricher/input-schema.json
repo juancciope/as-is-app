@@ -1,6 +1,6 @@
 {
-  "title": "Connected Investors Property Enricher",
-  "description": "Enriches foreclosure data from Supabase with contact information from Connected Investors",
+  "title": "Connected Investors Skip Trace Service",
+  "description": "Long-running service that accepts skip trace requests for individual properties",
   "type": "object",
   "schemaVersion": 1,
   "properties": {
@@ -16,35 +16,6 @@
       "description": "Your Connected Investors login password",
       "editor": "textfield",
       "isSecret": true
-    },
-    "apiBaseUrl": {
-      "title": "API Base URL",
-      "type": "string",
-      "description": "Base URL for your API (e.g., https://as-is-app.vercel.app)",
-      "default": "https://as-is-app.vercel.app",
-      "editor": "textfield"
-    },
-    "batchSize": {
-      "title": "Batch Size",
-      "type": "integer",
-      "description": "Number of properties to process in each batch",
-      "default": 10,
-      "minimum": 1,
-      "maximum": 50
-    },
-    "maxRetries": {
-      "title": "Max Retries",
-      "type": "integer",
-      "description": "Maximum number of retries for failed properties",
-      "default": 3,
-      "minimum": 1,
-      "maximum": 10
-    },
-    "skipAlreadyEnriched": {
-      "title": "Skip Already Enriched",
-      "type": "boolean",
-      "description": "Skip properties that already have contact information",
-      "default": true
     }
   },
   "required": ["username", "password"]

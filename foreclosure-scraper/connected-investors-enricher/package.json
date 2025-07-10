@@ -1,10 +1,11 @@
 {
-  "name": "connected-investors-enricher",
-  "version": "1.0.0",
-  "description": "Enriches foreclosure data with contact information from Connected Investors",
-  "main": "main.js",
+  "name": "connected-investors-skip-trace-service",
+  "version": "2.0.0",
+  "description": "Skip trace service for individual properties via Connected Investors",
+  "main": "main-service.js",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main-service.js",
+    "start-batch": "node main.js"
   },
   "dependencies": {
     "apify": "^3.1.10",
