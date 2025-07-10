@@ -313,8 +313,9 @@ async function dismissModalsAndOverlays(page) {
             console.log('Found headlessui portal, attempting to dismiss...');
             
             // First, let's capture the modal content to understand what it contains
+            let modalContent = null;
             try {
-                const modalContent = await portalRoot.textContent();
+                modalContent = await portalRoot.textContent();
                 console.log('=== MODAL CONTENT START ===');
                 console.log(modalContent);
                 console.log('=== MODAL CONTENT END ===');
