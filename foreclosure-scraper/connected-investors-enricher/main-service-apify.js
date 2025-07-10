@@ -534,6 +534,34 @@ async function searchAndEnrichProperty(page, address) {
 // Save property to list and perform skip trace
 async function saveAndSkipTrace(page, listName) {
     try {
+        // First check if property is already skip traced by looking for "Skip Trace Again" button
+        const skipTraceAgainButton = await page.$('button:has-text("Skip Trace Again")');
+        
+        if (skipTraceAgainButton) {
+            console.log('Property already skip traced - extracting existing contact info');
+            
+            // Extract the existing contact information from the property modal
+            const contactInfo = await extractExistingContactInfo(page);
+            
+            if (contactInfo && (contactInfo.emails.length > 0 || contactInfo.phones.length > 0)) {
+                console.log('Found existing contact info:', contactInfo);
+                return contactInfo;
+            } else {
+                // If no contact info found, click Skip Trace Again
+                console.log('No contact info found, clicking Skip Trace Again');
+                await skipTraceAgainButton.click();
+                console.log('Clicked Skip Trace Again');
+                await page.waitForTimeout(5000);
+                
+                // Extract contact information after re-tracing
+                const newContactInfo = await extractContactInfo(page);
+                return newContactInfo;
+            }
+        }
+        
+        // Property not skip traced yet - proceed with normal flow
+        console.log('Property not skip traced yet - proceeding with normal flow');
+        
         // Click save button
         const saveButton = await page.waitForSelector('div.sticky button.z-\\[1\\] > span', { timeout: 5000 });
         await saveButton.click();
@@ -653,6 +681,76 @@ async function saveAndSkipTrace(page, listName) {
         
     } catch (error) {
         console.error('Error in save and skip trace:', error.message);
+        return null;
+    }
+}
+
+// Extract existing contact information from property modal
+async function extractExistingContactInfo(page) {
+    try {
+        const contactInfo = {
+            emails: [],
+            phones: [],
+            owners: []
+        };
+        
+        console.log('Extracting existing contact information from property modal...');
+        
+        // Wait a bit for content to load
+        await page.waitForTimeout(2000);
+        
+        // Extract all text content from the modal
+        const modalContent = await page.textContent('#headlessui-portal-root');
+        
+        if (modalContent) {
+            // Extract emails
+            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+            const emails = modalContent.match(emailRegex) || [];
+            
+            // Filter out common false positives
+            const uniqueEmails = [...new Set(emails)].filter(email => 
+                !email.includes('noreply') && 
+                !email.includes('support') && 
+                !email.includes('admin') &&
+                !email.includes('no-reply') &&
+                !email.includes('@connectedinvestors') &&
+                !email.includes('@platlabs')
+            );
+            
+            contactInfo.emails = uniqueEmails;
+            
+            // Extract phone numbers
+            const phoneRegex = /\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+            const phones = modalContent.match(phoneRegex) || [];
+            const uniquePhones = [...new Set(phones)];
+            
+            contactInfo.phones = uniquePhones;
+            
+            // Try to extract owner names from common patterns
+            const ownerPatterns = [
+                /Owner:\s*([^\n]+)/gi,
+                /Name:\s*([^\n]+)/gi,
+                /Contact:\s*([^\n]+)/gi
+            ];
+            
+            for (const pattern of ownerPatterns) {
+                const matches = modalContent.matchAll(pattern);
+                for (const match of matches) {
+                    if (match[1] && match[1].trim().length > 2) {
+                        contactInfo.owners.push(match[1].trim());
+                    }
+                }
+            }
+            
+            // Remove duplicates from owners
+            contactInfo.owners = [...new Set(contactInfo.owners)];
+        }
+        
+        console.log('Extracted existing contact info:', contactInfo);
+        return contactInfo;
+        
+    } catch (error) {
+        console.error('Error extracting existing contact info:', error.message);
         return null;
     }
 }
