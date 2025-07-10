@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { ApifyApi } from 'apify-client';
+import { ApifyClient } from 'apify-client';
 
 // Initialize Apify client
-const apifyClient = new ApifyApi({
+const apifyClient = new ApifyClient({
   token: process.env.APIFY_API_TOKEN,
 });
 
