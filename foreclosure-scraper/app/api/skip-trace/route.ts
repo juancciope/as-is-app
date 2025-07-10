@@ -49,13 +49,37 @@ export async function POST(request: Request) {
     }
 
     // Check if property already has contact info
-    if (property.owner_emails || property.owner_phones) {
+    if (property.owner_emails || property.owner_phones || property.owner_email_1) {
+      // Collect emails from individual columns
+      const emails = [];
+      for (let i = 1; i <= 5; i++) {
+        if (property[`owner_email_${i}`]) {
+          emails.push(property[`owner_email_${i}`]);
+        }
+      }
+      
+      // Collect phones from individual columns
+      const phones = [];
+      for (let i = 1; i <= 5; i++) {
+        if (property[`owner_phone_${i}`]) {
+          phones.push(property[`owner_phone_${i}`]);
+        }
+      }
+      
+      // Also include legacy comma-separated values if no individual columns
+      if (emails.length === 0 && property.owner_emails) {
+        emails.push(...property.owner_emails.split(','));
+      }
+      if (phones.length === 0 && property.owner_phones) {
+        phones.push(...property.owner_phones.split(','));
+      }
+      
       return NextResponse.json({
         success: true,
         message: 'Property already has contact information',
         data: {
-          emails: property.owner_emails?.split(',') || [],
-          phones: property.owner_phones?.split(',') || [],
+          emails: emails,
+          phones: phones,
           owners: property.owner_info?.split(' | ') || []
         }
       });
@@ -96,23 +120,41 @@ export async function POST(request: Request) {
 
       const result = items[0] as any;
 
-      if (result.success && result.data && 
-          result.data.emails && result.data.phones && result.data.owners) {
+      if (result.success && result.data) {
+        // Prepare update object with individual email and phone columns
+        const updateData: any = {
+          owner_info: result.data.owners?.join(' | ') || '',
+          skip_trace: {
+            attempted_at: new Date().toISOString(),
+            method: 'connected_investors_api',
+            results: result.data,
+            runId: run.id
+          },
+          updated_at: new Date().toISOString()
+        };
+
+        // Add up to 5 emails
+        if (result.data.emails && Array.isArray(result.data.emails)) {
+          for (let i = 0; i < 5; i++) {
+            updateData[`owner_email_${i + 1}`] = result.data.emails[i] || null;
+          }
+        }
+
+        // Add up to 5 phone numbers
+        if (result.data.phones && Array.isArray(result.data.phones)) {
+          for (let i = 0; i < 5; i++) {
+            updateData[`owner_phone_${i + 1}`] = result.data.phones[i] || null;
+          }
+        }
+
+        // Keep legacy columns for backward compatibility
+        updateData.owner_emails = result.data.emails?.join(',') || '';
+        updateData.owner_phones = result.data.phones?.join(',') || '';
+
         // Update property with skip trace data
         const { data: updatedProperty, error: updateError } = await supabaseAdmin
           .from('foreclosure_data')
-          .update({
-            owner_emails: result.data.emails.join(','),
-            owner_phones: result.data.phones.join(','),
-            owner_info: result.data.owners.join(' | '),
-            skip_trace: {
-              attempted_at: new Date().toISOString(),
-              method: 'connected_investors_api',
-              results: result.data,
-              runId: run.id
-            },
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', propertyId)
           .select()
           .single();

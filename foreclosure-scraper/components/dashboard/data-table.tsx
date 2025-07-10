@@ -198,7 +198,7 @@ export function DataTable({ data }: DataTableProps) {
                 </span>
               </td>
               <td className="px-6 py-4">
-                {row.owner_emails || row.owner_phones ? (
+                {row.owner_emails || row.owner_phones || row.owner_email_1 || row.owner_phone_1 ? (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                     <span className="text-xs text-green-600 font-medium">Enriched</span>

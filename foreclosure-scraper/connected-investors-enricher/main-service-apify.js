@@ -543,20 +543,8 @@ async function saveAndSkipTrace(page, listName) {
             // Extract the existing contact information from the property modal
             const contactInfo = await extractExistingContactInfo(page);
             
-            if (contactInfo && (contactInfo.emails.length > 0 || contactInfo.phones.length > 0)) {
-                console.log('Found existing contact info:', contactInfo);
-                return contactInfo;
-            } else {
-                // If no contact info found, click Skip Trace Again
-                console.log('No contact info found, clicking Skip Trace Again');
-                await skipTraceAgainButton.click();
-                console.log('Clicked Skip Trace Again');
-                await page.waitForTimeout(5000);
-                
-                // Extract contact information after re-tracing
-                const newContactInfo = await extractContactInfo(page);
-                return newContactInfo;
-            }
+            console.log('Found existing contact info:', contactInfo);
+            return contactInfo;
         }
         
         // Property not skip traced yet - proceed with normal flow
