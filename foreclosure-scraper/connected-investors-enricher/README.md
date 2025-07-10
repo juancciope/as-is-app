@@ -1,119 +1,70 @@
-# Connected Investors Property Enricher
+# Connected Investors Skip Trace Service
 
-This Apify actor enriches foreclosure data from your Supabase database with contact information from Connected Investors.
+This actor provides a long-running service that performs on-demand skip tracing for individual properties through Connected Investors.
+
+## How it works
+
+1. The actor starts up and logs into Connected Investors
+2. It runs an Express server that listens for skip trace requests
+3. When a request is received, it searches for the property and performs skip tracing
+4. Returns contact information (emails, phones, owner names) immediately
+
+## Input
+
+```json
+{
+  "username": "your_connected_investors_username",
+  "password": "your_connected_investors_password"
+}
+```
+
+## API Endpoints
+
+- `GET /health` - Health check endpoint
+- `POST /skip-trace` - Submit a property for skip tracing
+
+### Skip Trace Request Format
+
+```json
+{
+  "propertyId": "unique_property_id",
+  "address": "123 Main St, Nashville, TN"
+}
+```
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "propertyId": "unique_property_id",
+  "data": {
+    "emails": ["email1@example.com", "email2@example.com"],
+    "phones": ["615-555-1234", "615-555-5678"],
+    "owners": ["John Doe", "Jane Doe"]
+  }
+}
+```
 
 ## Features
 
-- **Database Integration**: Reads properties from Supabase foreclosure_data table
-- **Smart Filtering**: Only processes properties that need enrichment
-- **Skip Already Enriched**: Avoids re-processing properties that already have contact info
-- **Batch Processing**: Processes properties in configurable batches
-- **Retry Logic**: Handles failures with configurable retry attempts
-- **Multiple Contacts**: Handles multiple emails, phones, and owners per property
-- **Database Updates**: Updates Supabase with enriched contact information
-
-## Workflow
-
-1. **Login**: Authenticates with Connected Investors using OAuth
-2. **Fetch Properties**: Retrieves properties from Supabase that need enrichment
-3. **Search Properties**: Searches for each property on Connected Investors
-4. **Save & Skip Trace**: Saves properties to "Foreclousure Scraping" list and performs skip trace
-5. **Extract Contacts**: Extracts emails, phone numbers, and owner information
-6. **Update Database**: Updates Supabase with enriched contact data
-
-## Database Schema
-
-The actor expects the following fields in the `foreclosure_data` table:
-
-### Input Fields
-- `id`: Primary key
-- `address`: Property address for matching
-- `created_at`: Date filter for recent properties
-
-### Output Fields (Updated)
-- `owner_emails`: Comma-separated list of emails
-- `owner_phones`: Comma-separated list of phone numbers  
-- `owner_info`: Pipe-separated list of owner names
-- `skip_trace`: JSON object with enrichment details
-- `updated_at`: Timestamp of last update
-
-## Configuration
-
-### Required Environment Variables
-
-```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_KEY=your_service_role_key
-```
-
-### Input Parameters
-
-- **username**: Connected Investors login email
-- **password**: Connected Investors login password
-- **batchSize**: Number of properties to process per batch (default: 10)
-- **maxRetries**: Maximum retries for failed properties (default: 3)
-- **skipAlreadyEnriched**: Skip properties with existing contact data (default: true)
+- Persistent login session
+- Real-time skip tracing
+- Automatic retry on failures
+- Concurrent request handling
+- OAuth authentication support
 
 ## Usage
 
-### 1. Manual Run
-Run the actor manually from Apify Console with your credentials.
+1. Deploy this actor to Apify
+2. Run the actor with your Connected Investors credentials
+3. Get the webhook URL from the running actor
+4. Send POST requests to `{webhook_url}/skip-trace` with property details
+5. Receive contact information immediately
 
-### 2. Scheduled Run
-Set up a scheduled run to enrich properties daily after all scrapers complete.
+## Notes
 
-### 3. API Integration
-Call the actor via API after your scraping pipeline completes:
-
-```javascript
-const apifyClient = new ApifyClient({
-    token: 'your_apify_token',
-});
-
-const run = await apifyClient.actor('your_enricher_actor_id').call({
-    username: 'your_username',
-    password: 'your_password',
-    batchSize: 20,
-    skipAlreadyEnriched: true
-});
-```
-
-## Error Handling
-
-- **Login Failures**: Stops execution and reports credential issues
-- **Network Errors**: Retries individual properties up to maxRetries
-- **Database Errors**: Logs errors but continues processing other properties
-- **Missing Properties**: Skips properties that can't be found on Connected Investors
-
-## Performance
-
-- **Memory**: 2GB recommended for optimal performance
-- **Timeout**: 2 hours default for large datasets
-- **Batch Size**: Start with 10, increase if stable
-- **Rate Limiting**: Built-in delays to respect Connected Investors limits
-
-## Monitoring
-
-The actor provides detailed logging for:
-- Properties fetched from database
-- Successful enrichments
-- Failed enrichments with retry attempts
-- Database update confirmations
-- Skip trace results summary
-
-## Integration with Existing Pipeline
-
-This enricher is designed to run after your existing scrapers:
-
-1. **Scrapers Run**: Phillips Jones Law, ClearRecon, TN Ledger, WABI PowerBI, Wilson Associates
-2. **Data Stored**: Properties stored in Supabase
-3. **Enricher Runs**: This actor enriches the stored data
-4. **Updated Data**: Properties now have contact information for lead generation
-
-## Support
-
-For issues or questions:
-1. Check Apify console logs for detailed error messages
-2. Verify Supabase connection and permissions
-3. Ensure Connected Investors credentials are valid
-4. Review database schema matches expected format
+- The actor stays running continuously to maintain the login session
+- Each skip trace request takes approximately 10-20 seconds
+- Properties are automatically saved to the "Foreclousure Scraping" list
+- The service includes automatic error handling and retries
