@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     // Check if property already has contact info
-    if (property.owner_emails || property.owner_phones || property.owner_email_1) {
+    if (property.owner_email_1 || property.owner_phone_1) {
       // Collect emails from individual columns
       const emails = [];
       for (let i = 1; i <= 5; i++) {
@@ -66,13 +66,7 @@ export async function POST(request: Request) {
         }
       }
       
-      // Also include legacy comma-separated values if no individual columns
-      if (emails.length === 0 && property.owner_emails) {
-        emails.push(...property.owner_emails.split(','));
-      }
-      if (phones.length === 0 && property.owner_phones) {
-        phones.push(...property.owner_phones.split(','));
-      }
+      // Note: Legacy columns removed since they don't exist in the database
       
       // Collect owner names
       const parsedOwners = [];
@@ -94,7 +88,7 @@ export async function POST(request: Request) {
         data: {
           emails: emails,
           phones: phones,
-          owners: property.owner_info?.split(' | ') || [],
+          owners: [], // Legacy owner_info column also doesn't exist
           parsedOwners: parsedOwners
         }
       });
@@ -146,7 +140,6 @@ export async function POST(request: Request) {
       if (result.success && result.data) {
         // Prepare update object with individual email and phone columns
         const updateData: any = {
-          owner_info: result.data.owners?.join(' | ') || '',
           skip_trace: {
             attempted_at: new Date().toISOString(),
             method: 'connected_investors_api',
@@ -184,9 +177,8 @@ export async function POST(request: Request) {
           }
         }
 
-        // Keep legacy columns for backward compatibility
-        updateData.owner_emails = result.data.emails?.join(',') || '';
-        updateData.owner_phones = result.data.phones?.join(',') || '';
+        // Note: Legacy columns owner_emails and owner_phones removed since they don't exist
+        // All data is now stored in individual columns (owner_email_1, owner_phone_1, etc.)
 
         // Update property with skip trace data
         const { data: updatedProperty, error: updateError } = await supabaseAdmin
