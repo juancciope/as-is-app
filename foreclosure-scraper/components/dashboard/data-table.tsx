@@ -77,11 +77,26 @@ export function DataTable({ data }: DataTableProps) {
     if (bValue === null || bValue === undefined) return -1;
     
     if (sortField === 'date') {
-      const dateA = new Date(aValue);
-      const dateB = new Date(bValue);
-      return sortDirection === 'asc' 
-        ? dateA.getTime() - dateB.getTime()
-        : dateB.getTime() - dateA.getTime();
+      try {
+        const dateA = new Date(aValue);
+        const dateB = new Date(bValue);
+        
+        // If dates are invalid, fall back to string comparison
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+          return sortDirection === 'asc' 
+            ? String(aValue).localeCompare(String(bValue))
+            : String(bValue).localeCompare(String(aValue));
+        }
+        
+        return sortDirection === 'asc' 
+          ? dateA.getTime() - dateB.getTime()
+          : dateB.getTime() - dateA.getTime();
+      } catch {
+        // Fallback to string comparison if date parsing fails
+        return sortDirection === 'asc' 
+          ? String(aValue).localeCompare(String(bValue))
+          : String(bValue).localeCompare(String(aValue));
+      }
     }
     
     if (sortField === 'distance_miles' || sortField === 'est_drive_time') {
@@ -160,9 +175,18 @@ export function DataTable({ data }: DataTableProps) {
             >
               <td className="px-6 py-4 font-medium text-gray-900">
                 <div className="flex flex-col">
-                  <span>{new Date(row.date).toLocaleDateString()}</span>
+                  <span>{row.date}</span>
                   <span className="text-xs text-gray-500">
-                    {new Date(row.date).toLocaleDateString('en-US', { weekday: 'short' })}
+                    {(() => {
+                      try {
+                        const parsedDate = new Date(row.date);
+                        return !isNaN(parsedDate.getTime()) 
+                          ? parsedDate.toLocaleDateString('en-US', { weekday: 'short' })
+                          : '';
+                      } catch {
+                        return '';
+                      }
+                    })()}
                   </span>
                 </div>
               </td>
