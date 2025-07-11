@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (enrichmentStatus === 'enriched') {
       query = query.or('owner_email_1.not.is.null,owner_phone_1.not.is.null');
     } else if (enrichmentStatus === 'needs_enrichment') {
-      query = query.and('owner_email_1.is.null,owner_phone_1.is.null');
+      query = query.is('owner_email_1', null).is('owner_phone_1', null);
     }
     
     // Order by date descending
