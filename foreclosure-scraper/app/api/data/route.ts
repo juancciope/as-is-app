@@ -76,7 +76,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: data || [],
       total: data?.length || 0,
-      source,
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {
