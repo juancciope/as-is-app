@@ -8,42 +8,53 @@ export async function GET(request: NextRequest) {
     }
     
     const searchParams = request.nextUrl.searchParams;
-    const source = searchParams.get('source') || 'unified';
-    const needsEnrichment = searchParams.get('needsEnrichment') === 'true';
     
     // Build the query
     let query = supabase.from(FORECLOSURE_TABLE).select('*');
     
-    // Filter by source if not unified
-    if (source !== 'unified') {
-      query = query.eq('source', source);
-    }
-    
-    // Filter for properties that need enrichment
-    if (needsEnrichment) {
-      query = query.is('owner_emails', null).is('owner_phones', null);
-    }
-    
-    // Apply filters if provided
-    const withinRange = searchParams.get('within30min');
-    const city = searchParams.get('city');
+    // Apply filters
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
+    const counties = searchParams.get('counties');
+    const sources = searchParams.get('sources');
+    const within30min = searchParams.get('within30min');
+    const enrichmentStatus = searchParams.get('enrichmentStatus');
     
-    if (withinRange === 'true') {
-      query = query.eq('within_30min', 'Y');
-    }
-    
-    if (city) {
-      query = query.ilike('city', `%${city}%`);
-    }
-    
+    // Date range filter
     if (dateFrom) {
       query = query.gte('date', dateFrom);
     }
     
     if (dateTo) {
       query = query.lte('date', dateTo);
+    }
+    
+    // Counties filter (comma-separated list)
+    if (counties && counties !== '') {
+      const countyList = counties.split(',').map(c => c.trim()).filter(c => c.length > 0);
+      if (countyList.length > 0) {
+        query = query.in('county', countyList);
+      }
+    }
+    
+    // Sources filter (comma-separated list)
+    if (sources && sources !== '') {
+      const sourceList = sources.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      if (sourceList.length > 0) {
+        query = query.in('source', sourceList);
+      }
+    }
+    
+    // Within 30 minutes filter
+    if (within30min === 'true') {
+      query = query.eq('within_30min', 'Y');
+    }
+    
+    // Enrichment status filter
+    if (enrichmentStatus === 'enriched') {
+      query = query.or('owner_email_1.not.is.null,owner_phone_1.not.is.null');
+    } else if (enrichmentStatus === 'needs_enrichment') {
+      query = query.and('owner_email_1.is.null,owner_phone_1.is.null');
     }
     
     // Order by date descending

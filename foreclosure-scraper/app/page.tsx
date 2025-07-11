@@ -8,6 +8,7 @@ import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { DataTable } from '../components/dashboard/data-table';
 import { StatsCards } from '../components/dashboard/stats-cards';
+import { AdvancedFilters, FilterState } from '../components/dashboard/advanced-filters';
 import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search } from 'lucide-react';
 
 export default function Home() {
@@ -22,10 +23,13 @@ export default function Home() {
     lastUpdated: '',
     sources: {}
   });
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FilterState>({
+    dateFrom: '',
+    dateTo: '',
+    counties: [],
+    sources: [],
     within30Min: false,
-    source: 'all',
-    dateRange: 'all'
+    enrichmentStatus: 'all'
   });
 
   useEffect(() => {
@@ -36,8 +40,13 @@ export default function Home() {
     setIsLoadingData(true);
     try {
       const params = new URLSearchParams();
+      
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      if (filters.counties.length > 0) params.append('counties', filters.counties.join(','));
+      if (filters.sources.length > 0) params.append('sources', filters.sources.join(','));
       if (filters.within30Min) params.append('within30min', 'true');
-      if (filters.source !== 'all') params.append('source', filters.source);
+      if (filters.enrichmentStatus !== 'all') params.append('enrichmentStatus', filters.enrichmentStatus);
       
       const response = await fetch(`/api/data?${params}`);
       const result = await response.json();
@@ -170,14 +179,6 @@ export default function Home() {
             )}
           </Button>
           
-          <Button
-            variant="outline"
-            onClick={exportData}
-            disabled={data.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
         </div>
       </div>
 
@@ -291,62 +292,12 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Refine your search results</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 items-end">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="within30"
-                checked={filters.within30Min}
-                onCheckedChange={(checked) => 
-                  setFilters({ ...filters, within30Min: checked })
-                }
-              />
-              <Label htmlFor="within30">Within 30 minutes</Label>
-            </div>
-            
-            <div className="flex-1">
-              <Label>Data Source</Label>
-              <Select
-                value={filters.source}
-                onValueChange={(value) => 
-                  setFilters({ ...filters, source: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sources</SelectItem>
-                  <SelectItem value="clearrecon">ClearRecon</SelectItem>
-                  <SelectItem value="phillipjoneslaw">Phillip Jones Law</SelectItem>
-                  <SelectItem value="tnledger">TN Ledger</SelectItem>
-                  <SelectItem value="wabipowerbi">WABI PowerBI</SelectItem>
-                  <SelectItem value="wilson">Wilson Associates</SelectItem>
-                  <SelectItem value="connectedinvestors">Connected Investors</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <Button
-              variant="outline"
-              onClick={fetchData}
-              disabled={isLoadingData}
-            >
-              {isLoadingData ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <AdvancedFilters
+        onFiltersChange={setFilters}
+        onExport={exportData}
+        isLoading={isLoadingData}
+        totalResults={data.length}
+      />
 
       <Card>
         <CardHeader>
