@@ -12,7 +12,29 @@
     "scrape:phillipjoneslaw": "python3 scrapers/sources/phillipjoneslaw.py",
     "scrape:tnledger": "python3 scrapers/sources/tnledger.py",
     "scrape:wabipowerbi": "python3 scrapers/sources/wabipowerbi.py",
-    "scrape:wilson": "python3 scrapers/sources/wilson.py"
+    "scrape:wilson": "python3 scrapers/sources/wilson.py",
+    "migration:verify": "npx tsx scripts/verify-migration.ts",
+    "migration:apply": "echo 'Please apply migration manually through Supabase dashboard or CLI'",
+    "vnext:config": "npx tsx -e \"import config from './lib/config'; config.logConfiguration(); console.log('Environment validation:', config.validateEnvironment());\"",
+    "backfill:dry-run": "npx tsx scripts/backfill-vnext.ts",
+    "backfill:apply": "npx tsx scripts/backfill-vnext.ts --apply",
+    "backfill:test": "npx tsx scripts/test-backfill.ts",
+    "scoring:test": "npx tsx scripts/test-scoring.ts",
+    "api:test": "npx tsx scripts/test-properties-api.ts",
+    "skip-trace:test": "npx tsx scripts/test-skip-trace-flow.ts",
+    "rollout:guide": "npx tsx scripts/feature-flag-rollout.ts guide",
+    "rollout:phase1": "npx tsx scripts/feature-flag-rollout.ts phase 1",
+    "rollout:phase2": "npx tsx scripts/feature-flag-rollout.ts phase 2",
+    "rollout:phase3": "npx tsx scripts/feature-flag-rollout.ts phase 3",
+    "rollout:phase4": "npx tsx scripts/feature-flag-rollout.ts phase 4",
+    "rollout:phase5": "npx tsx scripts/feature-flag-rollout.ts phase 5",
+    "monitor:start": "npx tsx scripts/rollout-monitor.ts start",
+    "monitor:check": "npx tsx scripts/rollout-monitor.ts check",
+    "legacy:audit": "npx tsx scripts/legacy-deprecation.ts audit",
+    "legacy:readonly": "npx tsx scripts/legacy-deprecation.ts readonly",
+    "legacy:backup": "npx tsx scripts/legacy-deprecation.ts backup",
+    "legacy:verify": "npx tsx scripts/legacy-deprecation.ts verify",
+    "legacy:remove": "npx tsx scripts/legacy-deprecation.ts remove"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.0.4",
@@ -46,6 +68,7 @@
     "eslint-config-next": "14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
+    "tsx": "^4.7.0",
     "typescript": "^5"
   }
 }
