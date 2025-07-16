@@ -9,8 +9,8 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
 import { Calendar, Filter, Download, RefreshCw, X, Star, MapPin } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { FeatureFlags } from '../../lib/config';
+import { cn } from '@/lib/utils';
+import { FeatureFlags } from '@/lib/config';
 
 interface AdvancedFiltersProps {
   onFiltersChange: (filters: FilterState) => void;

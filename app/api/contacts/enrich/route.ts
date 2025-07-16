@@ -10,8 +10,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '../../../lib/supabase';
-import { FeatureFlags } from '../../../lib/config';
+import { supabaseAdmin } from '@/lib/supabase';
+import { FeatureFlags } from '@/lib/config';
 import { 
   validateContact, 
   normalizePhoneNumber, 
@@ -19,8 +19,8 @@ import {
   deduplicateContacts,
   hasValidContactInfo,
   type ValidationResult 
-} from '../../../lib/contact-validation';
-import type { Contact, PropertyContact } from '../../../lib/supabase';
+} from '@/lib/contact-validation';
+import type { Contact, PropertyContact } from '@/lib/supabase';
 
 interface EnrichmentRequest {
   propertyId: string;

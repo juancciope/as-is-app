@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '../../lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { ApifyClient } from 'apify-client';
-import { FeatureFlags, DatabaseConfig } from '../../lib/config';
-import type { Property, Contact, PropertyContact } from '../../lib/supabase';
+import { FeatureFlags, DatabaseConfig } from '@/lib/config';
+import type { Property, Contact, PropertyContact } from '@/lib/supabase';
 
 // Initialize Apify client
 const apifyClient = new ApifyClient({

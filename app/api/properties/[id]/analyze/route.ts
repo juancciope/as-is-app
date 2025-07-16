@@ -11,10 +11,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '../../../../lib/supabase';
-import { scoreProperty, createDefaultScorer, type ScoreResult } from '../../../../lib/scoring';
-import { FeatureFlags, DatabaseConfig, isAIAnalysisEnabled } from '../../../../lib/config';
-import type { Property, DistressEvent, Contact, PropertyContact, InvestorRules } from '../../../../lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
+import { scoreProperty, createDefaultScorer, type ScoreResult } from '@/lib/scoring';
+import { FeatureFlags, DatabaseConfig, isAIAnalysisEnabled } from '@/lib/config';
+import type { Property, DistressEvent, Contact, PropertyContact, InvestorRules } from '@/lib/supabase';
 
 interface AnalysisResponse {
   property: Property;
@@ -276,7 +276,7 @@ async function analyzeVNextProperty(propertyId: string): Promise<NextResponse> {
 
   // Calculate score
   const scorer = investorRules 
-    ? new (await import('../../../../lib/scoring')).PropertyScorer(investorRules)
+    ? new (await import('@/lib/scoring')).PropertyScorer(investorRules)
     : createDefaultScorer();
 
   const context = {
