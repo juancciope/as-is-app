@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd foreclosure-scraper && npm run build",
+  "outputDirectory": "foreclosure-scraper/.next",
+  "installCommand": "cd foreclosure-scraper && npm install",
+  "framework": "nextjs"
+}
