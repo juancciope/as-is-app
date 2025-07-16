@@ -323,8 +323,8 @@ async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property
   }
 
   // Create contact records
-  const contactsToCreate = [];
-  const propertyContactsToCreate = [];
+  const contactsToCreate: any[] = [];
+  const propertyContactsToCreate: any[] = [];
 
   // Check if we have any contact data (emails or phones)
   const hasEmails = skipTraceResult.data.emails && Array.isArray(skipTraceResult.data.emails) && skipTraceResult.data.emails.length > 0;
@@ -332,84 +332,96 @@ async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property
   const hasOwners = skipTraceResult.data.parsedOwners && Array.isArray(skipTraceResult.data.parsedOwners) && skipTraceResult.data.parsedOwners.length > 0;
 
   if (hasEmails || hasPhones) {
-    // Prepare phone objects
-    const phones: any[] = [];
-    if (hasPhones) {
-      skipTraceResult.data.phones.forEach((phone: string, index: number) => {
-        if (phone) {
-          phones.push({
-            number: phone,
-            label: index === 0 ? 'primary' : 'secondary',
-            verified: false,
-            source: 'connected_investors'
-          });
-        }
-      });
-    }
+    const emails = skipTraceResult.data.emails || [];
+    const phones = skipTraceResult.data.phones || [];
+    const owners = skipTraceResult.data.parsedOwners || [];
 
-    // Prepare email objects
-    const emails: any[] = [];
+    // Strategy: Create one contact record per email for individual outreach tracking
     if (hasEmails) {
-      skipTraceResult.data.emails.forEach((email: string, index: number) => {
-        if (email) {
-          emails.push({
-            email: email,
-            label: index === 0 ? 'primary' : 'secondary',
-            verified: false,
-            source: 'connected_investors'
-          });
-        }
-      });
-    }
+      // Create separate contact for each email address
+      emails.forEach((email: string, emailIndex: number) => {
+        if (!email) return;
 
-    if (hasOwners) {
-      // Create separate contact for each parsed owner
-      for (let i = 0; i < skipTraceResult.data.parsedOwners.length; i++) {
-        const owner = skipTraceResult.data.parsedOwners[i];
         const contactId = crypto.randomUUID();
+        
+        // Assign owner name if available (cycle through owners if more emails than owners)
+        const ownerIndex = emailIndex < owners.length ? emailIndex : emailIndex % Math.max(owners.length, 1);
+        const owner = owners[ownerIndex] || null;
+        
+        // Assign one phone number to each contact (distribute phones across contacts)
+        const assignedPhone = phones[emailIndex] || phones[emailIndex % Math.max(phones.length, 1)] || null;
+        const phoneObjects = assignedPhone ? [{
+          number: assignedPhone,
+          label: 'primary',
+          verified: false,
+          source: 'connected_investors'
+        }] : [];
+
+        // Create email object
+        const emailObjects = [{
+          email: email,
+          label: 'primary',
+          verified: false,
+          source: 'connected_investors'
+        }];
 
         contactsToCreate.push({
           id: contactId,
-          name_first: owner.firstName || null,
-          name_last: owner.lastName || null,
+          name_first: owner?.firstName || null,
+          name_last: owner?.lastName || null,
           entity_name: null,
           contact_type: 'skiptrace_result',
-          phones: i === 0 ? phones : [], // Only assign contact info to first owner
-          emails: i === 0 ? emails : [],
+          phones: phoneObjects,
+          emails: emailObjects,
           mailing_address: null,
-          notes: `Skip traced via Connected Investors on ${new Date().toISOString()}`
+          notes: `Skip traced via Connected Investors on ${new Date().toISOString()} - Contact ${emailIndex + 1} of ${emails.length}`
         });
 
         propertyContactsToCreate.push({
           property_id: propertyId,
           contact_id: contactId,
           role: 'skiptrace',
-          confidence: 0.8,
+          confidence: owner ? 0.8 : 0.7, // Higher confidence if we have owner name
           last_validated_at: null
         });
-      }
-    } else {
-      // No parsed owners, create a single anonymous contact with all the contact info
-      const contactId = crypto.randomUUID();
-
-      contactsToCreate.push({
-        id: contactId,
-        name_first: null,
-        name_last: null,
-        entity_name: null,
-        contact_type: 'skiptrace_result',
-        phones,
-        emails,
-        mailing_address: null,
-        notes: `Skip traced via Connected Investors on ${new Date().toISOString()} - No owner names found`
       });
+    } else if (hasPhones && !hasEmails) {
+      // Fallback: If we only have phones (no emails), create one contact per phone
+      phones.forEach((phone: string, phoneIndex: number) => {
+        if (!phone) return;
 
-      propertyContactsToCreate.push({
-        property_id: propertyId,
-        contact_id: contactId,
-        role: 'skiptrace',
-        confidence: 0.7, // Lower confidence since no names
-        last_validated_at: null
+        const contactId = crypto.randomUUID();
+        
+        // Assign owner name if available
+        const ownerIndex = phoneIndex < owners.length ? phoneIndex : phoneIndex % Math.max(owners.length, 1);
+        const owner = owners[ownerIndex] || null;
+
+        const phoneObjects = [{
+          number: phone,
+          label: 'primary',
+          verified: false,
+          source: 'connected_investors'
+        }];
+
+        contactsToCreate.push({
+          id: contactId,
+          name_first: owner?.firstName || null,
+          name_last: owner?.lastName || null,
+          entity_name: null,
+          contact_type: 'skiptrace_result',
+          phones: phoneObjects,
+          emails: [],
+          mailing_address: null,
+          notes: `Skip traced via Connected Investors on ${new Date().toISOString()} - SMS Contact ${phoneIndex + 1} of ${phones.length}`
+        });
+
+        propertyContactsToCreate.push({
+          property_id: propertyId,
+          contact_id: contactId,
+          role: 'skiptrace',
+          confidence: owner ? 0.8 : 0.7,
+          last_validated_at: null
+        });
       });
     }
   }
