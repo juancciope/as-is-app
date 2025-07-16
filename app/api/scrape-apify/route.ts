@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, FORECLOSURE_TABLE } from '@/lib/supabase';
+import { supabaseAdmin, FORECLOSURE_TABLE } from '../../../lib/supabase';
 
 interface PhillipJonesLawData {
   SourceWebsite: string;

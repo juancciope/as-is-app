@@ -5,7 +5,7 @@ import {
   MapPin, Home, Clock, TrendingUp, Star, Users, AlertCircle,
   CheckCircle2, Building, Calendar
 } from 'lucide-react';
-import { FeatureFlags } from '@/lib/config';
+import { FeatureFlags } from '../../lib/config';
 
 interface StatsCardsProps {
   data: any[];
