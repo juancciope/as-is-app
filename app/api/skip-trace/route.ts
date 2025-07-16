@@ -45,9 +45,16 @@ export async function POST(request: Request) {
     }
 
     // Check feature flag to determine which implementation to use
+    console.log('🎛️  Feature flags:', {
+      USE_LEGACY: FeatureFlags.USE_LEGACY,
+      USE_VNEXT_FILTERS: FeatureFlags.USE_VNEXT_FILTERS
+    });
+
     if (FeatureFlags.USE_LEGACY) {
+      console.log('📁 Using LEGACY skip trace implementation');
       return await handleLegacySkipTrace(propertyId);
     } else {
+      console.log('🆕 Using vNext skip trace implementation');
       return await handleVNextSkipTrace(propertyId);
     }
 
@@ -95,6 +102,8 @@ async function handleLegacySkipTrace(propertyId: string): Promise<NextResponse> 
  * Handle skip trace using vNext normalized schema
  */
 async function handleVNextSkipTrace(propertyId: string): Promise<NextResponse> {
+  console.log('🔍 Looking for property in vNext properties table, ID:', propertyId);
+  
   // Fetch property details from vNext table
   const { data: property, error: fetchError } = await supabaseAdmin!
     .from('properties')
@@ -102,9 +111,24 @@ async function handleVNextSkipTrace(propertyId: string): Promise<NextResponse> {
     .eq('id', propertyId)
     .single();
 
+  console.log('🏠 Property fetch result:', {
+    found: !!property,
+    error: fetchError?.message || 'none',
+    propertyData: property ? {
+      id: property.id,
+      address: property.full_address,
+      city: property.city,
+      county: property.county
+    } : null
+  });
+
   if (fetchError || !property) {
+    console.log('❌ Property not found in vNext properties table');
     return NextResponse.json(
-      { error: 'Property not found' },
+      { 
+        error: 'Property not found',
+        debug: { propertyId, fetchError, searchedTable: 'properties' }
+      },
       { status: 404 }
     );
   }
@@ -295,9 +319,14 @@ async function runSkipTraceAndUpdateLegacy(propertyId: string, property: any): P
  * Run skip trace and update vNext tables
  */
 async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property): Promise<NextResponse> {
+  console.log('🔍 Starting vNext skip trace for property:', propertyId, 'address:', property.full_address);
+  
   const skipTraceResult = await runConnectedInvestorsSkipTrace(propertyId, property.full_address);
   
+  console.log('📊 Skip trace result:', JSON.stringify(skipTraceResult, null, 2));
+  
   if (!skipTraceResult.success) {
+    console.log('❌ Skip trace failed, returning error response');
     return NextResponse.json(skipTraceResult);
   }
 
@@ -331,7 +360,17 @@ async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property
   const hasPhones = skipTraceResult.data.phones && Array.isArray(skipTraceResult.data.phones) && skipTraceResult.data.phones.length > 0;
   const hasOwners = skipTraceResult.data.parsedOwners && Array.isArray(skipTraceResult.data.parsedOwners) && skipTraceResult.data.parsedOwners.length > 0;
 
+  console.log('📋 Contact data analysis:', {
+    hasEmails,
+    emailCount: skipTraceResult.data.emails?.length || 0,
+    hasPhones,
+    phoneCount: skipTraceResult.data.phones?.length || 0,
+    hasOwners,
+    ownerCount: skipTraceResult.data.parsedOwners?.length || 0
+  });
+
   if (hasEmails || hasPhones) {
+    console.log('✅ Contact data found, proceeding to create contact records');
     const emails = skipTraceResult.data.emails || [];
     const phones = skipTraceResult.data.phones || [];
     const owners = skipTraceResult.data.parsedOwners || [];
@@ -424,40 +463,57 @@ async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property
         });
       });
     }
+
+    console.log(`📝 Prepared ${contactsToCreate.length} contacts to create:`, contactsToCreate.map(c => ({
+      id: c.id,
+      email: c.emails[0]?.email || 'none',
+      phone: c.phones[0]?.number || 'none',
+      name: `${c.name_first || ''} ${c.name_last || ''}`.trim() || 'anonymous'
+    })));
+  } else {
+    console.log('❌ No contact data found (no emails or phones)');
   }
 
   // Insert contacts
   if (contactsToCreate.length > 0) {
+    console.log(`💾 Inserting ${contactsToCreate.length} contacts into database...`);
     const { error: contactError } = await supabaseAdmin!
       .from('contacts')
       .insert(contactsToCreate);
 
     if (contactError) {
-      console.error('Error inserting contacts:', contactError);
+      console.error('❌ Error inserting contacts:', contactError);
       return NextResponse.json(
         { 
           error: 'Failed to save contact data', 
-          details: contactError.message
+          details: contactError.message,
+          debug: { contactsToCreate, contactError }
         },
         { status: 500 }
       );
     }
 
+    console.log('✅ Contacts inserted successfully');
+
     // Insert property-contact relationships
+    console.log(`🔗 Inserting ${propertyContactsToCreate.length} property-contact relationships...`);
     const { error: pcError } = await supabaseAdmin!
       .from('property_contacts')
       .insert(propertyContactsToCreate);
 
     if (pcError) {
-      console.error('Error inserting property contacts:', pcError);
+      console.error('❌ Error inserting property contacts:', pcError);
       return NextResponse.json(
         { 
           error: 'Failed to save property contact relationships', 
-          details: pcError.message
+          details: pcError.message,
+          debug: { propertyContactsToCreate, pcError }
         },
         { status: 500 }
       );
     }
+
+    console.log('✅ Property-contact relationships inserted successfully');
 
     // Update lead pipeline stage to 'enriched' since we now have contact info
     await updateLeadPipelineStage(propertyId, 'enriched');
