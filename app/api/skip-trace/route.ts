@@ -326,59 +326,89 @@ async function runSkipTraceAndUpdateVNext(propertyId: string, property: Property
   const contactsToCreate = [];
   const propertyContactsToCreate = [];
 
-  if (skipTraceResult.data.parsedOwners && Array.isArray(skipTraceResult.data.parsedOwners)) {
-    for (let i = 0; i < skipTraceResult.data.parsedOwners.length; i++) {
-      const owner = skipTraceResult.data.parsedOwners[i];
-      
-      // Prepare phone objects
-      const phones: any[] = [];
-      if (skipTraceResult.data.phones && Array.isArray(skipTraceResult.data.phones)) {
-        skipTraceResult.data.phones.forEach((phone: string, index: number) => {
-          if (phone) {
-            phones.push({
-              number: phone,
-              label: index === 0 ? 'primary' : 'secondary',
-              verified: false,
-              source: 'connected_investors'
-            });
-          }
+  // Check if we have any contact data (emails or phones)
+  const hasEmails = skipTraceResult.data.emails && Array.isArray(skipTraceResult.data.emails) && skipTraceResult.data.emails.length > 0;
+  const hasPhones = skipTraceResult.data.phones && Array.isArray(skipTraceResult.data.phones) && skipTraceResult.data.phones.length > 0;
+  const hasOwners = skipTraceResult.data.parsedOwners && Array.isArray(skipTraceResult.data.parsedOwners) && skipTraceResult.data.parsedOwners.length > 0;
+
+  if (hasEmails || hasPhones) {
+    // Prepare phone objects
+    const phones: any[] = [];
+    if (hasPhones) {
+      skipTraceResult.data.phones.forEach((phone: string, index: number) => {
+        if (phone) {
+          phones.push({
+            number: phone,
+            label: index === 0 ? 'primary' : 'secondary',
+            verified: false,
+            source: 'connected_investors'
+          });
+        }
+      });
+    }
+
+    // Prepare email objects
+    const emails: any[] = [];
+    if (hasEmails) {
+      skipTraceResult.data.emails.forEach((email: string, index: number) => {
+        if (email) {
+          emails.push({
+            email: email,
+            label: index === 0 ? 'primary' : 'secondary',
+            verified: false,
+            source: 'connected_investors'
+          });
+        }
+      });
+    }
+
+    if (hasOwners) {
+      // Create separate contact for each parsed owner
+      for (let i = 0; i < skipTraceResult.data.parsedOwners.length; i++) {
+        const owner = skipTraceResult.data.parsedOwners[i];
+        const contactId = crypto.randomUUID();
+
+        contactsToCreate.push({
+          id: contactId,
+          name_first: owner.firstName || null,
+          name_last: owner.lastName || null,
+          entity_name: null,
+          contact_type: 'skiptrace_result',
+          phones: i === 0 ? phones : [], // Only assign contact info to first owner
+          emails: i === 0 ? emails : [],
+          mailing_address: null,
+          notes: `Skip traced via Connected Investors on ${new Date().toISOString()}`
+        });
+
+        propertyContactsToCreate.push({
+          property_id: propertyId,
+          contact_id: contactId,
+          role: 'skiptrace',
+          confidence: 0.8,
+          last_validated_at: null
         });
       }
-
-      // Prepare email objects
-      const emails: any[] = [];
-      if (skipTraceResult.data.emails && Array.isArray(skipTraceResult.data.emails)) {
-        skipTraceResult.data.emails.forEach((email: string, index: number) => {
-          if (email) {
-            emails.push({
-              email: email,
-              label: index === 0 ? 'primary' : 'secondary',
-              verified: false,
-              source: 'connected_investors'
-            });
-          }
-        });
-      }
-
+    } else {
+      // No parsed owners, create a single anonymous contact with all the contact info
       const contactId = crypto.randomUUID();
 
       contactsToCreate.push({
         id: contactId,
-        name_first: owner.firstName || null,
-        name_last: owner.lastName || null,
+        name_first: null,
+        name_last: null,
         entity_name: null,
         contact_type: 'skiptrace_result',
         phones,
         emails,
         mailing_address: null,
-        notes: `Skip traced via Connected Investors on ${new Date().toISOString()}`
+        notes: `Skip traced via Connected Investors on ${new Date().toISOString()} - No owner names found`
       });
 
       propertyContactsToCreate.push({
         property_id: propertyId,
         contact_id: contactId,
         role: 'skiptrace',
-        confidence: 0.8,
+        confidence: 0.7, // Lower confidence since no names
         last_validated_at: null
       });
     }
