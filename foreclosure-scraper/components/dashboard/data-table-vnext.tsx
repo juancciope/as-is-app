@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronDown, ChevronUp, ExternalLink, MapPin, Calendar, Clock, 
   Search, CheckCircle2, Loader2, Star, TrendingUp, AlertCircle,
@@ -324,7 +324,7 @@ export function DataTableVNext({ data }: DataTableProps) {
                             {row.score}
                           </span>
                           {row.urgency_days !== undefined && row.urgency_days <= 7 && (
-                            <AlertCircle className="h-3 w-3 text-red-600" title={`${row.urgency_days} days`} />
+                            <AlertCircle className="h-3 w-3 text-red-600" />
                           )}
                         </div>
                       ) : (

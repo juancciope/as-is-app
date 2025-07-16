@@ -333,7 +333,7 @@ export default function HomeVNext() {
       {isVNext ? (
         <StatsCardsVNext data={data} />
       ) : (
-        <StatsCards data={data} />
+        <StatsCards stats={{ total: data.length, within30Min: 0, lastUpdated: new Date().toISOString(), sources: {} }} />
       )}
 
       {/* Scraper Management */}

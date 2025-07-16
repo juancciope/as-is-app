@@ -187,14 +187,14 @@ async function enrichContacts(
       // Ensure required fields
       const normalizedContact: Contact = {
         id: contact.id || crypto.randomUUID(),
-        name_first: contact.name_first || null,
-        name_last: contact.name_last || null,
-        entity_name: contact.entity_name || null,
+        name_first: contact.name_first || undefined,
+        name_last: contact.name_last || undefined,
+        entity_name: contact.entity_name || undefined,
         contact_type: contact.contact_type || 'manual_entry',
         phones: contact.phones || [],
         emails: contact.emails || [],
-        mailing_address: contact.mailing_address || null,
-        notes: contact.notes || null,
+        mailing_address: contact.mailing_address || undefined,
+        notes: contact.notes || undefined,
         created_at: contact.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -368,4 +368,4 @@ async function enrichContacts(
   }
 }
 
-export { POST, GET };
+// Exports are handled automatically by Next.js for named exports

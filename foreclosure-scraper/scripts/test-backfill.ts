@@ -170,7 +170,7 @@ class BackfillTester {
     ];
     
     const normalized = addresses.map(addr => this.normalizeAddress(addr));
-    const uniqueNormalized = [...new Set(normalized)];
+    const uniqueNormalized = Array.from(new Set(normalized));
     
     console.log(`     Original addresses: ${addresses.length}`);
     console.log(`     Unique normalized: ${uniqueNormalized.length}`);

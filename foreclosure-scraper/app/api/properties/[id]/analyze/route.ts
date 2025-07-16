@@ -425,4 +425,4 @@ function generateInvestmentStrategy(property: Property, scoreResult: ScoreResult
   return 'LOW PRIORITY: Monitor for changes in status or pricing. Consider only if no higher-priority opportunities are available.';
 }
 
-export { GET };
+// Exports are handled automatically by Next.js for named exports

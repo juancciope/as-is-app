@@ -115,10 +115,18 @@ class LegacyDeprecation {
   private async findViewDependencies(audit: LegacyAuditResult): Promise<void> {
     try {
       // Check for views that reference foreclosure_data
-      const { data: views, error } = await supabaseAdmin!
-        .rpc('get_table_dependencies', { table_name: 'foreclosure_data' })
-        .then(() => ({ data: null, error: null })) // RPC might not exist
-        .catch(() => ({ data: null, error: null }));
+      let views = null;
+      let error = null;
+      try {
+        const result = await supabaseAdmin!
+          .rpc('get_table_dependencies', { table_name: 'foreclosure_data' });
+        views = result.data;
+        error = result.error;
+      } catch (e) {
+        // RPC might not exist
+        views = null;
+        error = null;
+      }
 
       // Known views that reference legacy table
       const knownViews = ['foreclosure_properties'];
@@ -173,7 +181,7 @@ class LegacyDeprecation {
       }
 
       // Remove duplicates
-      audit.code_references = [...new Set(audit.code_references)];
+      audit.code_references = Array.from(new Set(audit.code_references));
 
     } catch (error) {
       console.log('   Note: Could not search code references');
@@ -369,7 +377,7 @@ class LegacyDeprecation {
 
     try {
       // Check feature flags
-      if (config.FeatureFlags.USE_LEGACY === '1') {
+      if (config.FeatureFlags.USE_LEGACY === true) {
         this.addResult(
           'Feature Flag Check',
           false,
@@ -482,7 +490,7 @@ class LegacyDeprecation {
       }
 
       // Check if USE_LEGACY is disabled
-      if (config.FeatureFlags.USE_LEGACY === '1') {
+      if (config.FeatureFlags.USE_LEGACY === true) {
         this.addResult(
           'Configuration Check',
           false,

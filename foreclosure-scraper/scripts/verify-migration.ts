@@ -549,7 +549,7 @@ class MigrationVerifier {
       const vnextResult = await testApiEndpoint('/api/properties', 'vNext Properties API');
 
       const legacyWorks = legacyResult.success;
-      const vnextWorksOrNotImplemented = vnextResult.success || vnextResult.error?.includes('404');
+      const vnextWorksOrNotImplemented = vnextResult.success || (vnextResult.error?.includes('404') ?? false);
 
       this.addResult(
         'API Endpoint Parity',

@@ -560,8 +560,8 @@ async function getLegacyFilterOptions(): Promise<FilterOptions> {
     .not('source', 'is', null);
   
   return {
-    counties: [...new Set(counties?.map(c => c.county).filter(Boolean) || [])],
-    sources: [...new Set(sources?.map(s => s.source).filter(Boolean) || [])],
+    counties: Array.from(new Set(counties?.map(c => c.county).filter(Boolean) || [])),
+    sources: Array.from(new Set(sources?.map(s => s.source).filter(Boolean) || [])),
     stages: ['new', 'enriched'],
     priorities: ['low', 'medium', 'high', 'urgent'],
     eventTypes: ['FORECLOSURE']
@@ -593,12 +593,12 @@ async function getVNextFilterOptions(): Promise<FilterOptions> {
     .not('event_type', 'is', null);
   
   return {
-    counties: [...new Set(counties?.map(c => c.county).filter(Boolean) || [])],
-    sources: [...new Set(sources?.map(s => s.source).filter(Boolean) || [])],
-    stages: [...new Set(stages?.map(s => s.stage).filter(Boolean) || [])],
+    counties: Array.from(new Set(counties?.map(c => c.county).filter(Boolean) || [])),
+    sources: Array.from(new Set(sources?.map(s => s.source).filter(Boolean) || [])),
+    stages: Array.from(new Set(stages?.map(s => s.stage).filter(Boolean) || [])),
     priorities: ['low', 'medium', 'high', 'urgent'],
-    eventTypes: [...new Set(eventTypes?.map(e => e.event_type).filter(Boolean) || [])]
+    eventTypes: Array.from(new Set(eventTypes?.map(e => e.event_type).filter(Boolean) || []))
   };
 }
 
-export { GET };
+// Exports are handled automatically by Next.js for named exports

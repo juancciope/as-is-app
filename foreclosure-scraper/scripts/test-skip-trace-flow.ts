@@ -242,7 +242,7 @@ async function testVNextSkipTrace(propertyId: string, mockData: any, result: Ski
   }
 
   // Create property-contact relationships
-  const propertyContactsToCreate = contactsToCreate.map(contact => ({
+  const propertyContactsToCreate = contactsToCreate.map((contact: any) => ({
     property_id: propertyId,
     contact_id: contact.id,
     role: 'test_skiptrace',

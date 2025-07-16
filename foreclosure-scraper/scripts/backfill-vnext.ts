@@ -187,8 +187,8 @@ class VNextBackfill {
       parcel_apn: undefined,
       lat: coords.lat,
       lon: coords.lon,
-      distance_nash_mi: proximityData.distance_nash_mi,
-      distance_mtjuliet_mi: proximityData.distance_mtjuliet_mi,
+      distance_nash_mi: proximityData.distance_nash_mi || undefined,
+      distance_mtjuliet_mi: proximityData.distance_mtjuliet_mi || undefined,
       within_30min_nash: proximityData.within_30min_nash,
       within_30min_mtjuliet: proximityData.within_30min_mtjuliet,
       property_type: 'SFR', // Default assumption
