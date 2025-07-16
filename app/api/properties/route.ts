@@ -11,9 +11,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
-import { scoreProperties, createDefaultScorer } from '@/lib/scoring';
-import { FeatureFlags, DatabaseConfig, VNextConfig } from '@/lib/config';
+import { supabaseAdmin } from '../../lib/supabase';
+import { scoreProperties, createDefaultScorer } from '../../lib/scoring';
+import { FeatureFlags, DatabaseConfig, VNextConfig } from '../../lib/config';
 import type { 
   Property, 
   DistressEvent, 
@@ -22,7 +22,7 @@ import type {
   LeadPipeline, 
   InvestorRules,
   PropertyWithEvents 
-} from '@/lib/supabase';
+} from '../../lib/supabase';
 
 interface PropertiesResponse {
   properties: EnhancedProperty[];
@@ -519,7 +519,7 @@ async function addScoringToProperties(properties: EnhancedProperty[]): Promise<E
     .single();
   
   const scorer = investorRules 
-    ? new (await import('@/lib/scoring')).PropertyScorer(investorRules)
+    ? new (await import('../../lib/scoring')).PropertyScorer(investorRules)
     : createDefaultScorer();
   
   return properties.map(property => {
