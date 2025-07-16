@@ -6,9 +6,9 @@ import {
   Search, CheckCircle2, Loader2, Star, TrendingUp, AlertCircle,
   Phone, Mail, User, Building
 } from 'lucide-react';
-import { FeatureFlags } from '@/lib/config';
+import { FeatureFlags } from '../../lib/config';
 import { Button } from '../ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface DataTableProps {
   data: any[];
