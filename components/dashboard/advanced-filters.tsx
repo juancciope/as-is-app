@@ -57,9 +57,13 @@ const DEFAULT_FILTERS: FilterState = {
   counties: [],
   sources: [],
   within30Min: false,
-  targetCounties: ['Davidson', 'Sumner', 'Wilson'], // Default to main counties
-  maxDistanceMiles: 30, // Default to 30 miles
+  targetCounties: ['Davidson', 'Sumner', 'Wilson'],
+  maxDistanceMiles: 30,
   enrichmentStatus: 'all',
+  saleDateFrom: '',
+  saleDateTo: '',
+  createdDateFrom: '',
+  createdDateTo: '',
   stages: [],
   propertyTypes: [],
   priorities: [],
@@ -149,6 +153,10 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
       (filters.targetCounties && filters.targetCounties.length > 0 && filters.targetCounties.length !== 3) ||
       (filters.maxDistanceMiles !== undefined && filters.maxDistanceMiles !== 30) ||
       filters.enrichmentStatus !== 'all' ||
+      filters.saleDateFrom ||
+      filters.saleDateTo ||
+      filters.createdDateFrom ||
+      filters.createdDateTo ||
       (filters.stages && filters.stages.length > 0) ||
       (filters.propertyTypes && filters.propertyTypes.length > 0) ||
       (filters.priorities && filters.priorities.length > 0) ||

@@ -33,7 +33,17 @@ export default function Home() {
     counties: [],
     sources: [],
     within30Min: false,
-    enrichmentStatus: 'all'
+    targetCounties: ['Davidson', 'Sumner', 'Wilson'],
+    maxDistanceMiles: 30,
+    enrichmentStatus: 'all',
+    saleDateFrom: '',
+    saleDateTo: '',
+    createdDateFrom: '',
+    createdDateTo: '',
+    stages: [],
+    propertyTypes: [],
+    priorities: [],
+    eventTypes: []
   });
 
   useEffect(() => {
@@ -66,6 +76,12 @@ export default function Home() {
       if (filters.saleDateTo) params.append('saleDateTo', filters.saleDateTo);
       if (filters.createdDateFrom) params.append('createdDateFrom', filters.createdDateFrom);
       if (filters.createdDateTo) params.append('createdDateTo', filters.createdDateTo);
+      if (filters.stages && filters.stages.length > 0) params.append('stages', filters.stages.join(','));
+      if (filters.propertyTypes && filters.propertyTypes.length > 0) params.append('propertyTypes', filters.propertyTypes.join(','));
+      if (filters.priorities && filters.priorities.length > 0) params.append('priorities', filters.priorities.join(','));
+      if (filters.eventTypes && filters.eventTypes.length > 0) params.append('eventTypes', filters.eventTypes.join(','));
+      if (filters.minScore !== undefined) params.append('minScore', filters.minScore.toString());
+      if (filters.maxScore !== undefined) params.append('maxScore', filters.maxScore.toString());
       
       console.log('📡 Fetching data from /api/data with params:', params.toString());
       const response = await fetch(`/api/data?${params}`);
