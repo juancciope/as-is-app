@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Label } from '../components/ui/label';
 import { DataTable } from '../components/dashboard/data-table';
+import { ContactsTable } from '../components/dashboard/contacts-table';
 import { StatsCards } from '../components/dashboard/stats-cards';
 import { AdvancedFilters, FilterState } from '../components/dashboard/advanced-filters';
-import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search } from 'lucide-react';
+import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search, UserCheck, Table } from 'lucide-react';
 
 export default function Home() {
   console.log('🏠 Home component rendering...');
@@ -20,7 +21,10 @@ export default function Home() {
   const [isScrapingSource, setIsScrapingSource] = useState<string | null>(null);
   const [completedScrapers, setCompletedScrapers] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [data, setData] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [activeTab, setActiveTab] = useState<'properties' | 'contacts'>('properties');
   const [stats, setStats] = useState({
     total: 0,
     within30Min: 0,
@@ -49,7 +53,16 @@ export default function Home() {
   useEffect(() => {
     console.log('🔄 useEffect triggered, fetching data...');
     fetchData();
+    if (activeTab === 'contacts') {
+      fetchContacts();
+    }
   }, [filters]);
+
+  useEffect(() => {
+    if (activeTab === 'contacts') {
+      fetchContacts();
+    }
+  }, [activeTab]);
 
   const fetchData = async () => {
     console.log('📡 Starting fetchData...');
@@ -116,6 +129,58 @@ export default function Home() {
       updateStats([]);
     } finally {
       setIsLoadingData(false);
+    }
+  };
+
+  const fetchContacts = async () => {
+    console.log('📞 Starting fetchContacts...');
+    setIsLoadingContacts(true);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      if (filters.counties.length > 0) params.append('counties', filters.counties.join(','));
+      if (filters.sources.length > 0) params.append('sources', filters.sources.join(','));
+      if (filters.enrichmentStatus !== 'all') params.append('enrichmentStatus', filters.enrichmentStatus);
+      
+      // vNext filters
+      if (filters.targetCounties && filters.targetCounties.length > 0) {
+        params.append('targetCounties', filters.targetCounties.join(','));
+      }
+      if (filters.maxDistanceMiles !== undefined) {
+        params.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
+      }
+      if (filters.saleDateFrom) params.append('saleDateFrom', filters.saleDateFrom);
+      if (filters.saleDateTo) params.append('saleDateTo', filters.saleDateTo);
+      if (filters.createdDateFrom) params.append('createdDateFrom', filters.createdDateFrom);
+      if (filters.createdDateTo) params.append('createdDateTo', filters.createdDateTo);
+      
+      console.log('📞 Fetching contacts from /api/contacts with params:', params.toString());
+      const response = await fetch(`/api/contacts?${params}`);
+      console.log('📞 Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Contacts API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('📞 Contacts API Response:', result);
+      
+      if (result.contacts && Array.isArray(result.contacts)) {
+        console.log('✅ Valid contacts received, count:', result.contacts.length);
+        setContacts(result.contacts);
+      } else {
+        console.error('❌ Invalid contacts format received:', result);
+        setContacts([]);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch contacts:', error);
+      setContacts([]);
+    } finally {
+      setIsLoadingContacts(false);
     }
   };
 
@@ -384,18 +449,69 @@ export default function Home() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Property Listings</CardTitle>
-          <CardDescription>
-            {data.length} properties found
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                {activeTab === 'properties' ? (
+                  <>
+                    <Table className="h-5 w-5" />
+                    Property Listings
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="h-5 w-5" />
+                    Contact Information
+                  </>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {activeTab === 'properties' 
+                  ? `${data.length} properties found`
+                  : `${contacts.length} contacts from filtered properties`
+                }
+              </CardDescription>
+            </div>
+            
+            {/* Tab Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === 'properties' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('properties')}
+                className="flex items-center gap-2"
+              >
+                <Table className="h-4 w-4" />
+                Properties ({data.length})
+              </Button>
+              <Button
+                variant={activeTab === 'contacts' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveTab('contacts')}
+                className="flex items-center gap-2"
+              >
+                <UserCheck className="h-4 w-4" />
+                Contacts ({contacts.length})
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {isLoadingData ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
+          {activeTab === 'properties' ? (
+            isLoadingData ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <DataTable data={data} onDataUpdate={fetchData} />
+            )
           ) : (
-            <DataTable data={data} />
+            isLoadingContacts ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <ContactsTable contacts={contacts} />
+            )
           )}
         </CardContent>
       </Card>

@@ -3,12 +3,14 @@ import { ChevronDown, ChevronUp, ExternalLink, MapPin, Calendar, Clock, Search, 
 
 interface DataTableProps {
   data: any[];
+  onDataUpdate?: () => void;
 }
 
-export function DataTable({ data }: DataTableProps) {
+export function DataTable({ data, onDataUpdate }: DataTableProps) {
   const [sortField, setSortField] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [skipTracingIds, setSkipTracingIds] = useState<Set<string>>(new Set());
+  const [feedbackMessage, setFeedbackMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
   
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -21,6 +23,7 @@ export function DataTable({ data }: DataTableProps) {
   
   const handleSkipTrace = async (propertyId: string) => {
     setSkipTracingIds(prev => new Set(prev).add(propertyId));
+    setFeedbackMessage(null);
     
     try {
       const response = await fetch('/api/skip-trace', {
@@ -35,37 +38,51 @@ export function DataTable({ data }: DataTableProps) {
         // Handle HTTP error responses
         console.error('Skip trace API error:', result);
         const errorMessage = result.details || result.error || 'Unknown error occurred';
-        alert(`Skip trace failed: ${errorMessage}`);
+        setFeedbackMessage({
+          type: 'error',
+          message: `Skip trace failed: ${errorMessage}`
+        });
         return;
       }
       
       if (result.success) {
-        // Update the property in the data with the new contact info
-        const updatedData = data.map(item => 
-          item.id === propertyId 
-            ? { 
-                ...item, 
-                owner_email_1: result.data.emails?.[0] || null,
-                owner_phone_1: result.data.phones?.[0] || null
-              }
-            : item
-        );
-        // You might want to trigger a data refresh here
-        window.location.reload(); // Simple refresh for now
+        // Show success message
+        const emailCount = result.data?.emails?.length || 0;
+        const phoneCount = result.data?.phones?.length || 0;
+        setFeedbackMessage({
+          type: 'success',
+          message: `Skip trace completed! Found ${emailCount} email(s) and ${phoneCount} phone(s).`
+        });
+        
+        // Refresh data without losing filters
+        if (onDataUpdate) {
+          onDataUpdate();
+        }
       } else {
         console.error('Skip trace failed:', result);
         const errorMessage = result.details || result.error || 'Skip trace failed for unknown reason';
-        alert(`Skip trace failed: ${errorMessage}`);
+        setFeedbackMessage({
+          type: 'error',
+          message: `Skip trace failed: ${errorMessage}`
+        });
       }
     } catch (error) {
       console.error('Skip trace error:', error);
-      alert('Skip trace failed. Please try again.');
+      setFeedbackMessage({
+        type: 'error',
+        message: 'Skip trace failed. Please try again.'
+      });
     } finally {
       setSkipTracingIds(prev => {
         const newSet = new Set(prev);
         newSet.delete(propertyId);
         return newSet;
       });
+      
+      // Clear feedback message after 5 seconds
+      setTimeout(() => {
+        setFeedbackMessage(null);
+      }, 5000);
     }
   };
   
@@ -119,8 +136,27 @@ export function DataTable({ data }: DataTableProps) {
   };
   
   return (
-    <div className="relative overflow-x-auto bg-white rounded-lg border border-gray-200">
-      <table className="w-full text-sm text-left text-gray-900 bg-white">
+    <div className="space-y-4">
+      {/* Feedback Message */}
+      {feedbackMessage && (
+        <div className={`p-4 rounded-lg border ${
+          feedbackMessage.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {feedbackMessage.type === 'success' ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            <span className="font-medium">{feedbackMessage.message}</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="relative overflow-x-auto bg-white rounded-lg border border-gray-200">
+        <table className="w-full text-sm text-left text-gray-900 bg-white">
         <thead className="text-xs uppercase bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900">
           <tr>
             <th 
@@ -314,6 +350,7 @@ export function DataTable({ data }: DataTableProps) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
