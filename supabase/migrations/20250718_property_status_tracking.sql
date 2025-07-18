@@ -39,6 +39,13 @@ UPDATE properties
 SET is_in_target_counties = (county IN ('Davidson', 'Sumner', 'Wilson'))
 WHERE is_in_target_counties IS NULL;
 
+-- Update existing properties to 'active' status instead of 'new'
+UPDATE properties 
+SET status = 'active',
+    first_seen_at = COALESCE(first_seen_at, created_at, NOW()),
+    last_seen_at = COALESCE(last_seen_at, updated_at, NOW())
+WHERE status = 'new' AND created_at < NOW() - INTERVAL '1 hour';
+
 -- Create a function to track property changes
 CREATE OR REPLACE FUNCTION track_property_changes()
 RETURNS TRIGGER AS $$

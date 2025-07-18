@@ -208,18 +208,9 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
     const maxDistance = maxDistanceMiles ? parseFloat(maxDistanceMiles) : 30;
     
     if (countyList.length > 0) {
-      // Create OR conditions for each target county with distance
-      const distanceConditions = countyList.map(county => {
-        const countyLower = county.toLowerCase();
-        return `distance_to_${countyLower}_mi.lte.${maxDistance}`;
-      });
-      
-      // Apply OR condition if we have multiple counties
-      if (distanceConditions.length > 1) {
-        query = query.or(distanceConditions.join(','));
-      } else {
-        query = query.lte(`distance_to_${countyList[0].toLowerCase()}_mi`, maxDistance);
-      }
+      // For now, fallback to simple county matching until distance data is populated
+      // TODO: Implement proper distance calculation
+      query = query.in('county', countyList);
     }
   }
   

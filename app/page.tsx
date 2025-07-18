@@ -33,7 +33,7 @@ export default function Home() {
     counties: [],
     sources: [],
     within30Min: false,
-    targetCounties: ['Davidson', 'Sumner', 'Wilson'],
+    targetCounties: [],
     maxDistanceMiles: 30,
     enrichmentStatus: 'all',
     saleDateFrom: '',

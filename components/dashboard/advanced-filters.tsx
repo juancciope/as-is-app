@@ -57,7 +57,7 @@ const DEFAULT_FILTERS: FilterState = {
   counties: [],
   sources: [],
   within30Min: false,
-  targetCounties: ['Davidson', 'Sumner', 'Wilson'],
+  targetCounties: [],
   maxDistanceMiles: 30,
   enrichmentStatus: 'all',
   saleDateFrom: '',
@@ -150,7 +150,7 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
       filters.counties.length > 0 ||
       filters.sources.length > 0 ||
       filters.within30Min ||
-      (filters.targetCounties && filters.targetCounties.length > 0 && filters.targetCounties.length !== 3) ||
+      (filters.targetCounties && filters.targetCounties.length > 0) ||
       (filters.maxDistanceMiles !== undefined && filters.maxDistanceMiles !== 30) ||
       filters.enrichmentStatus !== 'all' ||
       filters.saleDateFrom ||
@@ -440,13 +440,13 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
               </div>
             </div>
 
-            {/* All Counties (for legacy compatibility) */}
+            {/* All Counties (excluding target counties to avoid duplication) */}
             <div>
               <Label className="text-base font-medium">
-                All Counties ({filters.counties.length} selected)
+                Other Counties ({filters.counties.length} selected)
               </Label>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
-                {COUNTIES.map((county) => (
+                {COUNTIES.filter(county => !['Davidson', 'Sumner', 'Wilson'].includes(county)).map((county) => (
                   <div key={county} className="flex items-center space-x-2">
                     <Checkbox
                       id={`county-${county}`}
