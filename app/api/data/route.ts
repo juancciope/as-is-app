@@ -119,6 +119,13 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
       city,
       state,
       county,
+      status,
+      is_in_target_counties,
+      distance_to_davidson_mi,
+      distance_to_sumner_mi,
+      distance_to_wilson_mi,
+      nearest_target_county,
+      nearest_target_distance_mi,
       within_30min_nash,
       within_30min_mtjuliet,
       distance_nash_mi,
@@ -126,12 +133,15 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
       property_type,
       created_at,
       updated_at,
+      first_seen_at,
+      sale_date_updated_count,
       distress_events!inner (
         event_date,
         event_time,
         source,
         firm,
-        event_type
+        event_type,
+        sale_date
       ),
       property_contacts (
         contacts (
@@ -151,6 +161,14 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
   const sources = searchParams.get('sources');
   const within30min = searchParams.get('within30min');
   const enrichmentStatus = searchParams.get('enrichmentStatus');
+  
+  // vNext specific filters
+  const targetCounties = searchParams.get('targetCounties');
+  const maxDistanceMiles = searchParams.get('maxDistanceMiles');
+  const saleDateFrom = searchParams.get('saleDateFrom');
+  const saleDateTo = searchParams.get('saleDateTo');
+  const createdDateFrom = searchParams.get('createdDateFrom');
+  const createdDateTo = searchParams.get('createdDateTo');
   
   // Date range filter (filter by distress event date)
   if (dateFrom || dateTo) {
@@ -182,6 +200,50 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
   // Within 30 minutes filter (combine both hubs)
   if (within30min === 'true') {
     query = query.or('within_30min_nash.eq.true,within_30min_mtjuliet.eq.true');
+  }
+  
+  // Target counties and distance filter
+  if (targetCounties && targetCounties !== '') {
+    const countyList = targetCounties.split(',').map(c => c.trim()).filter(c => c.length > 0);
+    const maxDistance = maxDistanceMiles ? parseFloat(maxDistanceMiles) : 30;
+    
+    if (countyList.length > 0) {
+      // Create OR conditions for each target county with distance
+      const distanceConditions = countyList.map(county => {
+        const countyLower = county.toLowerCase();
+        return `distance_to_${countyLower}_mi.lte.${maxDistance}`;
+      });
+      
+      // Apply OR condition if we have multiple counties
+      if (distanceConditions.length > 1) {
+        query = query.or(distanceConditions.join(','));
+      } else {
+        query = query.lte(`distance_to_${countyList[0].toLowerCase()}_mi`, maxDistance);
+      }
+    }
+  }
+  
+  // Sale date filters (filter by distress event sale date)
+  if (saleDateFrom || saleDateTo) {
+    if (saleDateFrom) {
+      query = query.filter('distress_events.sale_date', 'gte', saleDateFrom);
+    }
+    if (saleDateTo) {
+      query = query.filter('distress_events.sale_date', 'lte', saleDateTo);
+    }
+  }
+  
+  // Created date filters (filter by property creation date)
+  if (createdDateFrom || createdDateTo) {
+    if (createdDateFrom) {
+      query = query.gte('created_at', createdDateFrom);
+    }
+    if (createdDateTo) {
+      // Add end of day to include the entire day
+      const endOfDay = new Date(createdDateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', endOfDay.toISOString());
+    }
   }
   
   // Order by creation date descending
@@ -217,9 +279,22 @@ async function handleVNextDataRequest(dbClient: any, searchParams: URLSearchPara
       source: distressEvent?.source || '',
       firm: distressEvent?.firm || '',
       within_30min: (property.within_30min_nash || property.within_30min_mtjuliet) ? 'Y' : 'N',
-      distance_miles: property.distance_nash_mi || property.distance_mtjuliet_mi || null,
+      distance_miles: property.nearest_target_distance_mi || property.distance_nash_mi || property.distance_mtjuliet_mi || null,
       created_at: property.created_at,
       updated_at: property.updated_at,
+      
+      // vNext status tracking
+      status: property.status || 'new',
+      is_in_target_counties: property.is_in_target_counties || false,
+      first_seen_at: property.first_seen_at,
+      sale_date_updated_count: property.sale_date_updated_count || 0,
+      nearest_target_county: property.nearest_target_county,
+      
+      // County distances for advanced filtering
+      distance_to_davidson_mi: property.distance_to_davidson_mi,
+      distance_to_sumner_mi: property.distance_to_sumner_mi,
+      distance_to_wilson_mi: property.distance_to_wilson_mi,
+      
       // Add enrichment status for compatibility
       owner_email_1: hasContact ? 'enriched' : null,
       owner_phone_1: hasContact ? 'enriched' : null,

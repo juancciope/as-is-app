@@ -204,9 +204,23 @@ export function DataTable({ data }: DataTableProps) {
                 </span>
               </td>
               <td className="px-6 py-4 text-gray-900">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                  {row.county || 'N/A'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                    {row.county || 'N/A'}
+                  </span>
+                  {row.status && row.status !== 'new' && (
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                      row.status === 'updated' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {row.status}
+                    </span>
+                  )}
+                  {row.sale_date_updated_count > 0 && (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                      {row.sale_date_updated_count}x updated
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 text-gray-900">
                 <span className="text-sm font-medium">{row.firm || 'N/A'}</span>
