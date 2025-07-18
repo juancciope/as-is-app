@@ -84,6 +84,18 @@ export interface Property {
   data_confidence?: number
   created_at: string
   updated_at: string
+  // vNext property status tracking
+  status?: string
+  first_seen_at?: string
+  last_seen_at?: string
+  is_in_target_counties?: boolean
+  sale_date_updated_count?: number
+  // Distance to target counties
+  distance_to_davidson_mi?: number
+  distance_to_sumner_mi?: number
+  distance_to_wilson_mi?: number
+  nearest_target_county?: string
+  nearest_target_distance_mi?: number
 }
 
 export interface DistressEvent {
@@ -93,10 +105,22 @@ export interface DistressEvent {
   source: string
   event_date?: string
   event_time?: string
+  sale_date?: string
   firm?: string
   status: string
   raw_data: Record<string, any>
   created_at: string
+}
+
+export interface PropertyHistory {
+  id: string
+  property_id: string
+  change_type: 'created' | 'sale_date_changed' | 'status_changed' | 'enriched'
+  old_value?: Record<string, any>
+  new_value?: Record<string, any>
+  changed_at: string
+  changed_by?: string
+  notes?: string
 }
 
 export interface Contact {
