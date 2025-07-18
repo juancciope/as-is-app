@@ -36,8 +36,8 @@ export default function HomeVNext() {
     counties: [],
     sources: [],
     within30Min: false,
-    within30MinNash: false,
-    within30MinMtJuliet: false,
+    targetCounties: ['Davidson', 'Sumner', 'Wilson'],
+    maxDistanceMiles: 30,
     enrichmentStatus: 'all',
     stages: [],
     propertyTypes: [],
@@ -69,8 +69,12 @@ export default function HomeVNext() {
       if (!showVNextFilters) {
         if (filters.within30Min) params.append('within30min', 'true');
       } else {
-        if (filters.within30MinNash) params.append('within30minNash', 'true');
-        if (filters.within30MinMtJuliet) params.append('within30minMtJuliet', 'true');
+        if (filters.targetCounties && filters.targetCounties.length > 0) {
+          params.append('targetCounties', filters.targetCounties.join(','));
+        }
+        if (filters.maxDistanceMiles !== undefined) {
+          params.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
+        }
       }
       
       // vNext filters
@@ -92,6 +96,18 @@ export default function HomeVNext() {
         }
         if (filters.maxScore !== undefined) {
           params.append('maxScore', filters.maxScore.toString());
+        }
+        if (filters.saleDateFrom) {
+          params.append('saleDateFrom', filters.saleDateFrom);
+        }
+        if (filters.saleDateTo) {
+          params.append('saleDateTo', filters.saleDateTo);
+        }
+        if (filters.createdDateFrom) {
+          params.append('createdDateFrom', filters.createdDateFrom);
+        }
+        if (filters.createdDateTo) {
+          params.append('createdDateTo', filters.createdDateTo);
         }
         
         // Include events and contacts for enhanced display
