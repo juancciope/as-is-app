@@ -14,6 +14,8 @@ import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText
 export default function Home() {
   console.log('🏠 Home component rendering...');
   
+  // Add error state for better debugging
+  const [error, setError] = useState<string | null>(null);
   const [isScrapingAll, setIsScrapingAll] = useState(false);
   const [isScrapingSource, setIsScrapingSource] = useState<string | null>(null);
   const [completedScrapers, setCompletedScrapers] = useState<string[]>([]);
@@ -42,6 +44,7 @@ export default function Home() {
   const fetchData = async () => {
     console.log('📡 Starting fetchData...');
     setIsLoadingData(true);
+    setError(null); // Clear any previous errors
     try {
       const params = new URLSearchParams();
       
@@ -52,24 +55,34 @@ export default function Home() {
       if (filters.within30Min) params.append('within30min', 'true');
       if (filters.enrichmentStatus !== 'all') params.append('enrichmentStatus', filters.enrichmentStatus);
       
+      console.log('📡 Fetching data from /api/data with params:', params.toString());
       const response = await fetch(`/api/data?${params}`);
+      console.log('📡 Response status:', response.status, response.statusText);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
+      console.log('📡 API Response:', result);
       
       if (result.data && Array.isArray(result.data)) {
+        console.log('✅ Valid data received, count:', result.data.length);
         setData(result.data);
         updateStats(result.data);
+        setError(null);
       } else {
-        console.error('Invalid data format received:', result);
+        console.error('❌ Invalid data format received:', result);
+        setError(`Invalid data format: ${JSON.stringify(result)}`);
         setData([]);
         updateStats([]);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('❌ Failed to fetch data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to fetch data: ${errorMessage}`);
       // Set empty data on error to prevent crashes
       setData([]);
       updateStats([]);
@@ -171,6 +184,27 @@ export default function Home() {
     a.download = `foreclosure-data-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-red-800 mb-4">Application Error</h2>
+          <p className="text-red-700 mb-4">{error}</p>
+          <button
+            onClick={() => {
+              setError(null);
+              fetchData();
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
