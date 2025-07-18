@@ -6,8 +6,18 @@ interface Contact {
   first_name?: string;
   last_name?: string;
   full_name: string;
-  emails: string[];
-  phones: string[];
+  emails: Array<{
+    email: string;
+    label: string;
+    source: string;
+    verified: boolean;
+  }>;
+  phones: Array<{
+    number: string;
+    label: string;
+    source: string;
+    verified: boolean;
+  }>;
   address?: string;
   city?: string;
   state?: string;
@@ -203,14 +213,17 @@ export function ContactsTable({ contacts, isLoading = false }: ContactsTableProp
               <td className="px-6 py-4">
                 {contact.emails.length > 0 ? (
                   <div className="space-y-1">
-                    {contact.emails.slice(0, 2).map((email, idx) => (
+                    {contact.emails.slice(0, 2).map((emailObj, idx) => (
                       <div key={idx} className="flex items-center gap-1">
                         <a 
-                          href={`mailto:${email}`}
+                          href={`mailto:${emailObj.email}`}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          {email}
+                          {emailObj.email}
                         </a>
+                        {emailObj.verified && (
+                          <span className="text-xs text-green-600">✓</span>
+                        )}
                       </div>
                     ))}
                     {contact.emails.length > 2 && (
@@ -226,14 +239,17 @@ export function ContactsTable({ contacts, isLoading = false }: ContactsTableProp
               <td className="px-6 py-4">
                 {contact.phones.length > 0 ? (
                   <div className="space-y-1">
-                    {contact.phones.slice(0, 2).map((phone, idx) => (
+                    {contact.phones.slice(0, 2).map((phoneObj, idx) => (
                       <div key={idx} className="flex items-center gap-1">
                         <a 
-                          href={`tel:${phone}`}
+                          href={`tel:${phoneObj.number}`}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          {phone}
+                          {phoneObj.number}
                         </a>
+                        {phoneObj.verified && (
+                          <span className="text-xs text-green-600">✓</span>
+                        )}
                       </div>
                     ))}
                     {contact.phones.length > 2 && (
