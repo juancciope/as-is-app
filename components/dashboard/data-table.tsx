@@ -175,7 +175,19 @@ export function DataTable({ data }: DataTableProps) {
             >
               <td className="px-6 py-4 font-medium text-gray-900">
                 <div className="flex flex-col">
-                  <span>{row.date}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{row.date}</span>
+                    {row.status === 'new' && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 font-medium">
+                        NEW
+                      </span>
+                    )}
+                    {row.first_seen_at && isToday(row.first_seen_at) && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium">
+                        TODAY
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-500">
                     {(() => {
                       try {
@@ -317,4 +329,14 @@ function getSourceDisplayName(source: string): string {
     'connectedinvestors': 'CI'
   };
   return names[source] || source;
+}
+
+function isToday(dateString: string): boolean {
+  try {
+    const date = new Date(dateString);
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  } catch {
+    return false;
+  }
 }

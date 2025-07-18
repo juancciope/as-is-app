@@ -27,6 +27,7 @@ interface AdvancedFiltersProps {
 }
 
 export interface FilterState {
+  // Legacy date filters (kept for backward compatibility)
   dateFrom: string;
   dateTo: string;
   counties: string[];
@@ -36,7 +37,7 @@ export interface FilterState {
   targetCounties?: string[];
   maxDistanceMiles?: number;
   enrichmentStatus: 'all' | 'enriched' | 'needs_enrichment';
-  // Date filters
+  // Simplified date filters - only 2 needed
   saleDateFrom?: string;
   saleDateTo?: string;
   createdDateFrom?: string;
@@ -234,62 +235,128 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
       
       <CardContent className="space-y-4">
         {/* Quick Filters - Always Visible */}
-        <div className="flex flex-wrap gap-4 items-end">
-          {/* Proximity Filters */}
-          {!showVNextFeatures ? (
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="within30"
-                checked={filters.within30Min}
-                onCheckedChange={(checked) => updateFilters({ within30Min: checked })}
-              />
-              <Label htmlFor="within30">Within 30 minutes</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Target Counties & Distance */}
+          {showVNextFeatures ? (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                Target Counties & Distance
+              </Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  {['Davidson', 'Sumner', 'Wilson'].map((county) => (
+                    <label key={county} className="flex items-center gap-1">
+                      <Checkbox
+                        checked={filters.targetCounties?.includes(county) || false}
+                        onCheckedChange={(checked) => {
+                          const current = filters.targetCounties || [];
+                          if (checked) {
+                            updateFilters({ targetCounties: [...current, county] });
+                          } else {
+                            updateFilters({ targetCounties: current.filter(c => c !== county) });
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{county}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={filters.maxDistanceMiles || 30}
+                    onChange={(e) => updateFilters({ maxDistanceMiles: parseInt(e.target.value) })}
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-medium min-w-[50px]">{filters.maxDistanceMiles || 30} mi</span>
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="flex gap-4">
-              <div className="flex-1 min-w-[300px]">
-                <Label className="flex items-center gap-1 mb-2">
-                  <MapPin className="h-3 w-3" />
-                  Target Counties & Distance
-                </Label>
-                <div className="flex gap-2">
-                  <div className="flex gap-2">
-                    {['Davidson', 'Sumner', 'Wilson'].map((county) => (
-                      <label key={county} className="flex items-center gap-1">
-                        <Checkbox
-                          checked={filters.targetCounties?.includes(county) || false}
-                          onCheckedChange={(checked) => {
-                            const current = filters.targetCounties || [];
-                            if (checked) {
-                              updateFilters({ targetCounties: [...current, county] });
-                            } else {
-                              updateFilters({ targetCounties: current.filter(c => c !== county) });
-                            }
-                          }}
-                        />
-                        <span className="text-sm">{county}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="5"
-                      value={filters.maxDistanceMiles || 30}
-                      onChange={(e) => updateFilters({ maxDistanceMiles: parseInt(e.target.value) })}
-                      className="w-24"
-                    />
-                    <span className="text-sm font-medium">{filters.maxDistanceMiles || 30} mi</span>
-                  </div>
-                </div>
+            <div className="space-y-2">
+              <Label>Proximity</Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="within30"
+                  checked={filters.within30Min}
+                  onCheckedChange={(checked) => updateFilters({ within30Min: checked })}
+                />
+                <Label htmlFor="within30">Within 30 minutes</Label>
               </div>
             </div>
           )}
           
-          <div className="flex-1 min-w-[200px]">
-            <Label>Enrichment Status</Label>
+          {/* Sale Date Filter */}
+          <div className="space-y-2">
+            <Label>Sale Date</Label>
+            <div className="space-y-2">
+              <Input
+                type="date"
+                value={filters.saleDateFrom || ''}
+                onChange={(e) => updateFilters({ saleDateFrom: e.target.value })}
+                placeholder="From"
+              />
+              <Input
+                type="date"
+                value={filters.saleDateTo || ''}
+                onChange={(e) => updateFilters({ saleDateTo: e.target.value })}
+                placeholder="To"
+              />
+            </div>
+          </div>
+
+          {/* Created Date Filter */}
+          <div className="space-y-2">
+            <Label>Date Added</Label>
+            <div className="space-y-2">
+              <Input
+                type="date"
+                value={filters.createdDateFrom || ''}
+                onChange={(e) => updateFilters({ createdDateFrom: e.target.value })}
+                placeholder="From"
+              />
+              <Input
+                type="date"
+                value={filters.createdDateTo || ''}
+                onChange={(e) => updateFilters({ createdDateTo: e.target.value })}
+                placeholder="To"
+              />
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  updateFilters({ createdDateFrom: today, createdDateTo: today });
+                }}
+              >
+                Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const date = new Date();
+                  date.setDate(date.getDate() - 7);
+                  updateFilters({
+                    createdDateFrom: date.toISOString().split('T')[0],
+                    createdDateTo: new Date().toISOString().split('T')[0]
+                  });
+                }}
+              >
+                7 Days
+              </Button>
+            </div>
+          </div>
+
+          {/* Enrichment Status */}
+          <div className="space-y-2">
+            <Label>Contact Status</Label>
             <Select
               value={filters.enrichmentStatus}
               onValueChange={(value: 'all' | 'enriched' | 'needs_enrichment') => 
@@ -306,236 +373,25 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          {/* vNext Priority Filter */}
-          {showVNextFeatures && ClientFeatureFlags.VNEXT_SCORING_ENABLED && (
-            <div className="flex-1 min-w-[200px]">
-              <Label className="flex items-center gap-1">
-                <Star className="h-3 w-3" />
-                Priority Level
-              </Label>
-              <Select
-                value={filters.priorities?.[0] || 'all'}
-                onValueChange={(value) => 
-                  updateFilters({ priorities: value === 'all' ? [] : [value] })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All priorities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  {PRIORITIES.map((priority) => (
-                    <SelectItem key={priority.value} value={priority.value}>
-                      {priority.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {hasActiveFilters() && (
+        {/* Clear Filters Button */}
+        {hasActiveFilters() && (
+          <div className="flex justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={clearFilters}
             >
               <X className="h-4 w-4 mr-2" />
-              Clear All
+              Clear All Filters
             </Button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Expanded Filters */}
         {isExpanded && (
           <div className="space-y-6 pt-4 border-t">
-            {/* Date Range */}
-            <div>
-              <Label className="text-base font-medium">Date Range</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                <div>
-                  <Label htmlFor="dateFrom" className="text-sm">From</Label>
-                  <Input
-                    id="dateFrom"
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={(e) => updateFilters({ dateFrom: e.target.value })}
-                    placeholder={getDefaultDateFrom()}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dateTo" className="text-sm">To</Label>
-                  <Input
-                    id="dateTo"
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={(e) => updateFilters({ dateTo: e.target.value })}
-                    placeholder={getDefaultDateTo()}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateFilters({
-                    dateFrom: getDefaultDateFrom(),
-                    dateTo: getDefaultDateTo()
-                  })}
-                >
-                  Last 30 Days
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const date = new Date();
-                    date.setDate(date.getDate() - 7);
-                    updateFilters({
-                      dateFrom: date.toISOString().split('T')[0],
-                      dateTo: getDefaultDateTo()
-                    });
-                  }}
-                >
-                  Last 7 Days
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateFilters({
-                    dateFrom: new Date().toISOString().split('T')[0],
-                    dateTo: getDefaultDateTo()
-                  })}
-                >
-                  Today
-                </Button>
-              </div>
-            </div>
-
-            {/* Sale Date Range */}
-            {showVNextFeatures && (
-              <div>
-                <Label className="text-base font-medium">Sale Date Range</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <Label htmlFor="saleDateFrom" className="text-sm">From</Label>
-                    <Input
-                      id="saleDateFrom"
-                      type="date"
-                      value={filters.saleDateFrom || ''}
-                      onChange={(e) => updateFilters({ saleDateFrom: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="saleDateTo" className="text-sm">To</Label>
-                    <Input
-                      id="saleDateTo"
-                      type="date"
-                      value={filters.saleDateTo || ''}
-                      onChange={(e) => updateFilters({ saleDateTo: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Created Date Range */}
-            {showVNextFeatures && (
-              <div>
-                <Label className="text-base font-medium">Property Added Date</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <Label htmlFor="createdDateFrom" className="text-sm">From</Label>
-                    <Input
-                      id="createdDateFrom"
-                      type="date"
-                      value={filters.createdDateFrom || ''}
-                      onChange={(e) => updateFilters({ createdDateFrom: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="createdDateTo" className="text-sm">To</Label>
-                    <Input
-                      id="createdDateTo"
-                      type="date"
-                      value={filters.createdDateTo || ''}
-                      onChange={(e) => updateFilters({ createdDateTo: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      updateFilters({
-                        createdDateFrom: today.toISOString().split('T')[0],
-                        createdDateTo: today.toISOString().split('T')[0]
-                      });
-                    }}
-                  >
-                    Today's New
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setDate(date.getDate() - 7);
-                      updateFilters({
-                        createdDateFrom: date.toISOString().split('T')[0],
-                        createdDateTo: new Date().toISOString().split('T')[0]
-                      });
-                    }}
-                  >
-                    Last 7 Days
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Counties */}
-            <div>
-              <Label className="text-base font-medium">
-                Counties ({filters.counties.length} selected)
-              </Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
-                {COUNTIES.map((county) => (
-                  <div key={county} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`county-${county}`}
-                      checked={filters.counties.includes(county)}
-                      onCheckedChange={() => toggleCounty(county)}
-                    />
-                    <Label
-                      htmlFor={`county-${county}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {county}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateFilters({ counties: COUNTIES })}
-                >
-                  Select All
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateFilters({ counties: [] })}
-                >
-                  Clear All
-                </Button>
-              </div>
-            </div>
-
             {/* Data Sources */}
             <div>
               <Label className="text-base font-medium">
@@ -570,6 +426,46 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
                   variant="outline"
                   size="sm"
                   onClick={() => updateFilters({ sources: [] })}
+                >
+                  Clear All
+                </Button>
+              </div>
+            </div>
+
+            {/* All Counties (for legacy compatibility) */}
+            <div>
+              <Label className="text-base font-medium">
+                All Counties ({filters.counties.length} selected)
+              </Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
+                {COUNTIES.map((county) => (
+                  <div key={county} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`county-${county}`}
+                      checked={filters.counties.includes(county)}
+                      onCheckedChange={() => toggleCounty(county)}
+                    />
+                    <Label
+                      htmlFor={`county-${county}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {county}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ counties: COUNTIES })}
+                >
+                  Select All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ counties: [] })}
                 >
                   Clear All
                 </Button>

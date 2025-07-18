@@ -55,6 +55,18 @@ export default function Home() {
       if (filters.within30Min) params.append('within30min', 'true');
       if (filters.enrichmentStatus !== 'all') params.append('enrichmentStatus', filters.enrichmentStatus);
       
+      // vNext filters
+      if (filters.targetCounties && filters.targetCounties.length > 0) {
+        params.append('targetCounties', filters.targetCounties.join(','));
+      }
+      if (filters.maxDistanceMiles !== undefined) {
+        params.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
+      }
+      if (filters.saleDateFrom) params.append('saleDateFrom', filters.saleDateFrom);
+      if (filters.saleDateTo) params.append('saleDateTo', filters.saleDateTo);
+      if (filters.createdDateFrom) params.append('createdDateFrom', filters.createdDateFrom);
+      if (filters.createdDateTo) params.append('createdDateTo', filters.createdDateTo);
+      
       console.log('📡 Fetching data from /api/data with params:', params.toString());
       const response = await fetch(`/api/data?${params}`);
       console.log('📡 Response status:', response.status, response.statusText);
