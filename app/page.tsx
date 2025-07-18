@@ -265,17 +265,49 @@ export default function Home() {
       return;
     }
 
-    const csv = [
-      Object.keys(data[0]).join(','),
-      ...data.map(row => Object.values(row).join(','))
-    ].join('\\n');
+    // Create CSV with specific columns: DATE, TIME, PL, FIRM, ADDRESS, CTY
+    const headers = ['DATE', 'TIME', 'PL', 'FIRM', 'ADDRESS', 'CTY'];
     
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csvRows = [
+      headers.join(','),
+      ...data.map(row => {
+        // Extract required fields and format them
+        const date = row.date || '';
+        const time = row.time || '';
+        const pl = row.county ? row.county.charAt(0).toUpperCase() : ''; // First letter of county
+        const firm = row.firm || '';
+        const address = row.address || '';
+        const cty = row.city || '';
+        
+        // Escape commas and quotes in CSV data
+        const escapeCSV = (value) => {
+          if (typeof value !== 'string') value = String(value);
+          if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+            return '"' + value.replace(/"/g, '""') + '"';
+          }
+          return value;
+        };
+        
+        return [
+          escapeCSV(date),
+          escapeCSV(time),
+          escapeCSV(pl),
+          escapeCSV(firm),
+          escapeCSV(address),
+          escapeCSV(cty)
+        ].join(',');
+      })
+    ].join('\n');
+    
+    const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `foreclosure-data-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `foreclosure-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   // Show error state if there's an error
