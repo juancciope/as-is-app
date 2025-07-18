@@ -12,6 +12,8 @@ import { AdvancedFilters, FilterState } from '../components/dashboard/advanced-f
 import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search } from 'lucide-react';
 
 export default function Home() {
+  console.log('🏠 Home component rendering...');
+  
   const [isScrapingAll, setIsScrapingAll] = useState(false);
   const [isScrapingSource, setIsScrapingSource] = useState<string | null>(null);
   const [completedScrapers, setCompletedScrapers] = useState<string[]>([]);
@@ -33,10 +35,12 @@ export default function Home() {
   });
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered, fetching data...');
     fetchData();
   }, [filters]);
 
   const fetchData = async () => {
+    console.log('📡 Starting fetchData...');
     setIsLoadingData(true);
     try {
       const params = new URLSearchParams();
