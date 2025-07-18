@@ -49,14 +49,26 @@ export default function Home() {
       if (filters.enrichmentStatus !== 'all') params.append('enrichmentStatus', filters.enrichmentStatus);
       
       const response = await fetch(`/api/data?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (result.data) {
+      if (result.data && Array.isArray(result.data)) {
         setData(result.data);
         updateStats(result.data);
+      } else {
+        console.error('Invalid data format received:', result);
+        setData([]);
+        updateStats([]);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      // Set empty data on error to prevent crashes
+      setData([]);
+      updateStats([]);
     } finally {
       setIsLoadingData(false);
     }
@@ -138,6 +150,11 @@ export default function Home() {
   };
 
   const exportData = () => {
+    if (!data || data.length === 0) {
+      alert('No data to export');
+      return;
+    }
+
     const csv = [
       Object.keys(data[0]).join(','),
       ...data.map(row => Object.values(row).join(','))
