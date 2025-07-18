@@ -13,7 +13,11 @@
 function getEnvVar(name: string, defaultValue?: string): string {
   const value = process.env[name];
   if (!value && defaultValue === undefined) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    // Only throw error on server-side, provide fallback for client-side
+    if (typeof window === 'undefined') {
+      throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return '';
   }
   return value || defaultValue || '';
 }

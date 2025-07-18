@@ -10,7 +10,7 @@ import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
 import { Calendar, Filter, Download, RefreshCw, X, Star, MapPin } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { FeatureFlags } from '../../lib/config';
+import { ClientFeatureFlags } from '../../lib/client-config';
 
 interface AdvancedFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
@@ -175,7 +175,7 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
   };
 
   // Check if we should show vNext features
-  const showVNextFeatures = FeatureFlags.USE_VNEXT_FILTERS;
+  const showVNextFeatures = ClientFeatureFlags.USE_VNEXT_FILTERS;
 
   // Set default date range to last 30 days
   const getDefaultDateFrom = () => {
@@ -287,7 +287,7 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
           </div>
 
           {/* vNext Priority Filter */}
-          {showVNextFeatures && FeatureFlags.VNEXT_SCORING_ENABLED && (
+          {showVNextFeatures && ClientFeatureFlags.VNEXT_SCORING_ENABLED && (
             <div className="flex-1 min-w-[200px]">
               <Label className="flex items-center gap-1">
                 <Star className="h-3 w-3" />
@@ -548,7 +548,7 @@ export function AdvancedFilters({ onFiltersChange, onExport, isLoading, totalRes
                 </div>
 
                 {/* Score Range (only if scoring is enabled) */}
-                {FeatureFlags.VNEXT_SCORING_ENABLED && (
+                {ClientFeatureFlags.VNEXT_SCORING_ENABLED && (
                   <div>
                     <Label className="text-base font-medium flex items-center gap-1">
                       <Star className="h-4 w-4" />
