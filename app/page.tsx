@@ -22,8 +22,8 @@ export default function Home() {
   const [completedScrapers, setCompletedScrapers] = useState<string[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
-  const [data, setData] = useState([]);
-  const [contacts, setContacts] = useState([]);
+  const [data, setData] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'properties' | 'contacts'>('properties');
   const [stats, setStats] = useState({
     total: 0,
@@ -280,7 +280,7 @@ export default function Home() {
         const cty = row.city || '';
         
         // Escape commas and quotes in CSV data
-        const escapeCSV = (value) => {
+        const escapeCSV = (value: any): string => {
           if (typeof value !== 'string') value = String(value);
           if (value.includes(',') || value.includes('"') || value.includes('\n')) {
             return '"' + value.replace(/"/g, '""') + '"';
