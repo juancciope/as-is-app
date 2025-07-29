@@ -42,10 +42,15 @@ export async function GET(
       lastMessageId: result?.lastMessageId,
       nextPage: result?.nextPage || false
     })
-  } catch (error) {
-    console.error('Error fetching messages:', error)
+  } catch (error: any) {
+    console.error('Error fetching messages for conversation', params.conversationId, ':', error)
     return NextResponse.json(
-      { error: 'Failed to fetch messages' },
+      { 
+        error: 'Failed to fetch messages',
+        conversationId: params.conversationId,
+        details: error.message,
+        messages: [] // Return empty array to prevent crashes
+      },
       { status: 500 }
     )
   }

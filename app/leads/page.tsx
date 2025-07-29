@@ -52,23 +52,29 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
-      console.log('Messages API response:', data) // Debug log
+      console.log('Messages API response for conversation', conversationId, ':', data) // Debug log
       
       // Handle different possible response structures
       let messagesArray = []
       if (Array.isArray(data)) {
         messagesArray = data
+        console.log('✓ Messages found as direct array:', messagesArray.length)
       } else if (data.messages && Array.isArray(data.messages)) {
         messagesArray = data.messages
+        console.log('✓ Messages found in data.messages:', messagesArray.length)
       } else if (data.data && Array.isArray(data.data)) {
         messagesArray = data.data
+        console.log('✓ Messages found in data.data:', messagesArray.length)
       } else if (data.results && Array.isArray(data.results)) {
         messagesArray = data.results
+        console.log('✓ Messages found in data.results:', messagesArray.length)
       } else {
-        console.warn('Messages data is not in expected format:', data)
+        console.warn('❌ Messages data is not in expected format:', data)
+        console.warn('Available keys:', Object.keys(data))
         messagesArray = []
       }
       
+      console.log('📝 Final messages array:', messagesArray)
       setMessages(messagesArray)
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -90,7 +96,8 @@ export default function LeadsPage() {
         },
         body: JSON.stringify({
           message: messageText,
-          type: 'SMS'
+          type: 'SMS',
+          contactId: selectedLead.contactId
         })
       })
 
