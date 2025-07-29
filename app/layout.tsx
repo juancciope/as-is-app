@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import Sidebar from '@/components/layout/sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Foreclosure Scraper Dashboard',
-  description: 'Monitor and analyze foreclosure auction data from multiple sources',
+  title: 'AS-IS CRM',
+  description: 'Real estate CRM for managing properties and leads',
 };
 
 export default function RootLayout({
@@ -17,9 +18,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <main className="min-h-screen bg-background">
-          {children}
-        </main>
+        <div className="flex h-screen bg-gray-100">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-4 lg:p-8">
+              {children}
+            </div>
+          </main>
+        </div>
       </body>
     </html>
   );
