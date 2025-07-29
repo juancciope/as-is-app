@@ -32,7 +32,15 @@ export async function GET(
       type
     })
 
-    return NextResponse.json(result)
+    console.log('GHL Messages API result:', result) // Debug log
+
+    // Ensure we always return a consistent structure
+    return NextResponse.json({
+      messages: Array.isArray(result?.messages) ? result.messages : [],
+      total: result?.total || 0,
+      lastMessageId: result?.lastMessageId,
+      nextPage: result?.nextPage || false
+    })
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json(

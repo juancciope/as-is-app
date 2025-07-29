@@ -52,9 +52,27 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
-      setMessages(data.messages || [])
+      console.log('Messages API response:', data) // Debug log
+      
+      // Handle different possible response structures
+      let messagesArray = []
+      if (Array.isArray(data)) {
+        messagesArray = data
+      } else if (data.messages && Array.isArray(data.messages)) {
+        messagesArray = data.messages
+      } else if (data.data && Array.isArray(data.data)) {
+        messagesArray = data.data
+      } else if (data.results && Array.isArray(data.results)) {
+        messagesArray = data.results
+      } else {
+        console.warn('Messages data is not in expected format:', data)
+        messagesArray = []
+      }
+      
+      setMessages(messagesArray)
     } catch (error) {
       console.error('Error fetching messages:', error)
+      setMessages([]) // Ensure messages is always an array
     } finally {
       setIsLoadingMessages(false)
     }
@@ -232,7 +250,7 @@ export default function LeadsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {messages.map((message) => (
+                    {Array.isArray(messages) && messages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex ${
