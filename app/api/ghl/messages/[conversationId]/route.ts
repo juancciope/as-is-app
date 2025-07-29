@@ -26,13 +26,17 @@ export async function GET(
     const lastMessageId = searchParams.get('lastMessageId') || undefined
     const type = searchParams.get('type') || undefined
 
+    console.log('🔍 Fetching messages for conversation:', params.conversationId)
+    console.log('📋 Parameters:', { limit, lastMessageId, type })
+
     const result = await ghl.getMessages(params.conversationId, {
       limit,
       lastMessageId,
       type
     })
 
-    console.log('GHL Messages API result:', result) // Debug log
+    console.log('🏠 GHL API raw response:', JSON.stringify(result, null, 2))
+    console.log('📊 Messages count from GHL:', result?.messages?.length || 0)
 
     // Ensure we always return a consistent structure
     const messages = Array.isArray(result?.messages) ? result.messages : []

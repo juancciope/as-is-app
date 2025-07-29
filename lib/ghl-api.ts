@@ -169,19 +169,27 @@ export class GoHighLevelAPI {
     if (params?.lastMessageId) queryParams.append('lastMessageId', params.lastMessageId)
     if (params?.type) queryParams.append('type', params.type)
 
-    const response = await fetch(
-      `${this.config.baseUrl}/conversations/${conversationId}/messages?${queryParams.toString()}`,
-      {
-        method: 'GET',
-        headers: this.headers
-      }
-    )
+    const url = `${this.config.baseUrl}/conversations/${conversationId}/messages?${queryParams.toString()}`
+    console.log('🌐 GHL API URL:', url)
+    console.log('📤 GHL API Headers:', this.headers)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.headers
+    })
+
+    console.log('📥 GHL API Response Status:', response.status, response.statusText)
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ GHL API Error Response:', errorText)
       throw new Error(`Failed to fetch messages: ${response.statusText}`)
     }
 
-    return await response.json()
+    const jsonResponse = await response.json()
+    console.log('📨 GHL API JSON Response:', JSON.stringify(jsonResponse, null, 2))
+    
+    return jsonResponse
   }
 
   async sendMessage(message: {
