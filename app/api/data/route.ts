@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin, FORECLOSURE_TABLE, ForeclosureData } from '../../../lib/supabase';
 import { FeatureFlags, DatabaseConfig } from '../../../lib/config';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const dbClient = supabaseAdmin || supabase;

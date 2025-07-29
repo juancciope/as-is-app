@@ -1,15 +1,3 @@
-/**
- * vNext Properties API Endpoint
- * 
- * This endpoint provides enhanced property data access with:
- * - Normalized schema support (properties + distress_events + contacts)
- * - Advanced filtering capabilities
- * - Integrated scoring system
- * - Feature flag support for gradual rollout
- * - Pagination and sorting
- * - Performance optimization
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../lib/supabase';
 import { scoreProperties, createDefaultScorer } from '../../../lib/scoring';
@@ -24,6 +12,8 @@ import type {
   PropertyWithEvents 
 } from '../../../lib/supabase';
 
+
+export const dynamic = 'force-dynamic';
 interface PropertiesResponse {
   properties: EnhancedProperty[];
   pagination: {

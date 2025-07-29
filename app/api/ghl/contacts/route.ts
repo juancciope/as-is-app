@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoHighLevelAPI } from '@/lib/ghl-api'
 
+
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const apiKey = process.env.GHL_API_KEY
