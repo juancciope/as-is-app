@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
     }
 
     // If first test fails, try alternative auth formats
-    let alternativeTest = null
+    let alternativeTests = []
     if (!response.ok && response.status === 401) {
       console.log('Bearer auth failed, trying alternative formats...')
       
-      // Try without Bearer prefix
-      const altResponse = await fetch(testUrl, {
+      // Test 1: Try without Bearer prefix
+      const altResponse1 = await fetch(testUrl, {
         method: 'GET',
         headers: {
           'Authorization': apiKey,
@@ -62,21 +62,73 @@ export async function GET(request: NextRequest) {
         }
       })
       
-      const altText = await altResponse.text()
-      let altData
+      const altText1 = await altResponse1.text()
+      let altData1
       try {
-        altData = JSON.parse(altText)
+        altData1 = JSON.parse(altText1)
       } catch {
-        altData = altText
+        altData1 = altText1
       }
       
-      alternativeTest = {
-        status: altResponse.status,
-        statusText: altResponse.statusText,
-        ok: altResponse.ok,
-        data: altData,
+      alternativeTests.push({
+        status: altResponse1.status,
+        statusText: altResponse1.statusText,
+        ok: altResponse1.ok,
+        data: altData1,
         method: 'Authorization: [api_key] (no Bearer)'
+      })
+
+      // Test 2: Try JWT as token directly
+      const altResponse2 = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28'
+        }
+      })
+      
+      const altText2 = await altResponse2.text()
+      let altData2
+      try {
+        altData2 = JSON.parse(altText2)
+      } catch {
+        altData2 = altText2
       }
+      
+      alternativeTests.push({
+        status: altResponse2.status,
+        statusText: altResponse2.statusText,
+        ok: altResponse2.ok,
+        data: altData2,
+        method: 'Authorization: Token [api_key]'
+      })
+
+      // Test 3: Try with custom header
+      const altResponse3 = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `JWT ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Version': '2021-07-28'
+        }
+      })
+      
+      const altText3 = await altResponse3.text()
+      let altData3
+      try {
+        altData3 = JSON.parse(altText3)
+      } catch {
+        altData3 = altText3
+      }
+      
+      alternativeTests.push({
+        status: altResponse3.status,
+        statusText: altResponse3.statusText,
+        ok: altResponse3.ok,
+        data: altData3,
+        method: 'Authorization: JWT [api_key]'
+      })
     }
 
     return NextResponse.json({
@@ -88,7 +140,7 @@ export async function GET(request: NextRequest) {
         data: responseData,
         method: 'Authorization: Bearer [api_key]'
       },
-      alternativeTest,
+      alternativeTests,
       config: {
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey.length,
