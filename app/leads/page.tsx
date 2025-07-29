@@ -259,29 +259,79 @@ export default function LeadsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Array.isArray(messages) && messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse().map((message: any) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${
-                          message.direction === 'outbound' ? 'justify-end' : 'justify-start'
-                        }`}
-                      >
-                        <div
-                          className={`max-w-xs px-4 py-2 rounded-lg ${
-                            message.direction === 'outbound'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-900'
-                          }`}
-                        >
-                          <p className="text-sm">{message.body}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.direction === 'outbound' ? 'text-blue-100' : 'text-gray-500'
-                          }`}>
-                            {new Date(message.dateAdded).toLocaleTimeString()}
-                          </p>
+                    {(() => {
+                      const smsMessages = Array.isArray(messages) ? 
+                        messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse() : []
+                      
+                      const groupedMessages: { [key: string]: any[] } = {}
+                      smsMessages.forEach((message: any) => {
+                        const messageDate = new Date(message.dateAdded)
+                        const dateKey = messageDate.toDateString()
+                        if (!groupedMessages[dateKey]) {
+                          groupedMessages[dateKey] = []
+                        }
+                        groupedMessages[dateKey].push(message)
+                      })
+
+                      return Object.entries(groupedMessages).map(([dateKey, dayMessages]) => (
+                        <div key={dateKey}>
+                          {/* Date separator */}
+                          <div className="flex justify-center my-4">
+                            <div className="bg-white px-3 py-1 rounded-full text-xs text-gray-500 border border-gray-200 shadow-sm">
+                              {(() => {
+                                const date = new Date(dateKey)
+                                const today = new Date()
+                                const yesterday = new Date(today)
+                                yesterday.setDate(yesterday.getDate() - 1)
+                                
+                                if (date.toDateString() === today.toDateString()) {
+                                  return 'Today'
+                                } else if (date.toDateString() === yesterday.toDateString()) {
+                                  return 'Yesterday'
+                                } else {
+                                  return date.toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })
+                                }
+                              })()}
+                            </div>
+                          </div>
+                          
+                          {/* Messages for this date */}
+                          <div className="space-y-2">
+                            {dayMessages.map((message: any) => (
+                              <div
+                                key={message.id}
+                                className={`flex ${
+                                  message.direction === 'outbound' ? 'justify-end' : 'justify-start'
+                                }`}
+                              >
+                                <div
+                                  className={`max-w-xs px-4 py-2 rounded-lg ${
+                                    message.direction === 'outbound'
+                                      ? 'bg-blue-500 text-white'
+                                      : 'bg-gray-200 text-gray-900'
+                                  }`}
+                                >
+                                  <p className="text-sm">{message.body}</p>
+                                  <p className={`text-xs mt-1 ${
+                                    message.direction === 'outbound' ? 'text-blue-100' : 'text-gray-500'
+                                  }`}>
+                                    {new Date(message.dateAdded).toLocaleTimeString([], { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    })()}
                   </div>
                 )}
               </div>
