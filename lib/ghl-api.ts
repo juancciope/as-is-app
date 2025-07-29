@@ -39,17 +39,26 @@ export interface GHLMessage {
 export interface GHLContact {
   id: string
   locationId: string
-  firstName: string
-  lastName: string
-  name: string
-  email: string
-  phone: string
+  firstName?: string
+  lastName?: string
+  name?: string
+  email?: string
+  phone?: string
+  dateAdded: string
+  dateUpdated?: string
+  tags?: string[]
+  source?: string
+  customFields?: Array<{
+    id: string
+    value: string
+  }>
   conversationId?: string
 }
 
 export class GoHighLevelAPI {
   private config: GHLConfig
   private headers: HeadersInit
+  private contactsHeaders: HeadersInit
 
   constructor(config: GHLConfig) {
     this.config = {
@@ -57,10 +66,18 @@ export class GoHighLevelAPI {
       baseUrl: config.baseUrl || 'https://services.leadconnectorhq.com'
     }
     
+    // Headers for conversations API (version 2021-04-15)
     this.headers = {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
       'Version': '2021-04-15'
+    }
+
+    // Headers for contacts API (version 2021-07-28)
+    this.contactsHeaders = {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json',
+      'Version': '2021-07-28'
     }
   }
 
@@ -184,5 +201,104 @@ export class GoHighLevelAPI {
 
     const data = await response.json()
     return data.conversation
+  }
+
+  async getContacts(params?: {
+    locationId?: string
+    limit?: number
+    query?: string
+    startAfter?: number
+    startAfterId?: string
+  }): Promise<{ contacts: GHLContact[], count: number }> {
+    const queryParams = new URLSearchParams()
+    
+    if (params?.locationId || this.config.locationId) {
+      queryParams.append('locationId', params?.locationId || this.config.locationId)
+    }
+    if (params?.limit) queryParams.append('limit', String(params.limit))
+    if (params?.query) queryParams.append('query', params.query)
+    if (params?.startAfter) queryParams.append('startAfter', String(params.startAfter))
+    if (params?.startAfterId) queryParams.append('startAfterId', params.startAfterId)
+
+    const response = await fetch(
+      `${this.config.baseUrl}/contacts/?${queryParams.toString()}`,
+      {
+        method: 'GET',
+        headers: this.contactsHeaders
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch contacts: ${response.statusText}`)
+    }
+
+    return await response.json()
+  }
+
+  async getContact(contactId: string): Promise<GHLContact> {
+    const response = await fetch(
+      `${this.config.baseUrl}/contacts/${contactId}`,
+      {
+        method: 'GET',
+        headers: this.contactsHeaders
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch contact: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data.contact
+  }
+
+  // Helper method to get conversations from contacts
+  async getConversationsFromContacts(params?: {
+    starred?: boolean
+    limit?: number
+  }): Promise<{ conversations: GHLConversation[], total: number }> {
+    try {
+      // Get all contacts
+      const contactsResult = await this.getContacts({
+        limit: params?.limit || 100
+      })
+
+      const conversations: GHLConversation[] = []
+      
+      // For each contact, try to get their conversation
+      // Note: We need to somehow determine conversation IDs
+      // This is a limitation - we'd need to track conversation IDs separately
+      // or use webhook data to know which contacts have active conversations
+      
+      for (const contact of contactsResult.contacts) {
+        try {
+          // This is a workaround - in practice you'd need to store conversation IDs
+          // or get them from webhook data when conversations are created
+          if (contact.conversationId) {
+            const conversation = await this.getConversation(contact.conversationId)
+            
+            // Filter by starred if requested
+            if (params?.starred === undefined || conversation.starred === params.starred) {
+              // Enrich conversation with contact info
+              conversation.contactName = contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
+              conversation.contactEmail = contact.email
+              conversation.contactPhone = contact.phone
+              
+              conversations.push(conversation)
+            }
+          }
+        } catch (error) {
+          // Skip contacts without valid conversations
+          console.warn(`Could not fetch conversation for contact ${contact.id}:`, error)
+        }
+      }
+
+      return {
+        conversations,
+        total: conversations.length
+      }
+    } catch (error) {
+      throw new Error(`Failed to get conversations from contacts: ${error}`)
+    }
   }
 }

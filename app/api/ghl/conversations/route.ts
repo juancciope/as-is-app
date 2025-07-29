@@ -14,18 +14,38 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Return empty conversations with helpful message
-    // The GHL API doesn't have a direct "list conversations" endpoint
-    // You would need to implement this by:
-    // 1. Getting contacts from your location
-    // 2. For each contact, checking if they have a conversation
-    // 3. Fetching individual conversations using getConversation(id)
-    
-    return NextResponse.json({
-      conversations: [],
-      total: 0,
-      message: 'GHL API does not provide a direct list conversations endpoint. You need to provide specific conversation IDs to fetch conversations.'
+    // Initialize GHL API client
+    const ghl = new GoHighLevelAPI({
+      apiKey,
+      locationId: locationId || ''
     })
+
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams
+    const starred = searchParams.get('starred') === 'true'
+    const limit = parseInt(searchParams.get('limit') || '50')
+
+    try {
+      // First, let's just get contacts to see if the API works
+      const contactsResult = await ghl.getContacts({ limit })
+      
+      // For now, return contacts info so we can see what we're working with
+      return NextResponse.json({
+        conversations: [],
+        total: 0,
+        contacts: contactsResult.contacts,
+        contactsCount: contactsResult.count,
+        message: `Found ${contactsResult.count} contacts. To get conversations, we need to determine which contacts have conversation IDs.`
+      })
+    } catch (contactError) {
+      console.error('Error fetching contacts:', contactError)
+      return NextResponse.json({
+        conversations: [],
+        total: 0,
+        error: `Failed to fetch contacts: ${contactError}`,
+        message: 'Could not fetch contacts from GHL API. Please check your API credentials and permissions.'
+      })
+    }
   } catch (error) {
     console.error('Error with GHL API:', error)
     return NextResponse.json(

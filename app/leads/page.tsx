@@ -6,12 +6,14 @@ import { Star, MessageCircle, Phone, Mail, Calendar, Loader2, AlertCircle } from
 export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [leads, setLeads] = useState<any[]>([])
+  const [contacts, setContacts] = useState<any[]>([])  
   const [messages, setMessages] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [messageText, setMessageText] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   useEffect(() => {
     fetchConversations()
@@ -30,6 +32,8 @@ export default function LeadsPage() {
 
       const data = await response.json()
       setLeads(data.conversations || [])
+      setContacts(data.contacts || [])
+      setDebugInfo(data)
     } catch (error: any) {
       console.error('Error fetching conversations:', error)
       setError(error.message || 'Failed to load conversations')
@@ -120,22 +124,40 @@ export default function LeadsPage() {
                 </div>
               </div>
             ) : leads.length === 0 ? (
-              <div className="p-4">
+              <div className="p-4 space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start">
                     <Star className="h-5 w-5 text-blue-400 mr-2 mt-0.5" />
                     <div>
-                      <p className="text-sm text-blue-800 font-medium">GHL Integration Note</p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        The GHL API doesn't provide a direct way to list all conversations. 
-                        You'll need to provide specific conversation IDs to fetch and display conversations here.
-                      </p>
-                      <p className="text-xs text-blue-600 mt-2">
-                        Consider implementing this by getting contacts first, then their conversation IDs.
-                      </p>
+                      <p className="text-sm text-blue-800 font-medium">GHL API Status</p>
+                      {debugInfo?.message && (
+                        <p className="text-xs text-blue-700 mt-1">{debugInfo.message}</p>
+                      )}
+                      {contacts.length > 0 && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          Found {contacts.length} contacts. To see conversations, we need conversation IDs.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
+                
+                {contacts.length > 0 && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm font-medium text-gray-800 mb-2">Available Contacts:</p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {contacts.slice(0, 10).map((contact: any) => (
+                        <div key={contact.id} className="text-xs text-gray-600 flex justify-between">
+                          <span>{contact.name || contact.email || 'Unknown'}</span>
+                          <span>{contact.phone || contact.email}</span>
+                        </div>
+                      ))}
+                      {contacts.length > 10 && (
+                        <div className="text-xs text-gray-500">...and {contacts.length - 10} more</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               leads.map((lead) => (
