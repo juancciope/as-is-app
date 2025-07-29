@@ -75,8 +75,8 @@ export default function LeadsPage() {
       }
       
       console.log('📝 Final messages array:', messagesArray)
-      console.log('🏷️ Message types found:', messagesArray.map(msg => msg.messageType))
-      console.log('📱 SMS messages only:', messagesArray.filter(msg => msg.messageType === 'TYPE_SMS').length)
+      console.log('🏷️ Message types found:', messagesArray.map((msg: any) => msg.messageType))
+      console.log('📱 SMS messages only:', messagesArray.filter((msg: any) => msg.messageType === 'TYPE_SMS').length)
       setMessages(messagesArray)
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -259,7 +259,7 @@ export default function LeadsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Array.isArray(messages) && messages.filter(message => message.messageType === 'TYPE_SMS').slice().reverse().map((message) => (
+                    {Array.isArray(messages) && messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse().map((message: any) => (
                       <div
                         key={message.id}
                         className={`flex ${
