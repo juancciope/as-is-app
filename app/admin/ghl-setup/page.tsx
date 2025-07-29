@@ -12,7 +12,7 @@ export default function GHLSetupPage() {
     }
 
     const redirectUri = `${window.location.origin}/oauth/callback`
-    const scope = 'conversations/message.readonly conversations/message.write'
+    const scope = 'conversations/message.readonly conversations/message.write conversations.readonly conversations.write'
     
     const authUrl = `https://marketplace.gohighlevel.com/oauth/chooselocation?` + 
       `response_type=code&` +
@@ -49,7 +49,7 @@ export default function GHLSetupPage() {
               <ol className="text-sm text-blue-700 space-y-1">
                 <li>1. Go to <a href="https://marketplace.gohighlevel.com/" target="_blank" rel="noopener" className="underline">GHL Marketplace</a></li>
                 <li>2. Sign up for developer account if needed</li>
-                <li>3. Create new app with these scopes: <code className="bg-blue-100 px-1 rounded">conversations/message.readonly conversations/message.write</code></li>
+                <li>3. Create new app with these scopes: <code className="bg-blue-100 px-1 rounded">conversations/message.readonly conversations/message.write conversations.readonly conversations.write</code></li>
                 <li>4. Copy your Client ID and Client Secret</li>
               </ol>
             </div>
