@@ -35,9 +35,10 @@ export async function GET(
     console.log('GHL Messages API result:', result) // Debug log
 
     // Ensure we always return a consistent structure
+    const messages = Array.isArray(result?.messages) ? result.messages : []
     return NextResponse.json({
-      messages: Array.isArray(result?.messages) ? result.messages : [],
-      total: result?.total || 0,
+      messages,
+      total: messages.length, // Calculate total from messages array
       lastMessageId: result?.lastMessageId,
       nextPage: result?.nextPage || false
     })
