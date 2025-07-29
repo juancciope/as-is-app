@@ -98,23 +98,65 @@ export class GoHighLevelAPI {
     return data.conversation
   }
 
-  // Note: GHL API doesn't have a direct "list conversations" endpoint
-  // This would need to be implemented by getting contacts and their conversation IDs
-  // For now, this method is a placeholder
   async getConversations(params?: {
     locationId?: string
     assignedTo?: string
     status?: string
     starred?: boolean
     limit?: number
-    offset?: number
+    query?: string
+    contactId?: string
+    lastMessageType?: string
+    sort?: 'asc' | 'desc'
+    sortBy?: 'last_manual_message_date' | 'last_message_date' | 'score_profile'
   }): Promise<{ conversations: GHLConversation[], total: number }> {
-    // This endpoint doesn't exist in GHL API
-    // Would need to implement by:
-    // 1. Getting contacts from the location
-    // 2. Getting conversation IDs for each contact
-    // 3. Fetching individual conversations
-    throw new Error('List conversations endpoint not available in GHL API. Use getConversation(id) instead.')
+    const queryParams = new URLSearchParams()
+    
+    if (params?.locationId || this.config.locationId) {
+      queryParams.append('locationId', params?.locationId || this.config.locationId)
+    }
+    if (params?.assignedTo) queryParams.append('assignedTo', params.assignedTo)
+    if (params?.contactId) queryParams.append('contactId', params.contactId)
+    if (params?.query) queryParams.append('query', params.query)
+    if (params?.lastMessageType) queryParams.append('lastMessageType', params.lastMessageType)
+    if (params?.limit) queryParams.append('limit', String(params.limit))
+    if (params?.sort) queryParams.append('sort', params.sort)
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
+    
+    // Handle status parameter - starred becomes status=starred
+    if (params?.starred) {
+      queryParams.append('status', 'starred')
+    } else if (params?.status) {
+      queryParams.append('status', params.status)
+    }
+
+    const response = await fetch(
+      `${this.config.baseUrl}/conversations/search?${queryParams.toString()}`,
+      {
+        method: 'GET',
+        headers: this.headers
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to search conversations: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return {
+      conversations: data.conversations.map((conv: any) => ({
+        ...conv,
+        contactName: conv.fullName || conv.contactName,
+        contactEmail: conv.email,
+        contactPhone: conv.phone,
+        starred: conv.status === 'starred' || false,
+        lastMessageBody: conv.lastMessageBody,
+        lastMessageDate: conv.lastMessageDate,
+        lastMessageType: conv.lastMessageType,
+        unreadCount: conv.unreadCount
+      })),
+      total: data.total
+    }
   }
 
   async getMessages(conversationId: string, params?: {

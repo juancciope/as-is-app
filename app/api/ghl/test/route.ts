@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
       'Version': '2021-07-28'
     })
 
-    const testUrl = `https://services.leadconnectorhq.com/contacts/?locationId=${locationId}&limit=1`
+    // Test the new Search Conversations endpoint instead
+    const testUrl = `https://services.leadconnectorhq.com/conversations/search?locationId=${locationId}&limit=1&status=starred`
     console.log('Test URL:', testUrl)
 
     const response = await fetch(testUrl, {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Version': '2021-07-28'
+        'Version': '2021-04-15'
       }
     })
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Authorization': apiKey,
           'Content-Type': 'application/json',
-          'Version': '2021-07-28'
+          'Version': '2021-04-15'
         }
       })
       
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Authorization': `Token ${apiKey}`,
           'Content-Type': 'application/json',
-          'Version': '2021-07-28'
+          'Version': '2021-04-15'
         }
       })
       
@@ -110,7 +111,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Authorization': `JWT ${apiKey}`,
           'Content-Type': 'application/json',
-          'Version': '2021-07-28'
+          'Version': '2021-04-15'
         }
       })
       

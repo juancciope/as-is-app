@@ -34,45 +34,35 @@ export async function GET(request: NextRequest) {
     })
 
     try {
-      // First, let's just get contacts to see if the API works
-      console.log('Attempting to fetch contacts with limit:', limit)
-      const contactsResult = await ghl.getContacts({ limit })
-      
-      // For now, return contacts info so we can see what we're working with
-      return NextResponse.json({
-        conversations: [],
-        total: 0,
-        contacts: contactsResult.contacts,
-        contactsCount: contactsResult.count,
-        message: `Found ${contactsResult.count} contacts. To get conversations, we need to determine which contacts have conversation IDs.`
-      })
-    } catch (contactError: any) {
-      console.error('Error fetching contacts:', {
-        error: contactError.message,
-        stack: contactError.stack,
-        response: contactError.response
+      // Use the new Search Conversations endpoint
+      console.log('Attempting to fetch conversations with limit:', limit, 'starred:', starred)
+      const result = await ghl.getConversations({ 
+        limit,
+        starred,
+        sort: 'desc',
+        sortBy: 'last_message_date'
       })
       
-      // Try to test API key with a simpler endpoint first
-      try {
-        console.log('Testing API key with a test conversation ID...')
-        // Let's try getting a conversation with a dummy ID to see if auth works
-        await ghl.getConversation('test-id')
-      } catch (testError: any) {
-        console.log('Test conversation error:', testError.message)
-      }
+      console.log('Successfully fetched conversations:', result.total)
+      return NextResponse.json(result)
+      
+    } catch (conversationError: any) {
+      console.error('Error fetching conversations:', {
+        error: conversationError.message,
+        stack: conversationError.stack
+      })
       
       return NextResponse.json({
         conversations: [],
         total: 0,
-        error: `Failed to fetch contacts: ${contactError.message}`,
+        error: `Failed to fetch conversations: ${conversationError.message}`,
         errorDetails: {
           hasApiKey: !!apiKey,
           hasLocationId: !!locationId,
           apiKeyStart: apiKey?.substring(0, 10) + '...',
           locationId: locationId
         },
-        message: 'Could not fetch contacts from GHL API. This might be an API key permission issue or incorrect credentials.'
+        message: 'Could not fetch conversations from GHL API. Please check your API credentials and generate a new API key if needed.'
       })
     }
   } catch (error) {
