@@ -120,9 +120,22 @@ export default function LeadsPage() {
                 </div>
               </div>
             ) : leads.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No starred conversations found</p>
+              <div className="p-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <Star className="h-5 w-5 text-blue-400 mr-2 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-blue-800 font-medium">GHL Integration Note</p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        The GHL API doesn't provide a direct way to list all conversations. 
+                        You'll need to provide specific conversation IDs to fetch and display conversations here.
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">
+                        Consider implementing this by getting contacts first, then their conversation IDs.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               leads.map((lead) => (

@@ -14,30 +14,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Initialize GHL API client
-    const ghl = new GoHighLevelAPI({
-      apiKey,
-      locationId: locationId || ''
+    // Return empty conversations with helpful message
+    // The GHL API doesn't have a direct "list conversations" endpoint
+    // You would need to implement this by:
+    // 1. Getting contacts from your location
+    // 2. For each contact, checking if they have a conversation
+    // 3. Fetching individual conversations using getConversation(id)
+    
+    return NextResponse.json({
+      conversations: [],
+      total: 0,
+      message: 'GHL API does not provide a direct list conversations endpoint. You need to provide specific conversation IDs to fetch conversations.'
     })
-
-    // Get query parameters
-    const searchParams = request.nextUrl.searchParams
-    const starred = searchParams.get('starred') === 'true'
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
-
-    // Fetch conversations
-    const result = await ghl.getConversations({
-      starred,
-      limit,
-      offset
-    })
-
-    return NextResponse.json(result)
   } catch (error) {
-    console.error('Error fetching GHL conversations:', error)
+    console.error('Error with GHL API:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch conversations' },
+      { error: 'Failed to access GHL API' },
       { status: 500 }
     )
   }

@@ -22,12 +22,14 @@ export async function GET(
     })
 
     const searchParams = request.nextUrl.searchParams
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const lastMessageId = searchParams.get('lastMessageId') || undefined
+    const type = searchParams.get('type') || undefined
 
     const result = await ghl.getMessages(params.conversationId, {
       limit,
-      offset
+      lastMessageId,
+      type
     })
 
     return NextResponse.json(result)
@@ -61,13 +63,26 @@ export async function POST(
     })
 
     const body = await request.json()
-    const message = await ghl.sendMessage(params.conversationId, {
+    
+    // Note: GHL send message requires contactId, not conversationId
+    // You'll need to get the contactId from the conversation first
+    if (!body.contactId) {
+      return NextResponse.json(
+        { error: 'contactId is required to send messages via GHL API' },
+        { status: 400 }
+      )
+    }
+
+    const result = await ghl.sendMessage({
       type: body.type || 'SMS',
-      body: body.message,
-      attachments: body.attachments
+      contactId: body.contactId,
+      message: body.message,
+      attachments: body.attachments,
+      fromNumber: body.fromNumber,
+      toNumber: body.toNumber
     })
 
-    return NextResponse.json({ message })
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error sending message:', error)
     return NextResponse.json(

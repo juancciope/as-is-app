@@ -48,16 +48,31 @@ GHL_LOCATION_ID=your_actual_location_id_here
 
 The integration provides these endpoints:
 
-- `GET /api/ghl/conversations` - Fetch conversations (filters: starred, limit, offset)
-- `GET /api/ghl/messages/[conversationId]` - Get messages for a conversation
-- `POST /api/ghl/messages/[conversationId]` - Send a message
+- `GET /api/ghl/conversations` - Currently returns empty (GHL API limitation)
+- `GET /api/ghl/messages/[conversationId]` - Get messages for a specific conversation
+- `POST /api/ghl/messages/[conversationId]` - Send a message (requires contactId)
 
-## Features
+## Important GHL API Limitations
 
-- **Starred Conversations**: Only shows conversations marked with a star in GHL
-- **Real-time Messaging**: Send and receive messages directly from the CRM
-- **Unread Count**: Shows unread message count for each conversation
-- **Contact Details**: Displays contact name, phone, and email
+⚠️ **No List Conversations Endpoint**: The GHL API doesn't provide a direct way to list all conversations. To implement this feature, you would need to:
+
+1. Get all contacts from your location (using the Contacts API)
+2. For each contact, check if they have active conversations
+3. Fetch individual conversations using their specific IDs
+
+## Current Features
+
+- **Individual Conversation Access**: Fetch specific conversations by ID
+- **Message History**: Get full message history for conversations
+- **Send Messages**: Send SMS, Email, or other message types
+- **Proper Error Handling**: Clear error messages for API issues
+
+## To Implement Full Conversation List
+
+You'll need to extend the integration to:
+1. Add the Contacts API endpoints
+2. Create a method to discover conversation IDs
+3. Cache conversation data for better performance
 
 ## Troubleshooting
 

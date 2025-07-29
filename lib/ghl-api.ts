@@ -28,11 +28,23 @@ export interface GHLMessage {
   locationId: string
   contactId: string
   body: string
-  type: string
+  messageType: string
   direction: string
   status: string
   dateAdded: string
-  attachments?: any[]
+  attachments?: string[]
+  meta?: any
+}
+
+export interface GHLContact {
+  id: string
+  locationId: string
+  firstName: string
+  lastName: string
+  name: string
+  email: string
+  phone: string
+  conversationId?: string
 }
 
 export class GoHighLevelAPI {
@@ -48,7 +60,7 @@ export class GoHighLevelAPI {
     this.headers = {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
-      'Version': '2021-07-28'
+      'Version': '2021-04-15'
     }
   }
 
@@ -69,6 +81,9 @@ export class GoHighLevelAPI {
     return data.conversation
   }
 
+  // Note: GHL API doesn't have a direct "list conversations" endpoint
+  // This would need to be implemented by getting contacts and their conversation IDs
+  // For now, this method is a placeholder
   async getConversations(params?: {
     locationId?: string
     assignedTo?: string
@@ -77,39 +92,23 @@ export class GoHighLevelAPI {
     limit?: number
     offset?: number
   }): Promise<{ conversations: GHLConversation[], total: number }> {
-    const queryParams = new URLSearchParams()
-    
-    if (params?.locationId || this.config.locationId) {
-      queryParams.append('locationId', params?.locationId || this.config.locationId)
-    }
-    if (params?.assignedTo) queryParams.append('assignedTo', params.assignedTo)
-    if (params?.status) queryParams.append('status', params.status)
-    if (params?.starred !== undefined) queryParams.append('starred', String(params.starred))
-    if (params?.limit) queryParams.append('limit', String(params.limit))
-    if (params?.offset) queryParams.append('offset', String(params.offset))
-
-    const response = await fetch(
-      `${this.config.baseUrl}/conversations?${queryParams.toString()}`,
-      {
-        method: 'GET',
-        headers: this.headers
-      }
-    )
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch conversations: ${response.statusText}`)
-    }
-
-    return await response.json()
+    // This endpoint doesn't exist in GHL API
+    // Would need to implement by:
+    // 1. Getting contacts from the location
+    // 2. Getting conversation IDs for each contact
+    // 3. Fetching individual conversations
+    throw new Error('List conversations endpoint not available in GHL API. Use getConversation(id) instead.')
   }
 
   async getMessages(conversationId: string, params?: {
     limit?: number
-    offset?: number
-  }): Promise<{ messages: GHLMessage[], total: number }> {
+    lastMessageId?: string
+    type?: string
+  }): Promise<{ messages: GHLMessage[], lastMessageId: string, nextPage: boolean }> {
     const queryParams = new URLSearchParams()
     if (params?.limit) queryParams.append('limit', String(params.limit))
-    if (params?.offset) queryParams.append('offset', String(params.offset))
+    if (params?.lastMessageId) queryParams.append('lastMessageId', params.lastMessageId)
+    if (params?.type) queryParams.append('type', params.type)
 
     const response = await fetch(
       `${this.config.baseUrl}/conversations/${conversationId}/messages?${queryParams.toString()}`,
@@ -126,20 +125,30 @@ export class GoHighLevelAPI {
     return await response.json()
   }
 
-  async sendMessage(conversationId: string, message: {
-    type: 'SMS' | 'Email' | 'WhatsApp' | 'GMB' | 'FB' | 'IG' | 'Custom'
-    body: string
+  async sendMessage(message: {
+    type: 'SMS' | 'Email' | 'WhatsApp' | 'IG' | 'FB' | 'Custom' | 'Live_Chat'
+    contactId: string
+    message: string
     attachments?: string[]
-  }): Promise<GHLMessage> {
+    subject?: string
+    emailFrom?: string
+    fromNumber?: string
+    toNumber?: string
+  }): Promise<{ conversationId: string, messageId: string }> {
     const response = await fetch(
-      `${this.config.baseUrl}/conversations/${conversationId}/messages`,
+      `${this.config.baseUrl}/conversations/messages`,
       {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify({
           type: message.type,
-          message: message.body,
-          attachments: message.attachments
+          contactId: message.contactId,
+          message: message.message,
+          attachments: message.attachments,
+          subject: message.subject,
+          emailFrom: message.emailFrom,
+          fromNumber: message.fromNumber,
+          toNumber: message.toNumber
         })
       }
     )
@@ -149,7 +158,10 @@ export class GoHighLevelAPI {
     }
 
     const data = await response.json()
-    return data.message
+    return {
+      conversationId: data.conversationId,
+      messageId: data.messageId
+    }
   }
 
   async updateConversation(conversationId: string, updates: {
