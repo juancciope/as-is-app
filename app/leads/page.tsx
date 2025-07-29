@@ -257,7 +257,7 @@ export default function LeadsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Array.isArray(messages) && messages.map((message) => (
+                    {Array.isArray(messages) && messages.slice().reverse().map((message) => (
                       <div
                         key={message.id}
                         className={`flex ${
