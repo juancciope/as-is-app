@@ -189,6 +189,15 @@ export class GoHighLevelAPI {
     const jsonResponse = await response.json()
     console.log('📨 GHL API JSON Response:', JSON.stringify(jsonResponse, null, 2))
     
+    // Handle the nested structure - messages are in jsonResponse.messages.messages
+    if (jsonResponse.messages && Array.isArray(jsonResponse.messages.messages)) {
+      return {
+        messages: jsonResponse.messages.messages,
+        lastMessageId: jsonResponse.messages.lastMessageId,
+        nextPage: jsonResponse.messages.nextPage
+      }
+    }
+    
     return jsonResponse
   }
 
