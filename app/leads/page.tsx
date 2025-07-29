@@ -1,34 +1,96 @@
 'use client'
 
-import { useState } from 'react'
-import { Star, MessageCircle, Phone, Mail, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Star, MessageCircle, Phone, Mail, Calendar, Loader2, AlertCircle } from 'lucide-react'
 
 export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null)
+  const [leads, setLeads] = useState<any[]>([])
+  const [messages, setMessages] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [messageText, setMessageText] = useState('')
+  const [isSending, setIsSending] = useState(false)
 
-  // Placeholder data - will be replaced with GHL integration
-  const leads = [
-    {
-      id: 1,
-      name: 'John Doe',
-      phone: '(555) 123-4567',
-      email: 'john.doe@email.com',
-      lastMessage: 'I\'m interested in the property on Main St',
-      lastMessageTime: '2 hours ago',
-      starred: true,
-      unread: 2
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      phone: '(555) 987-6543',
-      email: 'jane.smith@email.com',
-      lastMessage: 'Can we schedule a viewing?',
-      lastMessageTime: '5 hours ago',
-      starred: true,
-      unread: 0
+  useEffect(() => {
+    fetchConversations()
+  }, [])
+
+  const fetchConversations = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await fetch('/api/ghl/conversations?starred=true')
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to fetch conversations')
+      }
+
+      const data = await response.json()
+      setLeads(data.conversations || [])
+    } catch (error: any) {
+      console.error('Error fetching conversations:', error)
+      setError(error.message || 'Failed to load conversations')
+    } finally {
+      setIsLoading(false)
     }
-  ]
+  }
+
+  const fetchMessages = async (conversationId: string) => {
+    try {
+      setIsLoadingMessages(true)
+      const response = await fetch(`/api/ghl/messages/${conversationId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages')
+      }
+
+      const data = await response.json()
+      setMessages(data.messages || [])
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+    } finally {
+      setIsLoadingMessages(false)
+    }
+  }
+
+  const sendMessage = async () => {
+    if (!selectedLead || !messageText.trim()) return
+
+    try {
+      setIsSending(true)
+      const response = await fetch(`/api/ghl/messages/${selectedLead.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: messageText,
+          type: 'SMS'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      setMessageText('')
+      await fetchMessages(selectedLead.id)
+    } catch (error) {
+      console.error('Error sending message:', error)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const handleSelectLead = (lead: any) => {
+    setSelectedLead(lead)
+    if (lead) {
+      fetchMessages(lead.id)
+    }
+  }
 
   return (
     <div className="h-full bg-white rounded-lg shadow">
@@ -41,31 +103,56 @@ export default function LeadsPage() {
           </div>
           
           <div className="overflow-y-auto">
-            {leads.map((lead) => (
-              <div
-                key={lead.id}
-                onClick={() => setSelectedLead(lead)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                  selectedLead?.id === lead.id ? 'bg-blue-50' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center">
-                      <h3 className="font-semibold text-gray-900">{lead.name}</h3>
-                      {lead.starred && <Star className="ml-2 h-4 w-4 text-yellow-400 fill-current" />}
-                      {lead.unread > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
-                          {lead.unread}
-                        </span>
-                      )}
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="p-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                    <div>
+                      <p className="text-sm text-red-800">{error}</p>
+                      <p className="text-xs text-red-600 mt-1">Make sure GHL API credentials are configured</p>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{lead.lastMessage}</p>
-                    <p className="text-xs text-gray-500 mt-1">{lead.lastMessageTime}</p>
                   </div>
                 </div>
               </div>
-            ))}
+            ) : leads.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Star className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No starred conversations found</p>
+              </div>
+            ) : (
+              leads.map((lead) => (
+                <div
+                  key={lead.id}
+                  onClick={() => handleSelectLead(lead)}
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                    selectedLead?.id === lead.id ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <h3 className="font-semibold text-gray-900">{lead.contactName || 'Unknown'}</h3>
+                        {lead.starred && <Star className="ml-2 h-4 w-4 text-yellow-400 fill-current" />}
+                        {lead.unreadCount > 0 && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
+                            {lead.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -76,16 +163,20 @@ export default function LeadsPage() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedLead.name}</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{selectedLead.contactName || 'Unknown'}</h2>
                     <div className="flex items-center mt-2 space-x-4">
-                      <a href={`tel:${selectedLead.phone}`} className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                        <Phone className="h-4 w-4 mr-1" />
-                        {selectedLead.phone}
-                      </a>
-                      <a href={`mailto:${selectedLead.email}`} className="flex items-center text-sm text-gray-600 hover:text-gray-900">
-                        <Mail className="h-4 w-4 mr-1" />
-                        {selectedLead.email}
-                      </a>
+                      {selectedLead.contactPhone && (
+                        <a href={`tel:${selectedLead.contactPhone}`} className="flex items-center text-sm text-gray-600 hover:text-gray-900">
+                          <Phone className="h-4 w-4 mr-1" />
+                          {selectedLead.contactPhone}
+                        </a>
+                      )}
+                      {selectedLead.contactEmail && (
+                        <a href={`mailto:${selectedLead.contactEmail}`} className="flex items-center text-sm text-gray-600 hover:text-gray-900">
+                          <Mail className="h-4 w-4 mr-1" />
+                          {selectedLead.contactEmail}
+                        </a>
+                      )}
                     </div>
                   </div>
                   <button className="p-2 text-gray-400 hover:text-gray-600">
@@ -95,24 +186,62 @@ export default function LeadsPage() {
               </div>
 
               <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
-                <div className="text-center text-gray-500">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Conversation history will appear here</p>
-                  <p className="text-sm mt-2">Integration with Go High Level coming soon</p>
-                </div>
+                {isLoadingMessages ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center text-gray-500">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No messages in this conversation</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          message.direction === 'outbound' ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                            message.direction === 'outbound'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-200 text-gray-900'
+                          }`}
+                        >
+                          <p className="text-sm">{message.body}</p>
+                          <p className={`text-xs mt-1 ${
+                            message.direction === 'outbound' ? 'text-blue-100' : 'text-gray-500'
+                          }`}>
+                            {new Date(message.dateAdded).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="p-4 border-t border-gray-200">
-                <div className="flex space-x-2">
+                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex space-x-2">
                   <input
                     type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isSending}
                   />
-                  <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                    Send
+                  <button
+                    type="submit"
+                    disabled={isSending || !messageText.trim()}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
                   </button>
-                </div>
+                </form>
               </div>
             </div>
           ) : (
