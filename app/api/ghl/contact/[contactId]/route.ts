@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { GoHighLevelAPI } from '@/lib/ghl-api'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { contactId: string } }
+) {
+  try {
+    const apiKey = process.env.GHL_API_KEY
+    const locationId = process.env.GHL_LOCATION_ID
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'GHL API key not configured' },
+        { status: 500 }
+      )
+    }
+
+    const ghl = new GoHighLevelAPI({
+      apiKey,
+      locationId: locationId || ''
+    })
+
+    console.log('🔍 Fetching contact details for:', params.contactId)
+
+    const contact = await ghl.getContact(params.contactId)
+
+    console.log('👤 Contact details:', JSON.stringify(contact, null, 2))
+
+    return NextResponse.json({
+      success: true,
+      contact
+    })
+
+  } catch (error: any) {
+    console.error('Error fetching contact details:', error)
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch contact details',
+        contactId: params.contactId,
+        details: error.message
+      },
+      { status: 500 }
+    )
+  }
+}

@@ -48,6 +48,11 @@ export interface GHLContact {
   dateUpdated?: string
   tags?: string[]
   source?: string
+  address1?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
   customFields?: Array<{
     id: string
     value: string

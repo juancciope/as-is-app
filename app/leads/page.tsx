@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -27,6 +27,9 @@ export default function LeadsPage() {
   const [isSending, setIsSending] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [contactDetails, setContactDetails] = useState<any>(null)
+  const [propertyDetails, setPropertyDetails] = useState<any>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -141,15 +144,68 @@ export default function LeadsPage() {
     }
   }
 
+  const fetchContactDetails = async (contactId: string) => {
+    try {
+      setIsLoadingProfile(true)
+      const response = await fetch(`/api/ghl/contact/${contactId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch contact details')
+      }
+
+      const data = await response.json()
+      setContactDetails(data.contact)
+      
+      // If we have address information, fetch Zestimate
+      if (data.contact.address1 && data.contact.city && data.contact.state) {
+        fetchPropertyDetails(data.contact.address1, data.contact.city, data.contact.state, data.contact.postalCode)
+      }
+    } catch (error) {
+      console.error('Error fetching contact details:', error)
+      setContactDetails(null)
+    } finally {
+      setIsLoadingProfile(false)
+    }
+  }
+
+  const fetchPropertyDetails = async (address: string, city: string, state: string, zipCode?: string) => {
+    try {
+      const params = new URLSearchParams({
+        address,
+        city,
+        state,
+        ...(zipCode && { zipCode })
+      })
+      
+      const response = await fetch(`/api/zillow/zestimate?${params}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch property details')
+      }
+
+      const data = await response.json()
+      setPropertyDetails(data.property)
+    } catch (error) {
+      console.error('Error fetching property details:', error)
+      setPropertyDetails(null)
+    }
+  }
+
   const handleSelectLead = (lead: any) => {
     setSelectedLead(lead)
     if (lead) {
       fetchMessages(lead.id)
+      // Fetch contact details for the profile sidebar
+      if (lead.contactId) {
+        fetchContactDetails(lead.contactId)
+      }
     }
   }
 
   const handleBackToLeads = () => {
     setSelectedLead(null)
+    setContactDetails(null)
+    setPropertyDetails(null)
   }
 
   const renderMessages = () => {
@@ -401,7 +457,7 @@ export default function LeadsPage() {
         </div>
 
         {/* Column 3: Chat Window - Flex-1, Fixed Height, Independent Scroll */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 max-w-2xl">
           {selectedLead ? (
             <>
               {/* Chat Header - Fixed */}
@@ -455,6 +511,178 @@ export default function LeadsPage() {
                 <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                 <p className="text-lg font-medium">Select a conversation</p>
                 <p className="text-sm text-gray-400 mt-1">Choose a lead from the list to start messaging</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Column 4: Lead Profile Sidebar - Fixed Width, Independent Scroll */}
+        <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
+          {selectedLead ? (
+            <>
+              {/* Profile Header */}
+              <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center">
+                  <Avatar 
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=04325E&color=fff`}
+                    name={selectedLead.contactName || 'Unknown'} 
+                    size="lg"
+                  />
+                  <div className="ml-3">
+                    <h2 className="text-lg font-semibold text-[#04325E]">{selectedLead.contactName || 'Unknown'}</h2>
+                    <p className="text-sm text-gray-600">Lead Profile</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {isLoadingProfile ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Contact Information */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <div className="flex items-center mb-3">
+                        <User className="h-5 w-5 text-[#04325E] mr-2" />
+                        <h3 className="font-semibold text-gray-900">Contact Information</h3>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {contactDetails?.email && (
+                          <div className="flex items-center">
+                            <Mail className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                            <a href={`mailto:${contactDetails.email}`} className="text-sm text-blue-600 hover:text-blue-800 truncate">
+                              {contactDetails.email}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {contactDetails?.phone && (
+                          <div className="flex items-center">
+                            <Phone className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                            <a href={`tel:${contactDetails.phone}`} className="text-sm text-blue-600 hover:text-blue-800">
+                              {contactDetails.phone}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
+                          <div className="flex items-start">
+                            <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-gray-700">
+                              {contactDetails?.address1 && (
+                                <div>{contactDetails.address1}</div>
+                              )}
+                              <div>
+                                {contactDetails?.city && contactDetails.city}
+                                {contactDetails?.city && contactDetails?.state && ', '}
+                                {contactDetails?.state && contactDetails.state}
+                                {contactDetails?.postalCode && ` ${contactDetails.postalCode}`}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {contactDetails?.dateAdded && (
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                            <span className="text-sm text-gray-700">
+                              Added {new Date(contactDetails.dateAdded).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Property Information */}
+                    {propertyDetails && (
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <div className="flex items-center mb-3">
+                          <Home className="h-5 w-5 text-[#04325E] mr-2" />
+                          <h3 className="font-semibold text-gray-900">Property Information</h3>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {propertyDetails.zestimate?.amount && (
+                            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                              <div className="flex items-center">
+                                <DollarSign className="h-5 w-5 text-green-600 mr-2" />
+                                <span className="font-semibold text-green-800">Zestimate</span>
+                              </div>
+                              <span className="text-lg font-bold text-green-700">
+                                ${propertyDetails.zestimate.amount.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            {propertyDetails.livingArea && (
+                              <div>
+                                <span className="text-gray-500">Living Area</span>
+                                <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sq ft</div>
+                              </div>
+                            )}
+                            
+                            {propertyDetails.bedrooms && (
+                              <div>
+                                <span className="text-gray-500">Bedrooms</span>
+                                <div className="font-medium">{propertyDetails.bedrooms}</div>
+                              </div>
+                            )}
+                            
+                            {propertyDetails.bathrooms && (
+                              <div>
+                                <span className="text-gray-500">Bathrooms</span>
+                                <div className="font-medium">{propertyDetails.bathrooms}</div>
+                              </div>
+                            )}
+                            
+                            {propertyDetails.yearBuilt && (
+                              <div>
+                                <span className="text-gray-500">Year Built</span>
+                                <div className="font-medium">{propertyDetails.yearBuilt}</div>
+                              </div>
+                            )}
+                          </div>
+
+                          {propertyDetails.zestimate?.lastUpdated && (
+                            <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                              Last updated: {new Date(propertyDetails.zestimate.lastUpdated).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {contactDetails?.tags && contactDetails.tags.length > 0 && (
+                      <div className="bg-white rounded-lg border border-gray-200 p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3">Tags</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {contactDetails.tags.map((tag: string, index: number) => (
+                            <span 
+                              key={index}
+                              className="px-2 py-1 bg-[#FE8F00] bg-opacity-10 text-[#FE8F00] text-xs rounded-full border border-[#FE8F00] border-opacity-20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-500 p-4">
+              <div className="text-center">
+                <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-sm font-medium">Select a lead</p>
+                <p className="text-xs text-gray-400 mt-1">Choose a conversation to view profile details</p>
               </div>
             </div>
           )}
