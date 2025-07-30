@@ -1,28 +1,33 @@
 /* Custom theme for chat UI to match brand colors */
 
 /* CRITICAL: Ensure proper height inheritance and layout stability */
-.cs-main-container,
-.cs-chat-container,
-.cs-message-list {
+.cs-main-container {
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
+  position: relative !important;
 }
 
 .cs-chat-container {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  position: relative !important;
 }
 
 .cs-message-list {
   flex: 1 !important;
+  height: 0 !important; /* Force flex child to respect parent height */
   overflow-y: auto !important;
+  position: relative !important;
 }
 
 .cs-message-input {
   flex-shrink: 0 !important;
-  position: sticky !important;
-  bottom: 0 !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 
 /* Override conversation header */

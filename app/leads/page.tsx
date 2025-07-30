@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
@@ -26,10 +26,33 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [isMobile, setIsMobile] = useState(false)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchConversations()
+    
+    // Check if mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0 && chatContainerRef.current) {
+      const messageList = chatContainerRef.current.querySelector('.cs-message-list__scroll-wrapper')
+      if (messageList) {
+        setTimeout(() => {
+          messageList.scrollTop = messageList.scrollHeight
+        }, 100)
+      }
+    }
+  }, [messages])
 
   const fetchConversations = async () => {
     try {
@@ -69,25 +92,17 @@ export default function LeadsPage() {
       let messagesArray = []
       if (Array.isArray(data)) {
         messagesArray = data
-        console.log('✓ Messages found as direct array:', messagesArray.length)
       } else if (data.messages && Array.isArray(data.messages)) {
         messagesArray = data.messages
-        console.log('✓ Messages found in data.messages:', messagesArray.length)
       } else if (data.data && Array.isArray(data.data)) {
         messagesArray = data.data
-        console.log('✓ Messages found in data.data:', messagesArray.length)
       } else if (data.results && Array.isArray(data.results)) {
         messagesArray = data.results
-        console.log('✓ Messages found in data.results:', messagesArray.length)
       } else {
         console.warn('❌ Messages data is not in expected format:', data)
-        console.warn('Available keys:', Object.keys(data))
         messagesArray = []
       }
       
-      console.log('📝 Final messages array:', messagesArray)
-      console.log('🏷️ Message types found:', messagesArray.map((msg: any) => msg.messageType))
-      console.log('📱 SMS messages only:', messagesArray.filter((msg: any) => msg.messageType === 'TYPE_SMS').length)
       setMessages(messagesArray)
     } catch (error) {
       console.error('Error fetching messages:', error)
@@ -137,123 +152,106 @@ export default function LeadsPage() {
     setSelectedLead(null)
   }
 
-  // Mobile view - only show leads list
-  if (!selectedLead) {
-    return (
-      <div className="h-full bg-white rounded-lg shadow">
-        <div className="h-full flex flex-col">
-          {/* Header */}
-          <div className="flex-shrink-0 p-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-            <p className="text-sm text-gray-600 mt-1">Starred conversations from Go High Level</p>
-          </div>
-          
-          {/* Leads List */}
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              </div>
-            ) : error ? (
-              <div className="p-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                    <div>
-                      <p className="text-sm text-red-800">{error}</p>
-                      <p className="text-xs text-red-600 mt-1">Make sure GHL API credentials are configured</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : leads.length === 0 ? (
-              <div className="p-4 space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <Star className="h-5 w-5 text-blue-400 mr-2 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-blue-800 font-medium">GHL API Status</p>
-                      {debugInfo?.message && (
-                        <p className="text-xs text-blue-700 mt-1">{debugInfo.message}</p>
-                      )}
-                      {contacts.length > 0 && (
-                        <p className="text-xs text-blue-600 mt-2">
-                          Found {contacts.length} contacts. To see conversations, we need conversation IDs.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {contacts.length > 0 && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm font-medium text-gray-800 mb-2">Available Contacts:</p>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {contacts.slice(0, 10).map((contact: any) => (
-                        <div key={contact.id} className="text-xs text-gray-600 flex justify-between">
-                          <span>{contact.name || contact.email || 'Unknown'}</span>
-                          <span>{contact.phone || contact.email}</span>
-                        </div>
-                      ))}
-                      {contacts.length > 10 && (
-                        <div className="text-xs text-gray-500">...and {contacts.length - 10} more</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              leads.map((lead) => (
-                <div
-                  key={lead.id}
-                  onClick={() => handleSelectLead(lead)}
-                  className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <h3 className="font-semibold text-gray-900">{lead.contactName || 'Unknown'}</h3>
-                        {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current" />}
-                        {lead.unreadCount > 0 && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full">
-                            {lead.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    )
+  const renderMessages = () => {
+    const smsMessages = Array.isArray(messages) ? 
+      messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse() : []
+    
+    const groupedMessages: { [key: string]: any[] } = {}
+    smsMessages.forEach((message: any) => {
+      const messageDate = new Date(message.dateAdded)
+      const dateKey = messageDate.toDateString()
+      if (!groupedMessages[dateKey]) {
+        groupedMessages[dateKey] = []
+      }
+      groupedMessages[dateKey].push(message)
+    })
+
+    const elements: JSX.Element[] = []
+    
+    Object.entries(groupedMessages).forEach(([dateKey, dayMessages]) => {
+      const date = new Date(dateKey)
+      const today = new Date()
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      
+      let dateLabel = ''
+      if (date.toDateString() === today.toDateString()) {
+        dateLabel = 'Today'
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        dateLabel = 'Yesterday'
+      } else {
+        dateLabel = date.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })
+      }
+      
+      elements.push(
+        <MessageSeparator key={`sep-${dateKey}`} content={dateLabel} />
+      )
+      
+      dayMessages.forEach((message: any) => {
+        elements.push(
+          <Message
+            key={message.id}
+            model={{
+              message: message.body,
+              sentTime: new Date(message.dateAdded).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              }),
+              sender: message.direction === 'outbound' ? "You" : selectedLead.contactName || "Unknown",
+              direction: message.direction === 'outbound' ? "outgoing" : "incoming",
+              position: "single"
+            }}
+          />
+        )
+      })
+    })
+    
+    return elements
   }
 
-  // Desktop view or mobile chat view
-  return (
-    <div className="h-full bg-white rounded-lg shadow">
-      <div className="h-full flex">
-        {/* Leads List - Hidden on mobile when chat is open */}
-        <div className="hidden md:flex w-1/3 border-r border-gray-200 flex-col">
-          <div className="flex-shrink-0 p-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-            <p className="text-sm text-gray-600 mt-1">Starred conversations from Go High Level</p>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto">
-            {leads.map((lead) => (
+  // Mobile: Show only leads list when no lead selected
+  if (isMobile && !selectedLead) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col">
+        {/* Mobile Header */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+          <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+          <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+        </div>
+        
+        {/* Mobile Leads List */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : error ? (
+            <div className="p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                  <div>
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : leads.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>No starred conversations found</p>
+            </div>
+          ) : (
+            leads.map((lead) => (
               <div
                 key={lead.id}
                 onClick={() => handleSelectLead(lead)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                  selectedLead?.id === lead.id ? 'bg-orange-50 border-l-4 border-l-[#FE8F00]' : ''
-                }`}
+                className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -273,144 +271,193 @@ export default function LeadsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile: Show chat when lead selected
+  if (isMobile && selectedLead) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col">
+        {/* Mobile Chat Header */}
+        <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
+          <button 
+            onClick={handleBackToLeads}
+            className="mr-3 p-1 hover:bg-gray-100 rounded"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <Avatar 
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+            name={selectedLead.contactName || 'Unknown'} 
+            size="sm"
+          />
+          <div className="ml-3 flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-[#04325E] truncate">{selectedLead.contactName || 'Unknown'}</h2>
+            <p className="text-sm text-gray-600 truncate">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col" style={{ height: '100%' }}>
-          {/* Mobile Header with Back Button */}
-          <div className="md:hidden flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
-            <button 
-              onClick={handleBackToLeads}
-              className="mr-3 p-1 hover:bg-gray-100 rounded"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </button>
-            <div className="flex items-center">
-              <Avatar 
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                name={selectedLead.contactName || 'Unknown'} 
-                size="sm"
+        {/* Mobile Chat Container - Fixed Height */}
+        <div className="flex-1 min-h-0" ref={chatContainerRef}>
+          <MainContainer style={{ height: '100%' }}>
+            <ChatContainer style={{ height: '100%' }}>
+              <MessageList 
+                typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
+                style={{ height: '100%' }}
+              >
+                {isLoadingMessages ? (
+                  <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  renderMessages()
+                )}
+              </MessageList>
+              
+              <MessageInput 
+                placeholder="Type a message..." 
+                onSend={sendMessage}
+                disabled={isSending}
+                sendDisabled={isSending}
               />
-              <div className="ml-3">
-                <h2 className="text-lg font-semibold text-[#04325E]">{selectedLead.contactName || 'Unknown'}</h2>
-                <p className="text-sm text-gray-600">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
+            </ChatContainer>
+          </MainContainer>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop: 3-column layout
+  return (
+    <div className="fixed inset-0 bg-white">
+      <div className="h-full flex">
+        {/* Column 1: Sidebar Menu (if you have one - placeholder for now) */}
+        {/* You can add your main navigation sidebar here */}
+        
+        {/* Column 2: Conversations List - Fixed Width, Independent Scroll */}
+        <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
+          {/* Conversations Header - Fixed */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-200">
+            <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+            <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+          </div>
+          
+          {/* Conversations List - Scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="p-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+                    <div>
+                      <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : leads.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No starred conversations found</p>
+              </div>
+            ) : (
+              leads.map((lead) => (
+                <div
+                  key={lead.id}
+                  onClick={() => handleSelectLead(lead)}
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                    selectedLead?.id === lead.id ? 'bg-orange-50 border-l-4 border-l-[#FE8F00]' : ''
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center">
+                        <h3 className="font-semibold text-gray-900 truncate">{lead.contactName || 'Unknown'}</h3>
+                        {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current flex-shrink-0" />}
+                        {lead.unreadCount > 0 && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full flex-shrink-0">
+                            {lead.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Column 3: Chat Window - Flex-1, Fixed Height, Independent Scroll */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {selectedLead ? (
+            <>
+              {/* Chat Header - Fixed */}
+              <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
+                <Avatar 
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+                  name={selectedLead.contactName || 'Unknown'} 
+                />
+                <div className="ml-3 flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold text-[#04325E] truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                  <p className="text-sm text-gray-600 truncate">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
+                </div>
+                <button 
+                  className="p-2 hover:bg-gray-100 rounded transition-colors"
+                  onClick={() => console.log('Star clicked')}
+                >
+                  <Star className={`h-5 w-5 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-gray-400'}`} />
+                </button>
+              </div>
+
+              {/* Chat Container - Fixed Height, Independent Scroll */}
+              <div className="flex-1 min-h-0" ref={chatContainerRef}>
+                <MainContainer style={{ height: '100%' }}>
+                  <ChatContainer style={{ height: '100%' }}>
+                    <MessageList 
+                      typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
+                      style={{ height: '100%' }}
+                    >
+                      {isLoadingMessages ? (
+                        <div className="flex items-center justify-center p-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        </div>
+                      ) : (
+                        renderMessages()
+                      )}
+                    </MessageList>
+                    
+                    <MessageInput 
+                      placeholder="Type a message..." 
+                      onSend={sendMessage}
+                      disabled={isSending}
+                      sendDisabled={isSending}
+                    />
+                  </ChatContainer>
+                </MainContainer>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">Select a conversation</p>
+                <p className="text-sm text-gray-400 mt-1">Choose a lead from the list to start messaging</p>
               </div>
             </div>
-          </div>
-
-          {/* Chat Container */}
-          <div className="flex-1" style={{ height: '100%', position: 'relative' }}>
-            <MainContainer style={{ height: '100%' }}>
-              <ChatContainer style={{ height: '100%' }}>
-                {/* Desktop Header */}
-                <div className="hidden md:block">
-                  <ConversationHeader>
-                    <Avatar 
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                      name={selectedLead.contactName || 'Unknown'} 
-                    />
-                    <ConversationHeader.Content 
-                      userName={selectedLead.contactName || 'Unknown'}
-                      info={selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}
-                    />
-                    <ConversationHeader.Actions>
-                      <button 
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        onClick={() => console.log('Star clicked')}
-                      >
-                        <Star className={`h-5 w-5 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-gray-400'}`} />
-                      </button>
-                    </ConversationHeader.Actions>
-                  </ConversationHeader>
-                </div>
-                
-                <MessageList 
-                  typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                  style={{ height: '100%' }}
-                >
-                  {isLoadingMessages ? (
-                    <div className="flex items-center justify-center p-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    </div>
-                  ) : (
-                    (() => {
-                      const smsMessages = Array.isArray(messages) ? 
-                        messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse() : []
-                      
-                      const groupedMessages: { [key: string]: any[] } = {}
-                      smsMessages.forEach((message: any) => {
-                        const messageDate = new Date(message.dateAdded)
-                        const dateKey = messageDate.toDateString()
-                        if (!groupedMessages[dateKey]) {
-                          groupedMessages[dateKey] = []
-                        }
-                        groupedMessages[dateKey].push(message)
-                      })
-
-                      const elements: JSX.Element[] = []
-                      
-                      Object.entries(groupedMessages).forEach(([dateKey, dayMessages]) => {
-                        // Add date separator
-                        const date = new Date(dateKey)
-                        const today = new Date()
-                        const yesterday = new Date(today)
-                        yesterday.setDate(yesterday.getDate() - 1)
-                        
-                        let dateLabel = ''
-                        if (date.toDateString() === today.toDateString()) {
-                          dateLabel = 'Today'
-                        } else if (date.toDateString() === yesterday.toDateString()) {
-                          dateLabel = 'Yesterday'
-                        } else {
-                          dateLabel = date.toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })
-                        }
-                        
-                        elements.push(
-                          <MessageSeparator key={`sep-${dateKey}`} content={dateLabel} />
-                        )
-                        
-                        // Add messages for this date
-                        dayMessages.forEach((message: any) => {
-                          elements.push(
-                            <Message
-                              key={message.id}
-                              model={{
-                                message: message.body,
-                                sentTime: new Date(message.dateAdded).toLocaleTimeString([], { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
-                                }),
-                                sender: message.direction === 'outbound' ? "You" : selectedLead.contactName || "Unknown",
-                                direction: message.direction === 'outbound' ? "outgoing" : "incoming",
-                                position: "single"
-                              }}
-                            />
-                          )
-                        })
-                      })
-                      
-                      return elements
-                    })()
-                  )}
-                </MessageList>
-                
-                <MessageInput 
-                  placeholder="Type a message..." 
-                  onSend={sendMessage}
-                  disabled={isSending}
-                  sendDisabled={isSending}
-                  style={{ flexShrink: 0 }}
-                />
-              </ChatContainer>
-            </MainContainer>
-          </div>
+          )}
         </div>
       </div>
     </div>
