@@ -457,7 +457,7 @@ export default function LeadsPage() {
         </div>
 
         {/* Column 3: Chat Window - Flex-1, Fixed Height, Independent Scroll */}
-        <div className="flex-1 flex flex-col min-w-0 max-w-2xl">
+        <div className="flex-1 flex flex-col min-w-0">
           {selectedLead ? (
             <>
               {/* Chat Header - Fixed */}
@@ -516,25 +516,24 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Column 4: Lead Profile Sidebar - Compact Width, Independent Scroll */}
-        <div className="w-64 border-l border-gray-200 bg-gray-50 flex flex-col">
+        {/* Column 4: Lead Profile Sidebar - Very Compact Width, Independent Scroll */}
+        <div className="w-40 border-l border-gray-200 bg-gray-50 flex flex-col">
           {selectedLead ? (
             <>
               {/* Profile Header */}
-              <div className="flex-shrink-0 p-3 border-b border-gray-200 bg-white">
+              <div className="flex-shrink-0 p-2 border-b border-gray-200 bg-white">
                 <div className="text-center">
                   <Avatar 
                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=04325E&color=fff`}
                     name={selectedLead.contactName || 'Unknown'} 
-                    size="sm"
+                    size="xs"
                   />
-                  <h2 className="text-sm font-semibold text-[#04325E] mt-2 truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                  <p className="text-xs text-gray-600">Profile</p>
+                  <h2 className="text-xs font-semibold text-[#04325E] mt-1 truncate">{selectedLead.contactName || 'Unknown'}</h2>
                 </div>
               </div>
 
               {/* Profile Content */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {isLoadingProfile ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -542,13 +541,13 @@ export default function LeadsPage() {
                 ) : (
                   <>
                     {/* Contact Information */}
-                    <div className="bg-white rounded border border-gray-200 p-3">
-                      <h3 className="text-xs font-semibold text-[#04325E] mb-2 flex items-center">
+                    <div className="bg-white rounded border border-gray-200 p-2">
+                      <h3 className="text-xs font-semibold text-[#04325E] mb-1 flex items-center">
                         <User className="h-3 w-3 mr-1" />
                         Contact
                       </h3>
                       
-                      <div className="space-y-2 text-xs">
+                      <div className="space-y-1 text-xs">
                         {contactDetails?.email && (
                           <div className="flex items-center">
                             <Mail className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
@@ -588,17 +587,17 @@ export default function LeadsPage() {
 
                     {/* Property Information */}
                     {propertyDetails && (
-                      <div className="bg-white rounded border border-gray-200 p-3">
-                        <h3 className="text-xs font-semibold text-[#04325E] mb-2 flex items-center">
+                      <div className="bg-white rounded border border-gray-200 p-2">
+                        <h3 className="text-xs font-semibold text-[#04325E] mb-1 flex items-center">
                           <Home className="h-3 w-3 mr-1" />
                           Property
                         </h3>
                         
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           {propertyDetails.zestimate?.amount && (
-                            <div className="text-center p-2 bg-green-50 rounded border border-green-200">
+                            <div className="text-center p-1 bg-green-50 rounded border border-green-200">
                               <div className="text-xs text-green-600 font-medium">Zestimate</div>
-                              <div className="text-sm font-bold text-green-700">
+                              <div className="text-xs font-bold text-green-700">
                                 ${propertyDetails.zestimate.amount.toLocaleString()}
                               </div>
                             </div>
@@ -639,8 +638,8 @@ export default function LeadsPage() {
 
                     {/* Tags */}
                     {contactDetails?.tags && contactDetails.tags.length > 0 && (
-                      <div className="bg-white rounded border border-gray-200 p-3">
-                        <h3 className="text-xs font-semibold text-[#04325E] mb-2">Tags</h3>
+                      <div className="bg-white rounded border border-gray-200 p-2">
+                        <h3 className="text-xs font-semibold text-[#04325E] mb-1">Tags</h3>
                         <div className="flex flex-wrap gap-1">
                           {contactDetails.tags.map((tag: string, index: number) => (
                             <span 
@@ -658,11 +657,11 @@ export default function LeadsPage() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500 p-4">
+            <div className="flex-1 flex items-center justify-center text-gray-500 p-2">
               <div className="text-center">
-                <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-sm font-medium">Select a lead</p>
-                <p className="text-xs text-gray-400 mt-1">Choose a conversation to view profile details</p>
+                <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-xs font-medium">Select a lead</p>
+                <p className="text-xs text-gray-400 mt-1">View profile</p>
               </div>
             </div>
           )}
