@@ -217,7 +217,7 @@ export default function LeadsPage() {
   // Mobile: Show only leads list when no lead selected
   if (isMobile && !selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col">
+      <div className="fixed inset-0 bg-white flex flex-col z-50">
         {/* Mobile Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
@@ -281,14 +281,14 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col">
+      <div className="fixed inset-0 bg-white flex flex-col z-50">
         {/* Mobile Chat Header */}
         <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
           <button 
             onClick={handleBackToLeads}
-            className="mr-3 p-1 hover:bg-gray-100 rounded"
+            className="mr-3 p-2 hover:bg-gray-100 rounded-full active:bg-gray-200 transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
+            <ArrowLeft className="h-6 w-6 text-gray-700" />
           </button>
           <Avatar 
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
