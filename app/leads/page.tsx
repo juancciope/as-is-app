@@ -516,24 +516,25 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Column 4: Lead Profile Sidebar - Very Compact Width, Independent Scroll */}
-        <div className="w-40 border-l border-gray-200 bg-gray-50 flex flex-col">
+        {/* Column 4: Lead Profile Sidebar - Balanced Width, Independent Scroll */}
+        <div className="w-56 border-l border-gray-200 bg-gray-50 flex flex-col">
           {selectedLead ? (
             <>
               {/* Profile Header */}
-              <div className="flex-shrink-0 p-2 border-b border-gray-200 bg-white">
+              <div className="flex-shrink-0 p-3 border-b border-gray-200 bg-white">
                 <div className="text-center">
                   <Avatar 
                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=04325E&color=fff`}
                     name={selectedLead.contactName || 'Unknown'} 
-                    size="xs"
+                    size="sm"
                   />
-                  <h2 className="text-xs font-semibold text-[#04325E] mt-1 truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                  <h2 className="text-sm font-semibold text-[#04325E] mt-2 truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                  <p className="text-xs text-gray-600">Profile</p>
                 </div>
               </div>
 
               {/* Profile Content */}
-              <div className="flex-1 overflow-y-auto p-2 space-y-2">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {isLoadingProfile ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -541,16 +542,16 @@ export default function LeadsPage() {
                 ) : (
                   <>
                     {/* Contact Information */}
-                    <div className="bg-white rounded border border-gray-200 p-2">
-                      <h3 className="text-xs font-semibold text-[#04325E] mb-1 flex items-center">
-                        <User className="h-3 w-3 mr-1" />
+                    <div className="bg-white rounded border border-gray-200 p-3">
+                      <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
+                        <User className="h-4 w-4 mr-2" />
                         Contact
                       </h3>
                       
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-2 text-sm">
                         {contactDetails?.email && (
                           <div className="flex items-center">
-                            <Mail className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                            <Mail className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
                             <a href={`mailto:${contactDetails.email}`} className="text-blue-600 hover:text-blue-800 truncate">
                               {contactDetails.email}
                             </a>
@@ -559,7 +560,7 @@ export default function LeadsPage() {
                         
                         {contactDetails?.phone && (
                           <div className="flex items-center">
-                            <Phone className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                            <Phone className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
                             <a href={`tel:${contactDetails.phone}`} className="text-blue-600 hover:text-blue-800">
                               {contactDetails.phone}
                             </a>
@@ -568,7 +569,7 @@ export default function LeadsPage() {
                         
                         {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
                           <div className="flex items-start">
-                            <MapPin className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                            <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="text-gray-700">
                               {contactDetails?.address1 && (
                                 <div className="truncate">{contactDetails.address1}</div>
@@ -587,23 +588,23 @@ export default function LeadsPage() {
 
                     {/* Property Information */}
                     {propertyDetails && (
-                      <div className="bg-white rounded border border-gray-200 p-2">
-                        <h3 className="text-xs font-semibold text-[#04325E] mb-1 flex items-center">
-                          <Home className="h-3 w-3 mr-1" />
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
+                          <Home className="h-4 w-4 mr-2" />
                           Property
                         </h3>
                         
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {propertyDetails.zestimate?.amount && (
-                            <div className="text-center p-1 bg-green-50 rounded border border-green-200">
+                            <div className="text-center p-2 bg-green-50 rounded border border-green-200">
                               <div className="text-xs text-green-600 font-medium">Zestimate</div>
-                              <div className="text-xs font-bold text-green-700">
+                              <div className="text-sm font-bold text-green-700">
                                 ${propertyDetails.zestimate.amount.toLocaleString()}
                               </div>
                             </div>
                           )}
                           
-                          <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2 text-sm">
                             {propertyDetails.livingArea && (
                               <div>
                                 <span className="text-gray-500">Area</span>
@@ -638,9 +639,9 @@ export default function LeadsPage() {
 
                     {/* Tags */}
                     {contactDetails?.tags && contactDetails.tags.length > 0 && (
-                      <div className="bg-white rounded border border-gray-200 p-2">
-                        <h3 className="text-xs font-semibold text-[#04325E] mb-1">Tags</h3>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-sm font-semibold text-[#04325E] mb-2">Tags</h3>
+                        <div className="flex flex-wrap gap-2">
                           {contactDetails.tags.map((tag: string, index: number) => (
                             <span 
                               key={index}
