@@ -335,8 +335,8 @@ export default function LeadsPage() {
   return (
     <div className="fixed inset-0 bg-white">
       <div className="h-full flex">
-        {/* Column 1: Sidebar Menu (if you have one - placeholder for now) */}
-        {/* You can add your main navigation sidebar here */}
+        {/* Account for main sidebar - 256px (w-64) */}
+        <div className="w-64 flex-shrink-0"></div>
         
         {/* Column 2: Conversations List - Fixed Width, Independent Scroll */}
         <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
