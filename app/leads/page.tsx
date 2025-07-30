@@ -217,15 +217,15 @@ export default function LeadsPage() {
   // Mobile: Show only leads list when no lead selected
   if (isMobile && !selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col z-50">
+      <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden">
         {/* Mobile Header */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
+        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white w-full">
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
         </div>
         
         {/* Mobile Leads List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
           {isLoading ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -251,21 +251,21 @@ export default function LeadsPage() {
               <div
                 key={lead.id}
                 onClick={() => handleSelectLead(lead)}
-                className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
+                className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100 w-full"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center">
-                      <h3 className="font-semibold text-gray-900">{lead.contactName || 'Unknown'}</h3>
-                      {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current" />}
+                      <h3 className="font-semibold text-gray-900 truncate">{lead.contactName || 'Unknown'}</h3>
+                      {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current flex-shrink-0" />}
                       {lead.unreadCount > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full">
+                        <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full flex-shrink-0">
                           {lead.unreadCount}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-sm text-gray-600 mt-1 truncate w-full">{lead.lastMessageBody || 'No messages'}</p>
+                    <p className="text-xs text-gray-500 mt-1 truncate w-full">
                       {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
                     </p>
                   </div>
@@ -281,9 +281,9 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col z-50">
+      <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden">
         {/* Mobile Chat Header */}
-        <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
+        <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white w-full">
           <button 
             onClick={handleBackToLeads}
             className="mr-3 p-2 hover:bg-gray-100 rounded-full active:bg-gray-200 transition-colors"
@@ -302,7 +302,7 @@ export default function LeadsPage() {
         </div>
 
         {/* Mobile Chat Container - Fixed Height */}
-        <div className="flex-1 min-h-0" ref={chatContainerRef}>
+        <div className="flex-1 min-h-0 w-full overflow-hidden" ref={chatContainerRef}>
           <MainContainer style={{ height: '100%' }}>
             <ChatContainer style={{ height: '100%' }}>
               <MessageList 
