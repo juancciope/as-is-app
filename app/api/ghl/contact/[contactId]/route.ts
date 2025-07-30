@@ -8,8 +8,8 @@ export async function GET(
   { params }: { params: { contactId: string } }
 ) {
   try {
-    // Use OAuth access token instead of API key
-    const accessToken = process.env.GHL_ACCESS_TOKEN
+    // Use OAuth access token (stored as GHL_API_KEY from OAuth callback)
+    const accessToken = process.env.GHL_API_KEY
     const locationId = process.env.GHL_LOCATION_ID
 
     if (!accessToken) {
