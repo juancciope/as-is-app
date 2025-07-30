@@ -78,11 +78,11 @@ export class GoHighLevelAPI {
       'Version': '2021-04-15'
     }
 
-    // Headers for contacts API (use same version as conversations)
+    // Headers for contacts API (requires version 2021-07-28 per documentation)
     this.contactsHeaders = {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
-      'Version': '2021-04-15'
+      'Version': '2021-07-28'
     }
   }
 
@@ -300,19 +300,25 @@ export class GoHighLevelAPI {
   }
 
   async getContact(contactId: string): Promise<GHLContact> {
-    const response = await fetch(
-      `${this.config.baseUrl}/contacts/${contactId}`,
-      {
-        method: 'GET',
-        headers: this.contactsHeaders
-      }
-    )
+    const url = `${this.config.baseUrl}/contacts/${contactId}`
+    console.log('🌐 GHL Contact API URL:', url)
+    console.log('📤 GHL Contact API Headers:', this.contactsHeaders)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: this.contactsHeaders
+    })
+
+    console.log('📥 GHL Contact API Response Status:', response.status, response.statusText)
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ GHL Contact API Error Response:', errorText)
       throw new Error(`Failed to fetch contact: ${response.statusText}`)
     }
 
     const data = await response.json()
+    console.log('📨 GHL Contact API JSON Response:', JSON.stringify(data, null, 2))
     return data.contact
   }
 
