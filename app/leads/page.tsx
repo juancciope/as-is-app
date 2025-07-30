@@ -516,27 +516,25 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Column 4: Lead Profile Sidebar - Fixed Width, Independent Scroll */}
-        <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col">
+        {/* Column 4: Lead Profile Sidebar - Compact Width, Independent Scroll */}
+        <div className="w-64 border-l border-gray-200 bg-gray-50 flex flex-col">
           {selectedLead ? (
             <>
               {/* Profile Header */}
-              <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white">
-                <div className="flex items-center">
+              <div className="flex-shrink-0 p-3 border-b border-gray-200 bg-white">
+                <div className="text-center">
                   <Avatar 
                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=04325E&color=fff`}
                     name={selectedLead.contactName || 'Unknown'} 
-                    size="lg"
+                    size="sm"
                   />
-                  <div className="ml-3">
-                    <h2 className="text-lg font-semibold text-[#04325E]">{selectedLead.contactName || 'Unknown'}</h2>
-                    <p className="text-sm text-gray-600">Lead Profile</p>
-                  </div>
+                  <h2 className="text-sm font-semibold text-[#04325E] mt-2 truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                  <p className="text-xs text-gray-600">Profile</p>
                 </div>
               </div>
 
               {/* Profile Content */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {isLoadingProfile ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -544,17 +542,17 @@ export default function LeadsPage() {
                 ) : (
                   <>
                     {/* Contact Information */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center mb-3">
-                        <User className="h-5 w-5 text-[#04325E] mr-2" />
-                        <h3 className="font-semibold text-gray-900">Contact Information</h3>
-                      </div>
+                    <div className="bg-white rounded border border-gray-200 p-3">
+                      <h3 className="text-xs font-semibold text-[#04325E] mb-2 flex items-center">
+                        <User className="h-3 w-3 mr-1" />
+                        Contact
+                      </h3>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-2 text-xs">
                         {contactDetails?.email && (
                           <div className="flex items-center">
-                            <Mail className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <a href={`mailto:${contactDetails.email}`} className="text-sm text-blue-600 hover:text-blue-800 truncate">
+                            <Mail className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                            <a href={`mailto:${contactDetails.email}`} className="text-blue-600 hover:text-blue-800 truncate">
                               {contactDetails.email}
                             </a>
                           </div>
@@ -562,8 +560,8 @@ export default function LeadsPage() {
                         
                         {contactDetails?.phone && (
                           <div className="flex items-center">
-                            <Phone className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <a href={`tel:${contactDetails.phone}`} className="text-sm text-blue-600 hover:text-blue-800">
+                            <Phone className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                            <a href={`tel:${contactDetails.phone}`} className="text-blue-600 hover:text-blue-800">
                               {contactDetails.phone}
                             </a>
                           </div>
@@ -571,12 +569,12 @@ export default function LeadsPage() {
                         
                         {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
                           <div className="flex items-start">
-                            <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-gray-700">
+                            <MapPin className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
+                            <div className="text-gray-700">
                               {contactDetails?.address1 && (
-                                <div>{contactDetails.address1}</div>
+                                <div className="truncate">{contactDetails.address1}</div>
                               )}
-                              <div>
+                              <div className="truncate">
                                 {contactDetails?.city && contactDetails.city}
                                 {contactDetails?.city && contactDetails?.state && ', '}
                                 {contactDetails?.state && contactDetails.state}
@@ -585,87 +583,69 @@ export default function LeadsPage() {
                             </div>
                           </div>
                         )}
-
-                        {contactDetails?.dateAdded && (
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">
-                              Added {new Date(contactDetails.dateAdded).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
 
                     {/* Property Information */}
                     {propertyDetails && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <div className="flex items-center mb-3">
-                          <Home className="h-5 w-5 text-[#04325E] mr-2" />
-                          <h3 className="font-semibold text-gray-900">Property Information</h3>
-                        </div>
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-xs font-semibold text-[#04325E] mb-2 flex items-center">
+                          <Home className="h-3 w-3 mr-1" />
+                          Property
+                        </h3>
                         
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {propertyDetails.zestimate?.amount && (
-                            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                              <div className="flex items-center">
-                                <DollarSign className="h-5 w-5 text-green-600 mr-2" />
-                                <span className="font-semibold text-green-800">Zestimate</span>
-                              </div>
-                              <span className="text-lg font-bold text-green-700">
+                            <div className="text-center p-2 bg-green-50 rounded border border-green-200">
+                              <div className="text-xs text-green-600 font-medium">Zestimate</div>
+                              <div className="text-sm font-bold text-green-700">
                                 ${propertyDetails.zestimate.amount.toLocaleString()}
-                              </span>
+                              </div>
                             </div>
                           )}
                           
-                          <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
                             {propertyDetails.livingArea && (
                               <div>
-                                <span className="text-gray-500">Living Area</span>
-                                <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sq ft</div>
+                                <span className="text-gray-500">Area</span>
+                                <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sf</div>
                               </div>
                             )}
                             
                             {propertyDetails.bedrooms && (
                               <div>
-                                <span className="text-gray-500">Bedrooms</span>
+                                <span className="text-gray-500">Beds</span>
                                 <div className="font-medium">{propertyDetails.bedrooms}</div>
                               </div>
                             )}
                             
                             {propertyDetails.bathrooms && (
                               <div>
-                                <span className="text-gray-500">Bathrooms</span>
+                                <span className="text-gray-500">Baths</span>
                                 <div className="font-medium">{propertyDetails.bathrooms}</div>
                               </div>
                             )}
                             
                             {propertyDetails.yearBuilt && (
                               <div>
-                                <span className="text-gray-500">Year Built</span>
+                                <span className="text-gray-500">Built</span>
                                 <div className="font-medium">{propertyDetails.yearBuilt}</div>
                               </div>
                             )}
                           </div>
-
-                          {propertyDetails.zestimate?.lastUpdated && (
-                            <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                              Last updated: {new Date(propertyDetails.zestimate.lastUpdated).toLocaleDateString()}
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
 
                     {/* Tags */}
                     {contactDetails?.tags && contactDetails.tags.length > 0 && (
-                      <div className="bg-white rounded-lg border border-gray-200 p-4">
-                        <h3 className="font-semibold text-gray-900 mb-3">Tags</h3>
-                        <div className="flex flex-wrap gap-2">
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-xs font-semibold text-[#04325E] mb-2">Tags</h3>
+                        <div className="flex flex-wrap gap-1">
                           {contactDetails.tags.map((tag: string, index: number) => (
                             <span 
                               key={index}
-                              className="px-2 py-1 bg-[#FE8F00] bg-opacity-10 text-[#FE8F00] text-xs rounded-full border border-[#FE8F00] border-opacity-20"
+                              className="px-2 py-0.5 bg-[#FE8F00] bg-opacity-10 text-[#FE8F00] text-xs rounded-full border border-[#FE8F00] border-opacity-20"
                             >
                               {tag}
                             </span>

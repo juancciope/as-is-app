@@ -8,18 +8,19 @@ export async function GET(
   { params }: { params: { contactId: string } }
 ) {
   try {
-    const apiKey = process.env.GHL_API_KEY
+    // Use OAuth access token instead of API key
+    const accessToken = process.env.GHL_ACCESS_TOKEN
     const locationId = process.env.GHL_LOCATION_ID
 
-    if (!apiKey) {
+    if (!accessToken) {
       return NextResponse.json(
-        { error: 'GHL API key not configured' },
+        { error: 'GHL access token not configured' },
         { status: 500 }
       )
     }
 
     const ghl = new GoHighLevelAPI({
-      apiKey,
+      apiKey: accessToken, // The GoHighLevelAPI class treats this as the bearer token
       locationId: locationId || ''
     })
 
