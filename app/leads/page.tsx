@@ -516,8 +516,8 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Column 4: Lead Profile Sidebar - Balanced Width, Independent Scroll */}
-        <div className="w-56 border-l border-gray-200 bg-gray-50 flex flex-col">
+        {/* Column 4: Lead Profile Sidebar - Bigger Width, Independent Scroll */}
+        <div className="w-72 border-l border-gray-200 bg-gray-50 flex flex-col">
           {selectedLead ? (
             <>
               {/* Profile Header */}

@@ -78,11 +78,11 @@ export class GoHighLevelAPI {
       'Version': '2021-04-15'
     }
 
-    // Headers for contacts API (version 2021-07-28)
+    // Headers for contacts API (use same version as conversations)
     this.contactsHeaders = {
       'Authorization': `Bearer ${config.apiKey}`,
       'Content-Type': 'application/json',
-      'Version': '2021-07-28'
+      'Version': '2021-04-15'
     }
   }
 
