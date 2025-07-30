@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -12,7 +12,6 @@ import {
   MessageInput,
   ConversationHeader,
   Avatar,
-  InfoButton,
   TypingIndicator,
   MessageSeparator
 } from '@chatscope/chat-ui-kit-react'
@@ -31,7 +30,6 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchConversations()
   }, [])
-
 
   const fetchConversations = async () => {
     try {
@@ -66,9 +64,8 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
-      console.log('Messages API response for conversation', conversationId, ':', data) // Debug log
+      console.log('Messages API response for conversation', conversationId, ':', data)
       
-      // Handle different possible response structures
       let messagesArray = []
       if (Array.isArray(data)) {
         messagesArray = data
@@ -94,7 +91,7 @@ export default function LeadsPage() {
       setMessages(messagesArray)
     } catch (error) {
       console.error('Error fetching messages:', error)
-      setMessages([]) // Ensure messages is always an array
+      setMessages([])
     } finally {
       setIsLoadingMessages(false)
     }
@@ -136,16 +133,22 @@ export default function LeadsPage() {
     }
   }
 
-  return (
-    <div className="h-full bg-white rounded-lg shadow overflow-hidden">
-      <div className="flex h-full relative">
-        {/* Leads List */}
-        <div className={`${selectedLead ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 border-r border-gray-200 flex-col h-full leads-list`}>
-          <div className="p-4 border-b border-gray-200">
+  const handleBackToLeads = () => {
+    setSelectedLead(null)
+  }
+
+  // Mobile view - only show leads list
+  if (!selectedLead) {
+    return (
+      <div className="h-full bg-white rounded-lg shadow">
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
             <p className="text-sm text-gray-600 mt-1">Starred conversations from Go High Level</p>
           </div>
           
+          {/* Leads List */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center p-8">
@@ -204,15 +207,13 @@ export default function LeadsPage() {
                 <div
                   key={lead.id}
                   onClick={() => handleSelectLead(lead)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                    selectedLead?.id === lead.id ? 'bg-orange-50 border-l-4 border-l-[#FE8F00]' : ''
-                  }`}
+                  className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center">
                         <h3 className="font-semibold text-gray-900">{lead.contactName || 'Unknown'}</h3>
-                        {lead.starred && <Star className="ml-2 h-4 w-4 text-yellow-400 fill-current" />}
+                        {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current" />}
                         {lead.unreadCount > 0 && (
                           <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full">
                             {lead.unreadCount}
@@ -230,35 +231,104 @@ export default function LeadsPage() {
             )}
           </div>
         </div>
+      </div>
+    )
+  }
+
+  // Desktop view or mobile chat view
+  return (
+    <div className="h-full bg-white rounded-lg shadow">
+      <div className="h-full flex">
+        {/* Leads List - Hidden on mobile when chat is open */}
+        <div className="hidden md:flex w-1/3 border-r border-gray-200 flex-col">
+          <div className="flex-shrink-0 p-4 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
+            <p className="text-sm text-gray-600 mt-1">Starred conversations from Go High Level</p>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {leads.map((lead) => (
+              <div
+                key={lead.id}
+                onClick={() => handleSelectLead(lead)}
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                  selectedLead?.id === lead.id ? 'bg-orange-50 border-l-4 border-l-[#FE8F00]' : ''
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <h3 className="font-semibold text-gray-900">{lead.contactName || 'Unknown'}</h3>
+                      {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current" />}
+                      {lead.unreadCount > 0 && (
+                        <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full">
+                          {lead.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Chat Area */}
-        <div className={`${selectedLead ? 'flex' : 'hidden md:flex'} flex-1 chat-area`} style={{ position: 'relative', height: '100%' }}>
-          {selectedLead ? (
-            <MainContainer>
-              <ChatContainer>
-                <ConversationHeader>
-                  <ConversationHeader.Back onClick={() => setSelectedLead(null)} />
-                  <Avatar 
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                    name={selectedLead.contactName || 'Unknown'} 
-                  />
-                  <ConversationHeader.Content 
-                    userName={selectedLead.contactName || 'Unknown'}
-                    info={selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}
-                  />
-                  <ConversationHeader.Actions>
-                    <InfoButton />
-                    <button 
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      onClick={() => console.log('Star clicked')}
-                    >
-                      <Star className={`h-5 w-5 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-gray-400'}`} />
-                    </button>
-                  </ConversationHeader.Actions>
-                </ConversationHeader>
+        <div className="flex-1 flex flex-col" style={{ height: '100%' }}>
+          {/* Mobile Header with Back Button */}
+          <div className="md:hidden flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
+            <button 
+              onClick={handleBackToLeads}
+              className="mr-3 p-1 hover:bg-gray-100 rounded"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div className="flex items-center">
+              <Avatar 
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+                name={selectedLead.contactName || 'Unknown'} 
+                size="sm"
+              />
+              <div className="ml-3">
+                <h2 className="text-lg font-semibold text-[#04325E]">{selectedLead.contactName || 'Unknown'}</h2>
+                <p className="text-sm text-gray-600">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Container */}
+          <div className="flex-1" style={{ height: '100%', position: 'relative' }}>
+            <MainContainer style={{ height: '100%' }}>
+              <ChatContainer style={{ height: '100%' }}>
+                {/* Desktop Header */}
+                <div className="hidden md:block">
+                  <ConversationHeader>
+                    <Avatar 
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+                      name={selectedLead.contactName || 'Unknown'} 
+                    />
+                    <ConversationHeader.Content 
+                      userName={selectedLead.contactName || 'Unknown'}
+                      info={selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}
+                    />
+                    <ConversationHeader.Actions>
+                      <button 
+                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        onClick={() => console.log('Star clicked')}
+                      >
+                        <Star className={`h-5 w-5 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-gray-400'}`} />
+                      </button>
+                    </ConversationHeader.Actions>
+                  </ConversationHeader>
+                </div>
                 
                 <MessageList 
                   typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
+                  style={{ height: '100%' }}
                 >
                   {isLoadingMessages ? (
                     <div className="flex items-center justify-center p-8">
@@ -336,17 +406,11 @@ export default function LeadsPage() {
                   onSend={sendMessage}
                   disabled={isSending}
                   sendDisabled={isSending}
+                  style={{ flexShrink: 0 }}
                 />
               </ChatContainer>
             </MainContainer>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500 h-full">
-              <div className="text-center">
-                <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                <p>Select a lead to view conversation</p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
