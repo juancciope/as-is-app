@@ -1,0 +1,141 @@
+/* Custom theme for chat UI to match brand colors */
+
+/* Override conversation header */
+.cs-conversation-header {
+  background-color: white !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.cs-conversation-header__content {
+  color: #04325E !important;
+}
+
+.cs-conversation-header__user-name {
+  color: #04325E !important;
+  font-weight: 600 !important;
+}
+
+.cs-conversation-header__info {
+  color: #6b7280 !important;
+}
+
+/* Override message list background */
+.cs-message-list {
+  background-color: #f9fafb !important;
+}
+
+/* Override outgoing messages (user messages) */
+.cs-message--outgoing .cs-message__content {
+  background-color: #04325E !important;
+  color: white !important;
+}
+
+/* Override incoming messages */
+.cs-message--incoming .cs-message__content {
+  background-color: white !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Override message input */
+.cs-message-input {
+  background-color: white !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.cs-message-input__content-editor {
+  background-color: white !important;
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.cs-message-input__content-editor:focus-within {
+  border-color: #FE8F00 !important;
+  box-shadow: 0 0 0 3px rgba(254, 143, 0, 0.1) !important;
+}
+
+/* Send button */
+.cs-button--send {
+  background-color: #04325E !important;
+  color: white !important;
+}
+
+.cs-button--send:hover:not(:disabled) {
+  background-color: #032847 !important;
+}
+
+.cs-button--send:disabled {
+  opacity: 0.5 !important;
+}
+
+/* Date separators */
+.cs-message-separator__content {
+  background-color: white !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 0.75rem !important;
+  padding: 0.25rem 0.75rem !important;
+}
+
+/* Avatar customization */
+.cs-avatar {
+  background-color: #FE8F00 !important;
+}
+
+/* Typing indicator */
+.cs-typing-indicator__text {
+  color: #6b7280 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  /* Hide leads list on mobile when chat is open */
+  .leads-list {
+    display: none;
+  }
+  
+  .leads-list.mobile-visible {
+    display: flex;
+  }
+  
+  .chat-area {
+    width: 100% !important;
+  }
+  
+  .cs-conversation-header__back {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .cs-conversation-header__back {
+    display: none !important;
+  }
+}
+
+/* Info button styling */
+.cs-info-button {
+  color: #6b7280 !important;
+}
+
+.cs-info-button:hover {
+  color: #04325E !important;
+}
+
+/* Scrollbar styling */
+.cs-message-list__scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cs-message-list__scroll-wrapper::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.cs-message-list__scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.cs-message-list__scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
