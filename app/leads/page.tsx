@@ -870,7 +870,11 @@ export default function LeadsPage() {
                                   <div><span className="font-medium">Neighborhood Grade:</span> <span className="font-bold">{propertyAnalysis.data.market_analysis.neighborhood_grade}</span></div>
                                   <div><span className="font-medium">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
                                   <div><span className="font-medium">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average} days</div>
-                                  <div><span className="font-medium">Comparable Sales:</span> {propertyAnalysis.data.market_analysis.recent_sales_comparison}</div>
+                                  <div><span className="font-medium">Comparable Sales:</span> {
+                                    typeof propertyAnalysis.data.market_analysis.recent_sales_comparison === 'string' 
+                                      ? propertyAnalysis.data.market_analysis.recent_sales_comparison 
+                                      : JSON.stringify(propertyAnalysis.data.market_analysis.recent_sales_comparison)
+                                  }</div>
                                 </div>
                               </div>
                             )}
