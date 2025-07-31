@@ -592,7 +592,7 @@ export default function LeadsPage() {
                 <div className="w-0.5 h-4 bg-white rounded"></div>
               </div>
             </div>
-          />
+          </div>
           {selectedLead ? (
             <>
               {/* Profile Header */}
