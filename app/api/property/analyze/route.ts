@@ -21,201 +21,6 @@ export async function POST(request: NextRequest) {
     const fullAddress = `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`
     
     console.log('🏠 Analyzing property:', fullAddress)
-    console.log('🔍 First, scraping Zillow data using Apify...')
-    
-    // Step 1: Get Zillow URL using search scraper, then get details
-    let zillowData = null
-    try {
-      const apifyToken = process.env.APIFY_API_TOKEN
-      if (!apifyToken) {
-        throw new Error('APIFY_API_TOKEN not configured')
-      }
-
-      console.log('🔍 Step 1: Finding Zillow URL for:', fullAddress)
-
-      // Create Zillow search URL with proper format
-      const createZillowSearchUrl = (address: string) => {
-        const searchQueryState = {
-          usersSearchTerm: address,
-          mapBounds: {
-            west: -87.0,
-            east: -86.0, 
-            south: 35.5,
-            north: 36.5
-          },
-          isMapVisible: true,
-          isListVisible: true,
-          filterState: {
-            sort: { value: "days" }
-          }
-        }
-        
-        const encodedState = encodeURIComponent(JSON.stringify(searchQueryState))
-        return `https://www.zillow.com/homes/for_sale/?searchQueryState=${encodedState}`
-      }
-
-      const searchUrl = createZillowSearchUrl(fullAddress)
-      
-      // First run: Get the property URL using search scraper
-      const searchResponse = await fetch(
-        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${apifyToken}`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            searchUrls: [{ url: searchUrl }],
-            extractionMethod: "MAP_MARKERS"
-          })
-        }
-      )
-
-      if (!searchResponse.ok) {
-        const errorText = await searchResponse.text()
-        throw new Error(`Search scraper failed: ${searchResponse.status} - ${errorText}`)
-      }
-
-      const searchRunData = await searchResponse.json()
-      const searchDatasetId = searchRunData.data.defaultDatasetId
-      
-      console.log('⏳ Waiting for search results...')
-      
-      // Wait for search results
-      let searchData = null
-      let attempts = 0
-      const maxAttempts = 12 // 1 minute max
-      
-      while (attempts < maxAttempts && !searchData) {
-        await new Promise(resolve => setTimeout(resolve, 5000))
-        attempts++
-        
-        const datasetResponse = await fetch(
-          `https://api.apify.com/v2/datasets/${searchDatasetId}/items?token=${apifyToken}&clean=true&format=json`
-        )
-
-        if (datasetResponse.ok) {
-          const data = await datasetResponse.json()
-          console.log(`📋 Search returned ${data.length} properties`)
-          
-          if (data.length > 0) {
-            // Log all addresses for debugging
-            data.forEach((item: any, index: number) => {
-              console.log(`Property ${index + 1}: ${item.address || item.streetAddress || 'No address'}`)
-            })
-            
-            // Try multiple matching strategies
-            const searchAddress = address.toLowerCase().replace(/\s+/g, ' ').trim()
-            const searchCity = city.toLowerCase().trim()
-            const searchState = state.toLowerCase().trim()
-            
-            console.log(`🎯 Looking for: "${searchAddress}" in ${searchCity}, ${searchState}`)
-            
-            // Strategy 1: Exact address match
-            searchData = data.find((item: any) => {
-              const itemAddress = (item.address || item.streetAddress || '').toLowerCase().replace(/\s+/g, ' ').trim()
-              return itemAddress.includes(searchAddress) && 
-                     itemAddress.includes(searchCity) && 
-                     itemAddress.includes(searchState) &&
-                     item.detailUrl
-            })
-            
-            // Strategy 2: Street number and name match
-            if (!searchData) {
-              const streetParts = searchAddress.split(' ')
-              const streetNumber = streetParts[0]
-              const streetName = streetParts.slice(1).join(' ')
-              
-              searchData = data.find((item: any) => {
-                const itemAddress = (item.address || item.streetAddress || '').toLowerCase()
-                return itemAddress.includes(streetNumber) && 
-                       itemAddress.includes(streetName) &&
-                       itemAddress.includes(searchCity) &&
-                       item.detailUrl
-              })
-            }
-            
-            // Strategy 3: Fallback to first result (only if no better match)
-            if (!searchData && data[0]?.detailUrl) {
-              console.log('⚠️ Using fallback - first result may not be exact match')
-              searchData = data[0]
-            }
-            
-            if (searchData) {
-              console.log('✅ Selected property:', searchData.address || searchData.streetAddress)
-              console.log('🔗 Property URL:', searchData.detailUrl)
-            }
-            break
-          }
-        }
-      }
-
-      if (!searchData?.detailUrl) {
-        throw new Error('Could not find property URL from search results')
-      }
-
-      // Step 2: Get detailed property data using detail scraper
-      console.log('🔍 Step 2: Getting detailed property data...')
-      
-      const propertyUrl = searchData.detailUrl.startsWith('http') 
-        ? searchData.detailUrl 
-        : `https://www.zillow.com${searchData.detailUrl}`
-      
-      console.log('🔗 Property URL for detail scraper:', propertyUrl)
-      
-      const detailResponse = await fetch(
-        `https://api.apify.com/v2/acts/maxcopell~zillow-detail-scraper/runs?token=${apifyToken}`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            startUrls: [{ url: propertyUrl }],
-            propertyStatus: "FOR_SALE"
-          })
-        }
-      )
-
-      if (!detailResponse.ok) {
-        const errorText = await detailResponse.text()
-        throw new Error(`Detail scraper failed: ${detailResponse.status} - ${errorText}`)
-      }
-
-      const detailRunData = await detailResponse.json()
-      const detailDatasetId = detailRunData.data.defaultDatasetId
-      
-      // Wait for detailed results
-      attempts = 0
-      while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000))
-        attempts++
-        
-        const datasetResponse = await fetch(
-          `https://api.apify.com/v2/datasets/${detailDatasetId}/items?token=${apifyToken}&clean=true&format=json`
-        )
-
-        if (datasetResponse.ok) {
-          const data = await datasetResponse.json()
-          if (data.length > 0) {
-            zillowData = data[0] // Get detailed data
-            console.log('✅ Detailed Zillow data scraped successfully')
-            break
-          }
-        }
-        
-        console.log(`⏳ Waiting for detailed data... attempt ${attempts}/${maxAttempts}`)
-      }
-
-      if (!zillowData) {
-        console.log('⚠️ Using basic search data as fallback')
-        zillowData = searchData // Use search data as fallback
-      }
-    } catch (error) {
-      console.error('❌ Apify Zillow scraping error:', error)
-    }
     
     // Default assistant ID with environment variable override
     const assistantId = process.env.OPENAI_ASSISTANT_ID || 'asst_YOUR_ASSISTANT_ID_HERE'
@@ -243,52 +48,80 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    // Send structured message to assistant with Zillow data
+    // Send message using the same approach that worked with ChatGPT
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Please analyze this property for investment potential:
+      content: `I am looking to purchase distressed properties as an investment and fix them up to flip them. I am located in the middle Tennessee area. 
 
-PROPERTY TO ANALYZE:
-${JSON.stringify(analysisRequest, null, 2)}
+Give me an overview of the information you have about the following address, including all information I would need to make an investment decision:
 
-${zillowData ? `
-REAL ZILLOW DATA (scraped via Apify - use this EXACT data):
-${JSON.stringify(zillowData, null, 2)}
+${fullAddress}
 
-CRITICAL INSTRUCTIONS:
-- Use the EXACT Zillow data provided above for all property details
-- Do NOT modify, estimate, or approximate the scraped Zillow values
-- Square footage: ${zillowData.livingArea || zillowData.sqft || 'N/A'}
-- Bedrooms: ${zillowData.bedrooms || 'N/A'}  
-- Bathrooms: ${zillowData.bathrooms || 'N/A'}
-- Year built: ${zillowData.yearBuilt || 'N/A'}
-- Zestimate: $${zillowData.zestimate || zillowData.price || 'N/A'}
-- Lot size: ${zillowData.lotSize || 'N/A'}
+Please provide a comprehensive real estate investment analysis in JSON format with the following structure:
 
-Include this verification in your JSON response:
-"zillow_data_verification": {
-  "data_source": "Apify scraper (maxcopell/zillow-scraper)",
-  "scraped_successfully": true,
-  "zestimate_amount": ${zillowData.zestimate || zillowData.price || 'null'},
-  "property_details_verified": true
+{
+  "property_address": "${fullAddress}",
+  "analysis_summary": {
+    "investment_grade": "[A-F grade]",
+    "estimated_arv": [number],
+    "estimated_purchase_price": [number],  
+    "renovation_estimate": [number],
+    "projected_profit": [number],
+    "roi_percentage": [number],
+    "risk_level": "[Low/Medium/High]",
+    "recommendation": "[PROCEED/PROCEED_WITH_CAUTION/AVOID]"
+  },
+  "property_details": {
+    "current_estimated_value": [number],
+    "square_footage": [number],
+    "bedrooms": [number],
+    "bathrooms": [number],
+    "lot_size": "[size]",
+    "year_built": [year],
+    "property_type": "[type]"
+  },
+  "market_analysis": {
+    "neighborhood_grade": "[grade]",
+    "recent_sales_comparison": "[description]",
+    "market_trend": "[description]",
+    "days_on_market_average": [number],
+    "absorption_rate": "[description]"
+  },
+  "renovation_breakdown": {
+    "kitchen": [number],
+    "bathrooms": [number], 
+    "flooring": [number],
+    "paint_interior": [number],
+    "landscaping": [number],
+    "miscellaneous": [number],
+    "contingency_10_percent": [number],
+    "total_estimated": [number]
+  },
+  "financial_projections": {
+    "purchase_price": [number],
+    "renovation_costs": [number],
+    "holding_costs": [number],
+    "selling_costs": [number],
+    "total_investment": [number],
+    "estimated_sale_price": [number],
+    "gross_profit": [number],
+    "roi_percentage": [number],
+    "timeline_months": [number]
+  },
+  "investment_recommendation": {
+    "decision": "[PROCEED/PROCEED_WITH_CAUTION/AVOID]",
+    "confidence_level": "[percentage]",
+    "key_reasons": ["reason1", "reason2", "reason3"],
+    "concerns": ["concern1", "concern2"]
+  },
+  "data_verification": {
+    "source": "OpenAI knowledge base and current market data",
+    "data_quality": "AI-powered analysis",
+    "last_updated": "${new Date().toISOString()}"
+  }
 }
-` : `
-⚠️ ZILLOW DATA NOT AVAILABLE
-The Apify Zillow scraper did not return data for this property.
-Please:
-1. Generate realistic estimates based on Middle Tennessee market knowledge
-2. Clearly indicate that estimates are used (not Zillow data)
-3. Include this in your response:
 
-"zillow_data_verification": {
-  "data_source": "Market estimates (Zillow scraping failed)",
-  "scraped_successfully": false,
-  "reason": "Property not found or scraping timeout",
-  "using_estimates": true
-}
-`}
-
-Please provide your comprehensive analysis in the expected JSON format.`
+Use your knowledge of Middle Tennessee real estate market and current property values to provide accurate, realistic estimates for this investment analysis.`
     })
 
     // Run the assistant
