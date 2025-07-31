@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         if (datasetResponse.ok) {
           const data = await datasetResponse.json()
           if (data.length > 0) {
-            searchData = data.find(item => 
+            searchData = data.find((item: any) => 
               item.address && 
               item.address.toLowerCase().includes(address.toLowerCase()) &&
               item.detailUrl
