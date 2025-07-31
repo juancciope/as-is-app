@@ -1,0 +1,22 @@
+{
+    "name": "search_property_data",
+    "description": "Search for comprehensive property data across multiple real estate websites to get current market information, comparable sales, and property details for investment analysis.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "property_address": {
+          "type": "string",
+          "description": "The full property address to search for"
+        },
+        "search_type": {
+          "type": "string",
+          "enum": ["general", "detailed", "comparables"],
+          "description": "Type of search to perform - general for basic property info, detailed for comprehensive analysis, comparables for recent sales data",
+          "default": "general"
+        }
+      },
+      "required": ["property_address", "search_type"],
+      "additionalProperties": false
+    },
+    "strict": true
+}

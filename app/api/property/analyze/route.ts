@@ -20,44 +20,36 @@ export async function POST(request: NextRequest) {
 
     const fullAddress = `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`
     
-    console.log('🏠 Analyzing property:', fullAddress)
+    console.log('🏠 Analyzing property with web search:', fullAddress)
     
-    // Default assistant ID with environment variable override
-    const assistantId = process.env.OPENAI_ASSISTANT_ID || 'asst_YOUR_ASSISTANT_ID_HERE'
-    console.log('🤖 Using Assistant ID:', assistantId.substring(0, 10) + '...')
-
-    // Create a thread
-    const thread = await openai.beta.threads.create()
-
-    // Structure the data for the assistant
-    const analysisRequest = {
-      property_address: fullAddress,
-      investor_profile: {
-        location: "Middle Tennessee area",
-        strategy: "Fix and flip distressed properties",
-        focus: "Investment properties for renovation and resale"
-      },
-      analysis_type: "comprehensive_investment_analysis",
-      requested_data: [
-        "property_valuation",
-        "market_analysis", 
-        "renovation_estimates",
-        "roi_projections",
-        "neighborhood_analysis",
-        "investment_recommendation"
-      ]
-    }
-
-    // Send message using the same approach that worked with ChatGPT
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: `I am looking to purchase distressed properties as an investment and fix them up to flip them. I am located in the middle Tennessee area. 
+    // Use Responses API with web search instead of Assistants API
+    const response = await openai.responses.create({
+      model: "gpt-4.1",
+      tools: [{ 
+        type: "web_search_preview",
+        user_location: {
+          type: "approximate",
+          country: "US",
+          city: "Nashville",
+          region: "Tennessee"
+        }
+      }],
+      input: `I am looking to purchase distressed properties as an investment and fix them up to flip them. I am located in the middle Tennessee area. 
 
 Give me an overview of the information you have about the following address, including all information I would need to make an investment decision:
 
 ${fullAddress}
 
-Please provide a comprehensive real estate investment analysis in JSON format with the following structure:
+Please search Zillow, Redfin, Realtor.com, and other real estate websites to find current, accurate data for this property. I need:
+
+1. Current market value/Zestimate from multiple sources
+2. Property details (square footage, bedrooms, bathrooms, year built, lot size)
+3. Recent comparable sales in the neighborhood with actual addresses and sale prices
+4. Property tax information
+5. Neighborhood analysis and market trends
+6. Price history if available
+
+Based on the real data you find through web search, provide a comprehensive real estate investment analysis in JSON format:
 
 {
   "property_address": "${fullAddress}",
@@ -82,7 +74,7 @@ Please provide a comprehensive real estate investment analysis in JSON format wi
   },
   "market_analysis": {
     "neighborhood_grade": "[grade]",
-    "recent_sales_comparison": "[description]",
+    "recent_sales_comparison": "[description with actual addresses and prices]",
     "market_trend": "[description]",
     "days_on_market_average": [number],
     "absorption_rate": "[description]"
@@ -114,192 +106,92 @@ Please provide a comprehensive real estate investment analysis in JSON format wi
     "key_reasons": ["reason1", "reason2", "reason3"],
     "concerns": ["concern1", "concern2"]
   },
-  "data_verification": {
-    "source": "Web search results from Zillow/Redfin/Realtor.com",
-    "search_performed": true,
+  "data_sources": {
+    "web_searches_performed": true,
+    "sources_found": ["list of actual URLs"],
     "data_quality": "Current market data from web search",
-    "last_updated": "${new Date().toISOString()}",
-    "primary_data_source": "[Include Zillow/Redfin URL if found]"
+    "last_updated": "${new Date().toISOString()}"
   }
 }
 
-IMPORTANT: You MUST perform a web search for this property address to get current, accurate data. Search on Zillow, Redfin, or Realtor.com to find the actual property details, current value estimates, and recent comparable sales. Base your analysis on the real data you find through web search, not on estimates or general knowledge.`
+CRITICAL: You MUST perform web searches to get real, current data. Do not use estimates or general knowledge. Base your entire analysis on actual data found through web search of real estate websites.`
     })
 
-    // Run the assistant
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: assistantId
-    })
-
-    // Poll for completion with exponential backoff
-    let runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id })
-    let attempts = 0
-    const maxAttempts = 30
+    console.log('✅ Web search response received')
     
-    while ((runStatus.status === 'in_progress' || runStatus.status === 'queued' || runStatus.status === 'requires_action') && attempts < maxAttempts) {
-      // Handle function calls
-      if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
-        console.log('🔧 Assistant requires function call handling')
-        
-        const toolOutputs = []
-        
-        for (const toolCall of runStatus.required_action.submit_tool_outputs.tool_calls) {
-          console.log(`📞 Function call: ${toolCall.function.name}`)
-          console.log(`📋 Arguments: ${toolCall.function.arguments}`)
-          
-          // Handle search_property_data function
-          console.log(`🔍 Handling function: ${toolCall.function.name}`)
-          if (toolCall.function.name === 'search_property_data') {
-            const args = JSON.parse(toolCall.function.arguments)
-            
-            // For now, return mock data. In production, you'd implement actual search
-            const propertyData = {
-              source: "Zillow",
-              url: `https://www.zillow.com/homedetails/${args.property_address.replace(/\s+/g, '-')}`,
-              data: {
-                address: args.property_address,
-                zestimate: 485000,
-                square_footage: 2456,
-                bedrooms: 4,
-                bathrooms: 2.5,
-                year_built: 1998,
-                lot_size: "0.25 acres",
-                property_type: "Single Family Home",
-                last_sold: {
-                  date: "March 2019",
-                  price: 385000
-                },
-                property_tax: 3850,
-                monthly_hoa: 0,
-                price_per_sqft: 197,
-                neighborhood: "Fieldstone Farms",
-                walk_score: 15,
-                school_ratings: {
-                  elementary: 8,
-                  middle: 7,
-                  high: 8
-                },
-                recent_comps: [
-                  {
-                    address: "245 Halberton Dr",
-                    sold_date: "Jan 2024",
-                    sold_price: 510000,
-                    sqft: 2650,
-                    beds: 4,
-                    baths: 3
-                  },
-                  {
-                    address: "312 Fieldstone Ln",
-                    sold_date: "Dec 2023",
-                    sold_price: 475000,
-                    sqft: 2380,
-                    beds: 4,
-                    baths: 2.5
-                  }
-                ]
-              }
-            }
-            
-            toolOutputs.push({
-              tool_call_id: toolCall.id,
-              output: JSON.stringify(propertyData)
-            })
-          } else {
-            // Handle unknown function
-            console.log(`⚠️ Unknown function called: ${toolCall.function.name}`)
-            toolOutputs.push({
-              tool_call_id: toolCall.id,
-              output: JSON.stringify({
-                error: `Unknown function: ${toolCall.function.name}`
-              })
-            })
-          }
-        }
-        
-        // Submit the function results back to the assistant
-        console.log('📤 Submitting tool outputs:', toolOutputs)
-        try {
-          await openai.beta.threads.runs.submitToolOutputs(
-            run.id,
-            { 
-              thread_id: thread.id,
-              tool_outputs: toolOutputs 
-            }
-          )
-          console.log('✅ Tool outputs submitted successfully')
-        } catch (submitError: any) {
-          console.error('❌ Error submitting tool outputs:', submitError)
-          throw submitError
-        }
-      }
-      
-      const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
-      await new Promise(resolve => setTimeout(resolve, delay))
-      runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id })
-      attempts++
-    }
+    // Extract the analysis from the response
+    const outputText = response.output_text
+    const webSearchCalls = response.output?.filter(item => item.type === 'web_search_call') || []
+    const messageContent = response.output?.find(item => item.type === 'message')
+    
+    console.log(`🔍 Web searches performed: ${webSearchCalls.length}`)
+    
+    // Extract citations/sources
+    const firstContent = messageContent?.content?.[0]
+    const citations = (firstContent && 'annotations' in firstContent) ? firstContent.annotations || [] : []
+    const sourceUrls = citations
+      .filter((annotation: any) => annotation.type === 'url_citation')
+      .map((citation: any) => ({
+        url: citation.url,
+        title: citation.title,
+        text_reference: outputText.substring(citation.start_index, citation.end_index)
+      }))
 
-    if (runStatus.status === 'completed') {
-      // Get the assistant's response
-      const messages = await openai.beta.threads.messages.list(thread.id)
-      const assistantMessage = messages.data.find(msg => msg.role === 'assistant')
-      
-      if (assistantMessage && assistantMessage.content[0].type === 'text') {
-        const responseText = assistantMessage.content[0].text.value
-        
-        // Try to parse JSON response, handle markdown code blocks
-        let analysisData
-        try {
-          // First try direct parsing
-          analysisData = JSON.parse(responseText)
-        } catch {
-          try {
-            // Try to extract JSON from markdown code blocks
-            const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/)
-            if (jsonMatch && jsonMatch[1]) {
-              analysisData = JSON.parse(jsonMatch[1])
-            } else {
-              // Try to find any JSON-like content
-              const jsonStart = responseText.indexOf('{')
-              const jsonEnd = responseText.lastIndexOf('}')
-              if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-                const possibleJson = responseText.substring(jsonStart, jsonEnd + 1)
-                analysisData = JSON.parse(possibleJson)
-              } else {
-                throw new Error('No JSON found')
-              }
-            }
-          } catch {
-            // If all parsing fails, treat as formatted text
-            analysisData = {
-              analysis_text: responseText,
-              property_address: fullAddress,
-              recommendation: "See detailed analysis above"
-            }
-          }
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: analysisData,
-          address: fullAddress,
-          timestamp: new Date().toISOString(),
-          method: 'assistant'
-        })
+    console.log(`📚 Sources found: ${sourceUrls.length}`)
+    
+    // Try to parse JSON response from the output
+    let analysisData
+    try {
+      // First try to extract JSON from markdown code blocks
+      const jsonMatch = outputText.match(/```json\s*([\s\S]*?)\s*```/)
+      if (jsonMatch && jsonMatch[1]) {
+        analysisData = JSON.parse(jsonMatch[1])
       } else {
-        throw new Error('No response from assistant')
+        // Try to find any JSON-like content
+        const jsonStart = outputText.indexOf('{')
+        const jsonEnd = outputText.lastIndexOf('}')
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          const possibleJson = outputText.substring(jsonStart, jsonEnd + 1)
+          analysisData = JSON.parse(possibleJson)
+        } else {
+          throw new Error('No JSON found')
+        }
       }
-    } else if (runStatus.status === 'failed') {
-      console.error('❌ Run failed:', runStatus.last_error)
-      throw new Error(`Assistant run failed: ${runStatus.last_error?.message || 'Unknown error'}`)
-    } else if (runStatus.status === 'requires_action') {
-      console.error('❌ Run still requires action after max attempts')
-      console.error('Last run status:', JSON.stringify(runStatus, null, 2))
-      throw new Error('Assistant is waiting for function response but function handling failed')
-    } else {
-      console.error('❌ Unexpected run status:', runStatus.status)
-      throw new Error(`Assistant run timeout or failed with status: ${runStatus.status}`)
+    } catch {
+      // If JSON parsing fails, structure the text response
+      analysisData = {
+        property_address: fullAddress,
+        analysis_text: outputText,
+        web_search_performed: webSearchCalls.length > 0,
+        sources_found: sourceUrls.length,
+        recommendation: "See detailed analysis above",
+        data_sources: {
+          web_searches_performed: webSearchCalls.length > 0,
+          sources_found: sourceUrls.map(s => s.url),
+          data_quality: webSearchCalls.length > 0 ? "Current market data from web search" : "Limited data available",
+          last_updated: new Date().toISOString()
+        }
+      }
     }
+
+    // Add source information to the analysis
+    if (analysisData && typeof analysisData === 'object') {
+      analysisData.web_search_results = {
+        searches_performed: webSearchCalls.length,
+        sources_found: sourceUrls,
+        search_quality: webSearchCalls.length > 0 ? 'high' : 'none'
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: analysisData,
+      address: fullAddress,
+      timestamp: new Date().toISOString(),
+      method: 'web_search',
+      web_searches_performed: webSearchCalls.length,
+      sources_found: sourceUrls.length
+    })
 
   } catch (error: any) {
     console.error('Error analyzing property:', error)
