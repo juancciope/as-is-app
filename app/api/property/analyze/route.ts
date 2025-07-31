@@ -97,13 +97,55 @@ export async function POST(request: NextRequest) {
 
         if (datasetResponse.ok) {
           const data = await datasetResponse.json()
+          console.log(`📋 Search returned ${data.length} properties`)
+          
           if (data.length > 0) {
-            searchData = data.find((item: any) => 
-              item.address && 
-              item.address.toLowerCase().includes(address.toLowerCase()) &&
-              item.detailUrl
-            ) || data[0] // Get first match or fallback to first result
-            console.log('✅ Found property URL:', searchData?.detailUrl)
+            // Log all addresses for debugging
+            data.forEach((item: any, index: number) => {
+              console.log(`Property ${index + 1}: ${item.address || item.streetAddress || 'No address'}`)
+            })
+            
+            // Try multiple matching strategies
+            const searchAddress = address.toLowerCase().replace(/\s+/g, ' ').trim()
+            const searchCity = city.toLowerCase().trim()
+            const searchState = state.toLowerCase().trim()
+            
+            console.log(`🎯 Looking for: "${searchAddress}" in ${searchCity}, ${searchState}`)
+            
+            // Strategy 1: Exact address match
+            searchData = data.find((item: any) => {
+              const itemAddress = (item.address || item.streetAddress || '').toLowerCase().replace(/\s+/g, ' ').trim()
+              return itemAddress.includes(searchAddress) && 
+                     itemAddress.includes(searchCity) && 
+                     itemAddress.includes(searchState) &&
+                     item.detailUrl
+            })
+            
+            // Strategy 2: Street number and name match
+            if (!searchData) {
+              const streetParts = searchAddress.split(' ')
+              const streetNumber = streetParts[0]
+              const streetName = streetParts.slice(1).join(' ')
+              
+              searchData = data.find((item: any) => {
+                const itemAddress = (item.address || item.streetAddress || '').toLowerCase()
+                return itemAddress.includes(streetNumber) && 
+                       itemAddress.includes(streetName) &&
+                       itemAddress.includes(searchCity) &&
+                       item.detailUrl
+              })
+            }
+            
+            // Strategy 3: Fallback to first result (only if no better match)
+            if (!searchData && data[0]?.detailUrl) {
+              console.log('⚠️ Using fallback - first result may not be exact match')
+              searchData = data[0]
+            }
+            
+            if (searchData) {
+              console.log('✅ Selected property:', searchData.address || searchData.streetAddress)
+              console.log('🔗 Property URL:', searchData.detailUrl)
+            }
             break
           }
         }
@@ -116,6 +158,12 @@ export async function POST(request: NextRequest) {
       // Step 2: Get detailed property data using detail scraper
       console.log('🔍 Step 2: Getting detailed property data...')
       
+      const propertyUrl = searchData.detailUrl.startsWith('http') 
+        ? searchData.detailUrl 
+        : `https://www.zillow.com${searchData.detailUrl}`
+      
+      console.log('🔗 Property URL for detail scraper:', propertyUrl)
+      
       const detailResponse = await fetch(
         `https://api.apify.com/v2/acts/maxcopell~zillow-detail-scraper/runs?token=${apifyToken}`,
         {
@@ -125,7 +173,7 @@ export async function POST(request: NextRequest) {
             'Accept': 'application/json'
           },
           body: JSON.stringify({
-            startUrls: [{ url: `https://www.zillow.com${searchData.detailUrl}` }],
+            startUrls: [{ url: propertyUrl }],
             propertyStatus: "FOR_SALE"
           })
         }
