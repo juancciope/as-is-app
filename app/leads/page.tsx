@@ -30,6 +30,8 @@ export default function LeadsPage() {
   const [contactDetails, setContactDetails] = useState<any>(null)
   const [propertyDetails, setPropertyDetails] = useState<any>(null)
   const [propertyAnalysis, setPropertyAnalysis] = useState<any>(null)
+  const [previousReports, setPreviousReports] = useState<any[]>([])
+  const [isLoadingReports, setIsLoadingReports] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
@@ -197,12 +199,58 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
-      // Address info available for AI analysis (dummy Zillow call removed)
+      // Fetch previous property analysis reports for this address
+      if (data.contact?.address1) {
+        fetchPreviousReports(data.contact.address1)
+      }
+      
     } catch (error) {
       console.error('Error fetching contact details:', error)
       setContactDetails(null)
     } finally {
       setIsLoadingProfile(false)
+    }
+  }
+
+  const fetchPreviousReports = async (address: string) => {
+    try {
+      setIsLoadingReports(true)
+      const response = await fetch(`/api/property/reports?address=${encodeURIComponent(address)}&limit=5`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch previous reports')
+      }
+
+      const data = await response.json()
+      setPreviousReports(data.reports || [])
+      
+      // If we have a recent report (within last 7 days), use it as current analysis
+      const recentReport = data.reports?.find((report: any) => {
+        const reportDate = new Date(report.created_at)
+        const sevenDaysAgo = new Date()
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        return reportDate > sevenDaysAgo
+      })
+      
+      if (recentReport && !propertyAnalysis) {
+        setPropertyAnalysis({
+          success: true,
+          data: recentReport.analysis_data,
+          address: recentReport.property_address,
+          timestamp: recentReport.created_at,
+          method: recentReport.method,
+          web_searches_performed: recentReport.web_searches_performed,
+          sources_found: recentReport.sources_found,
+          report_id: recentReport.id,
+          from_database: true
+        })
+      }
+      
+    } catch (error) {
+      console.error('Error fetching previous reports:', error)
+      setPreviousReports([])
+    } finally {
+      setIsLoadingReports(false)
     }
   }
 
@@ -219,6 +267,7 @@ export default function LeadsPage() {
     }
     // Reset analysis when switching leads
     setPropertyAnalysis(null)
+    setPreviousReports([])
   }
 
   const handleBackToLeads = () => {
@@ -226,6 +275,7 @@ export default function LeadsPage() {
     setContactDetails(null)
     setPropertyDetails(null)
     setPropertyAnalysis(null)
+    setPreviousReports([])
   }
 
   const generatePropertyReport = async () => {
@@ -789,7 +839,12 @@ export default function LeadsPage() {
                           Generated: {new Date(propertyAnalysis.timestamp).toLocaleString()}
                           {propertyAnalysis.method && (
                             <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                              🤖 AI Assistant
+                              🤖 {propertyAnalysis.method === 'web_search' ? 'Web Search' : 'AI Assistant'}
+                            </span>
+                          )}
+                          {propertyAnalysis.from_database && (
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                              💾 Cached
                             </span>
                           )}
                         </div>
@@ -920,6 +975,59 @@ export default function LeadsPage() {
                               </div>
                             )}
                           </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Previous Reports */}
+                    {previousReports.length > 0 && (
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Previous Reports ({previousReports.length})
+                        </h3>
+                        
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {previousReports.map((report: any, index: number) => (
+                            <div 
+                              key={report.id}
+                              className="text-xs p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100"
+                              onClick={() => {
+                                setPropertyAnalysis({
+                                  success: true,
+                                  data: report.analysis_data,
+                                  address: report.property_address,
+                                  timestamp: report.created_at,
+                                  method: report.method,
+                                  web_searches_performed: report.web_searches_performed,
+                                  sources_found: report.sources_found,
+                                  report_id: report.id,
+                                  from_database: true
+                                })
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-700">
+                                  {new Date(report.created_at).toLocaleDateString()}
+                                </span>
+                                <div className="flex items-center space-x-1">
+                                  {report.method === 'web_search' && (
+                                    <span className="px-1 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">
+                                      Web
+                                    </span>
+                                  )}
+                                  {report.web_searches_performed > 0 && (
+                                    <span className="text-green-600">
+                                      {report.sources_found} sources
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-gray-500 mt-1 truncate">
+                                {report.analysis_data?.investment_recommendation?.decision || 'Analysis available'}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}

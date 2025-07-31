@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { supabaseAdmin, PropertyAnalysisReport } from '../../../../lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -183,6 +184,42 @@ CRITICAL: You MUST perform web searches to get real, current data. Do not use es
       }
     }
 
+    // Store the analysis report in the database
+    let reportId: string | null = null
+    if (supabaseAdmin) {
+      try {
+        console.log('💾 Storing property analysis report in database...')
+        
+        const reportData: Omit<PropertyAnalysisReport, 'id' | 'created_at' | 'updated_at'> = {
+          property_address: fullAddress,
+          city: city,
+          state: state,
+          zip_code: zipCode || null,
+          analysis_data: analysisData,
+          method: 'web_search',
+          web_searches_performed: webSearchCalls.length,
+          sources_found: sourceUrls.length,
+          source_urls: sourceUrls,
+          confidence_score: webSearchCalls.length > 0 ? 0.85 : 0.50 // Higher confidence with web searches
+        }
+        
+        const { data: savedReport, error: saveError } = await supabaseAdmin
+          .from('property_analysis_reports')
+          .insert(reportData)
+          .select('id')
+          .single()
+        
+        if (saveError) {
+          console.error('❌ Error saving property analysis report:', saveError)
+        } else {
+          reportId = savedReport.id
+          console.log('✅ Property analysis report saved with ID:', reportId)
+        }
+      } catch (error) {
+        console.error('❌ Error storing analysis report:', error)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: analysisData,
@@ -190,7 +227,8 @@ CRITICAL: You MUST perform web searches to get real, current data. Do not use es
       timestamp: new Date().toISOString(),
       method: 'web_search',
       web_searches_performed: webSearchCalls.length,
-      sources_found: sourceUrls.length
+      sources_found: sourceUrls.length,
+      report_id: reportId // Include the database ID for reference
     })
 
   } catch (error: any) {

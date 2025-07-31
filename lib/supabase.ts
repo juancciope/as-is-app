@@ -193,6 +193,26 @@ export interface InvestorRules {
 }
 
 // Combined types for API responses
+export interface PropertyAnalysisReport {
+  id: string
+  property_address: string
+  city?: string
+  state?: string
+  zip_code?: string
+  analysis_data: Record<string, any> // JSON data from OpenAI analysis
+  method: string // 'web_search', 'assistant', etc.
+  web_searches_performed?: number
+  sources_found?: number
+  source_urls?: Array<{
+    url: string
+    title?: string
+    text_reference?: string
+  }>
+  confidence_score?: number
+  created_at: string
+  updated_at: string
+}
+
 export interface PropertyWithEvents extends Property {
   events: DistressEvent[]
   contacts: Contact[]
