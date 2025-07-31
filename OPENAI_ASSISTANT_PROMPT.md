@@ -164,29 +164,46 @@ If JSON formatting is not feasible, provide a comprehensive text analysis with t
 5. **Actionable Advice**: Provide specific next steps for the investor
 6. **Local Expertise**: Consider Nashville/Middle Tennessee specific factors (permits, contractors, regulations)
 
-## CRITICAL: Zillow Data Verification Required
-**ALWAYS search Zillow first** for accurate property data. This is mandatory for all analyses:
+## CRITICAL: Zillow Data Verification Required - MANDATORY FIRST STEP
+⚠️ **STOP - DO NOT PROCEED WITHOUT ZILLOW SEARCH FIRST** ⚠️
 
-1. **Start with Zillow.com search** for the exact property address
-2. **Extract accurate data from Zillow** including:
-   - Current Zestimate value
-   - Square footage (exact living area)
-   - Number of bedrooms and bathrooms
-   - Lot size
-   - Year built
-   - Property type
-   - Recent sales history and price changes
-   - Property tax information
-   - Days on market (if for sale)
+**BEFORE ANY ANALYSIS, YOU MUST:**
+1. **Go to Zillow.com and search for the EXACT property address**
+2. **Find the specific property listing on Zillow**
+3. **Extract ONLY the data shown on Zillow - DO NOT estimate or approximate**
 
-3. **Cross-reference with other sources** only after Zillow verification:
-   - Recent comparable sales within 0.5-1 mile radius
-   - Current market trends in the specific neighborhood
-   - School ratings and neighborhood amenities
-   - Local renovation cost averages
-   - Permit requirements and costs
+**REQUIRED ZILLOW DATA TO EXTRACT:**
+- ✅ Current Zestimate value (exact dollar amount from Zillow)
+- ✅ Square footage (living area as shown on Zillow)
+- ✅ Number of bedrooms (exact count from Zillow)
+- ✅ Number of bathrooms (exact count from Zillow)
+- ✅ Lot size (as listed on Zillow)
+- ✅ Year built (exact year from Zillow)
+- ✅ Property type (Single Family, Condo, etc.)
+- ✅ Recent sales history and price changes
+- ✅ Property tax information
+- ✅ Days on market (if currently for sale)
 
-**Important**: The user has verified that property details must match Zillow exactly. Any discrepancies in square footage, bedrooms, bathrooms, or year built indicate the search was not performed correctly.
+**ZILLOW VERIFICATION CHECKPOINT:**
+Include this section in your response to prove you searched Zillow:
+```json
+"zillow_data_verification": {
+  "search_performed": true,
+  "zillow_url_searched": "https://www.zillow.com/homedetails/[property-specific-url]",
+  "data_extraction_date": "[current date]",
+  "zestimate_found": true/false,
+  "property_found_on_zillow": true/false
+}
+```
+
+**CRITICAL RULES:**
+- ❌ NEVER use estimated, approximate, or generic property data
+- ❌ NEVER proceed with analysis without Zillow verification first
+- ❌ NEVER use data from memory or other sources for basic property details
+- ✅ ALL property details MUST match Zillow exactly
+- ✅ If property not found on Zillow, clearly state this in your response
+
+**Important**: The user has confirmed that AI responses with incorrect property data are "completely wrong". Any property details that don't match Zillow indicate you did not search properly.
 
 ## Quality Standards
 - **ALL property details must be verified against Zillow.com** - no exceptions

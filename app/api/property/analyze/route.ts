@@ -51,18 +51,45 @@ export async function POST(request: NextRequest) {
     // Send structured message to assistant
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `Please analyze this property for investment potential:
+      content: `🚨 MANDATORY ZILLOW VERIFICATION REQUIRED 🚨
 
-PROPERTY DATA:
+PROPERTY TO ANALYZE:
 ${JSON.stringify(analysisRequest, null, 2)}
 
-CRITICAL INSTRUCTIONS:
-1. FIRST: Search Zillow.com for this exact address to get accurate property details
-2. Verify ALL property data (square footage, bedrooms, bathrooms, year built) matches Zillow exactly
-3. Use Zillow's current Zestimate as the baseline market value
-4. Include Zillow's sales history and price changes in your analysis
+⚠️ CRITICAL - READ BEFORE PROCEEDING:
+The user has confirmed that previous responses had "completely wrong data" compared to Zillow.
+YOU MUST FOLLOW THESE STEPS EXACTLY:
 
-Please provide a comprehensive analysis in the expected JSON format with verified Zillow data.`
+STEP 1: ZILLOW SEARCH (MANDATORY)
+- Go to Zillow.com
+- Search for the EXACT address: "${fullAddress}"
+- Find the specific property listing
+- Extract EXACT data from Zillow (DO NOT estimate or approximate)
+
+STEP 2: DATA VERIFICATION CHECKPOINT
+Include this verification section in your JSON response:
+"zillow_data_verification": {
+  "search_performed": true,
+  "zillow_url_searched": "https://www.zillow.com/homedetails/[actual-url-found]",
+  "data_extraction_date": "[today's date]",
+  "zestimate_amount": [exact amount from Zillow],
+  "property_found_on_zillow": true/false
+}
+
+STEP 3: ACCURATE PROPERTY DETAILS
+Use ONLY Zillow data for:
+- Square footage (living area from Zillow)
+- Bedrooms (exact count from Zillow) 
+- Bathrooms (exact count from Zillow)
+- Year built (exact year from Zillow)
+- Current Zestimate (exact dollar amount)
+- Lot size (as shown on Zillow)
+
+❌ DO NOT PROCEED WITHOUT ZILLOW SEARCH FIRST
+❌ DO NOT USE ESTIMATED OR GENERIC DATA
+✅ PROPERTY DETAILS MUST MATCH ZILLOW EXACTLY
+
+Provide your comprehensive analysis in JSON format with verified Zillow data.`
     })
 
     // Run the assistant
