@@ -69,7 +69,7 @@ Please provide a comprehensive analysis in the expected JSON format.`
     let attempts = 0
     const maxAttempts = 30
     
-    while ((runStatus.status === 'running' || runStatus.status === 'queued') && attempts < maxAttempts) {
+    while ((runStatus.status === 'in_progress' || runStatus.status === 'queued') && attempts < maxAttempts) {
       const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
       await new Promise(resolve => setTimeout(resolve, delay))
       runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id })
