@@ -220,9 +220,11 @@ IMPORTANT: You MUST perform a web search for this property address to get curren
         console.log('📤 Submitting tool outputs:', toolOutputs)
         try {
           await openai.beta.threads.runs.submitToolOutputs(
-            thread.id,
             run.id,
-            { tool_outputs: toolOutputs }
+            { 
+              thread_id: thread.id,
+              tool_outputs: toolOutputs 
+            }
           )
           console.log('✅ Tool outputs submitted successfully')
         } catch (submitError: any) {
