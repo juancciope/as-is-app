@@ -115,13 +115,15 @@ Please provide a comprehensive real estate investment analysis in JSON format wi
     "concerns": ["concern1", "concern2"]
   },
   "data_verification": {
-    "source": "OpenAI knowledge base and current market data",
-    "data_quality": "AI-powered analysis",
-    "last_updated": "${new Date().toISOString()}"
+    "source": "Web search results from Zillow/Redfin/Realtor.com",
+    "search_performed": true,
+    "data_quality": "Current market data from web search",
+    "last_updated": "${new Date().toISOString()}",
+    "primary_data_source": "[Include Zillow/Redfin URL if found]"
   }
 }
 
-Use your knowledge of Middle Tennessee real estate market and current property values to provide accurate, realistic estimates for this investment analysis.`
+IMPORTANT: You MUST perform a web search for this property address to get current, accurate data. Search on Zillow, Redfin, or Realtor.com to find the actual property details, current value estimates, and recent comparable sales. Base your analysis on the real data you find through web search, not on estimates or general knowledge.`
     })
 
     // Run the assistant
