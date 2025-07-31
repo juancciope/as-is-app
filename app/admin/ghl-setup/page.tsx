@@ -12,7 +12,7 @@ export default function GHLSetupPage() {
     }
 
     const redirectUri = `${window.location.origin}/oauth/callback`
-    const scope = 'conversations/message.readonly conversations/message.write conversations.readonly conversations.write'
+    const scope = 'conversations/message.readonly conversations/message.write conversations.readonly conversations.write contacts.readonly contacts.write'
     
     const authUrl = `https://marketplace.gohighlevel.com/oauth/chooselocation?` + 
       `response_type=code&` +
