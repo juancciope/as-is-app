@@ -35,87 +35,54 @@ export async function POST(request: NextRequest) {
           region: "Tennessee"
         }
       }],
-      input: `I am looking to purchase distressed properties as an investment and fix them up to flip them. I am located in the middle Tennessee area. 
+      input: `Search for property information for the address: ${fullAddress}
 
-Give me an overview of the information you have about the following address, including all information I would need to make an investment decision:
+Please search Zillow, Redfin, Realtor.com and other real estate websites for this exact property address. After gathering the data, provide a comprehensive real estate investment analysis for a fix-and-flip investor.
 
-${fullAddress}
-
-Please search Zillow, Redfin, Realtor.com, and other real estate websites to find current, accurate data for this property. I need:
-
-1. Current market value/Zestimate from multiple sources
-2. Property details (square footage, bedrooms, bathrooms, year built, lot size)
-3. Recent comparable sales in the neighborhood with actual addresses and sale prices
-4. Property tax information
-5. Neighborhood analysis and market trends
-6. Price history if available
-
-Based on the real data you find through web search, provide a comprehensive real estate investment analysis in JSON format:
+Return your response as a JSON object with this structure:
 
 {
   "property_address": "${fullAddress}",
-  "analysis_summary": {
-    "investment_grade": "[A-F grade]",
-    "estimated_arv": [number],
-    "estimated_purchase_price": [number],  
-    "renovation_estimate": [number],
-    "projected_profit": [number],
-    "roi_percentage": [number],
-    "risk_level": "[Low/Medium/High]",
-    "recommendation": "[PROCEED/PROCEED_WITH_CAUTION/AVOID]"
-  },
   "property_details": {
-    "current_estimated_value": [number],
-    "square_footage": [number],
-    "bedrooms": [number],
-    "bathrooms": [number],
-    "lot_size": "[size]",
-    "year_built": [year],
-    "property_type": "[type]"
+    "current_estimated_value": 0,
+    "square_footage": 0, 
+    "bedrooms": 0,
+    "bathrooms": 0,
+    "year_built": 0,
+    "property_type": "Single Family"
   },
   "market_analysis": {
-    "neighborhood_grade": "[grade]",
-    "recent_sales_comparison": "[description with actual addresses and prices]",
-    "market_trend": "[description]",
-    "days_on_market_average": [number],
-    "absorption_rate": "[description]"
+    "comparable_sales": [
+      {
+        "address": "123 Example St",
+        "sale_price": 250000,
+        "square_footage": 1500,
+        "price_per_sqft": 167
+      }
+    ],
+    "market_trend": "Stable",
+    "days_on_market_average": 30
+  },
+  "investment_analysis": {
+    "estimated_arv": 0,
+    "estimated_purchase_price": 0,
+    "renovation_estimate": 0,
+    "projected_profit": 0,
+    "roi_percentage": 0,
+    "investment_grade": "B",
+    "recommendation": "PROCEED_WITH_CAUTION"
   },
   "renovation_breakdown": {
-    "kitchen": [number],
-    "bathrooms": [number], 
-    "flooring": [number],
-    "paint_interior": [number],
-    "landscaping": [number],
-    "miscellaneous": [number],
-    "contingency_10_percent": [number],
-    "total_estimated": [number]
-  },
-  "financial_projections": {
-    "purchase_price": [number],
-    "renovation_costs": [number],
-    "holding_costs": [number],
-    "selling_costs": [number],
-    "total_investment": [number],
-    "estimated_sale_price": [number],
-    "gross_profit": [number],
-    "roi_percentage": [number],
-    "timeline_months": [number]
-  },
-  "investment_recommendation": {
-    "decision": "[PROCEED/PROCEED_WITH_CAUTION/AVOID]",
-    "confidence_level": "[percentage]",
-    "key_reasons": ["reason1", "reason2", "reason3"],
-    "concerns": ["concern1", "concern2"]
-  },
-  "data_sources": {
-    "web_searches_performed": true,
-    "sources_found": ["list of actual URLs"],
-    "data_quality": "Current market data from web search",
-    "last_updated": "${new Date().toISOString()}"
+    "kitchen": 15000,
+    "bathrooms": 8000,
+    "flooring": 5000,
+    "paint_interior": 3000,
+    "landscaping": 2000,
+    "miscellaneous": 5000,
+    "contingency_10_percent": 3800,
+    "total_estimated": 41800
   }
-}
-
-CRITICAL: You MUST perform web searches to get real, current data. Do not use estimates or general knowledge. Base your entire analysis on actual data found through web search of real estate websites.`
+}`
     })
 
     console.log('✅ Web search response received')
@@ -140,38 +107,71 @@ CRITICAL: You MUST perform web searches to get real, current data. Do not use es
 
     console.log(`📚 Sources found: ${sourceUrls.length}`)
     
-    // Try to parse JSON response from the output
+    // Parse JSON response with improved error handling
     let analysisData
     try {
-      // First try to extract JSON from markdown code blocks
-      const jsonMatch = outputText.match(/```json\s*([\s\S]*?)\s*```/)
-      if (jsonMatch && jsonMatch[1]) {
-        analysisData = JSON.parse(jsonMatch[1])
-      } else {
-        // Try to find any JSON-like content
-        const jsonStart = outputText.indexOf('{')
-        const jsonEnd = outputText.lastIndexOf('}')
-        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-          const possibleJson = outputText.substring(jsonStart, jsonEnd + 1)
-          analysisData = JSON.parse(possibleJson)
-        } else {
-          throw new Error('No JSON found')
-        }
+      // Clean the output text first
+      let cleanText = outputText.trim()
+      
+      // Remove any markdown code block formatting
+      const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (codeBlockMatch && codeBlockMatch[1]) {
+        cleanText = codeBlockMatch[1].trim()
       }
-    } catch {
-      // If JSON parsing fails, structure the text response
+      
+      // Find JSON object boundaries
+      const jsonStart = cleanText.indexOf('{')
+      const jsonEnd = cleanText.lastIndexOf('}')
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        const jsonText = cleanText.substring(jsonStart, jsonEnd + 1)
+        analysisData = JSON.parse(jsonText)
+        console.log('✅ Successfully parsed JSON response')
+      } else {
+        throw new Error('No valid JSON object found in response')
+      }
+      
+    } catch (parseError) {
+      console.log('⚠️ JSON parsing failed:', parseError)
+      
+      // Create a structured fallback response
       analysisData = {
         property_address: fullAddress,
-        analysis_text: outputText,
-        web_search_performed: webSearchCalls.length > 0,
-        sources_found: sourceUrls.length,
-        recommendation: "See detailed analysis above",
-        data_sources: {
-          web_searches_performed: webSearchCalls.length > 0,
-          sources_found: sourceUrls.map(s => s.url),
-          data_quality: webSearchCalls.length > 0 ? "Current market data from web search" : "Limited data available",
-          last_updated: new Date().toISOString()
-        }
+        property_details: {
+          current_estimated_value: null,
+          square_footage: null,
+          bedrooms: null,
+          bathrooms: null,
+          year_built: null,
+          property_type: "Unknown"
+        },
+        market_analysis: {
+          comparable_sales: [],
+          market_trend: "Data unavailable",
+          days_on_market_average: null
+        },
+        investment_analysis: {
+          estimated_arv: null,
+          estimated_purchase_price: null,
+          renovation_estimate: null,
+          projected_profit: null,
+          roi_percentage: null,
+          investment_grade: "N/A",
+          recommendation: "MANUAL_REVIEW_REQUIRED"
+        },
+        renovation_breakdown: {
+          kitchen: null,
+          bathrooms: null,
+          flooring: null,
+          paint_interior: null,
+          landscaping: null,
+          miscellaneous: null,
+          contingency_10_percent: null,
+          total_estimated: null
+        },
+        parsing_error: true,
+        raw_response: outputText.substring(0, 500),
+        error_message: "Unable to parse AI response. Manual review required."
       }
     }
 

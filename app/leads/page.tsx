@@ -37,12 +37,7 @@ export default function LeadsPage() {
   const [contactProperties, setContactProperties] = useState<any[]>([])
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState(0)
   const [isAddingProperty, setIsAddingProperty] = useState(false)
-  const [newPropertyForm, setNewPropertyForm] = useState({
-    address: '',
-    city: '',
-    state: '',
-    zipCode: ''
-  })
+  const [newPropertyAddress, setNewPropertyAddress] = useState('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
@@ -336,24 +331,53 @@ export default function LeadsPage() {
     }
   }
 
+  // Helper function to parse full address into components
+  const parseAddress = (fullAddress: string) => {
+    // Simple address parsing - can be enhanced with a proper address parsing library
+    const parts = fullAddress.split(',').map(part => part.trim())
+    
+    if (parts.length >= 3) {
+      // Format: "123 Main St, Nashville, TN 37203"
+      const address = parts[0]
+      const city = parts[1]
+      const stateZip = parts[2].split(' ')
+      const state = stateZip[0]
+      const zipCode = stateZip.slice(1).join(' ')
+      
+      return { address, city, state, zipCode }
+    } else if (parts.length === 2) {
+      // Format: "123 Main St, Nashville TN"
+      const address = parts[0]
+      const cityStateZip = parts[1].split(' ')
+      const city = cityStateZip.slice(0, -1).join(' ')
+      const state = cityStateZip[cityStateZip.length - 1]
+      
+      return { address, city, state, zipCode: '' }
+    } else {
+      // Single part or complex format - treat as full address
+      return { address: fullAddress, city: '', state: '', zipCode: '' }
+    }
+  }
+
   const addNewProperty = () => {
+    const parsedAddress = parseAddress(newPropertyAddress)
+    
     const newProperty = {
       id: `property-${Date.now()}`,
-      address: newPropertyForm.address,
-      city: newPropertyForm.city,
-      state: newPropertyForm.state,
-      zipCode: newPropertyForm.zipCode,
+      address: parsedAddress.address,
+      city: parsedAddress.city,
+      state: parsedAddress.state,
+      zipCode: parsedAddress.zipCode,
       isPrimary: false
     }
     
     setContactProperties(prev => [...prev, newProperty])
     setSelectedPropertyIndex(contactProperties.length) // Select the new property
     setIsAddingProperty(false)
-    setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+    setNewPropertyAddress('')
     
-    // Fetch reports for the new property
-    const fullAddress = `${newProperty.address}, ${newProperty.city}, ${newProperty.state}${newProperty.zipCode ? ` ${newProperty.zipCode}` : ''}`
-    fetchPreviousReports(fullAddress)
+    // Fetch reports for the new property using the original full address
+    fetchPreviousReports(newPropertyAddress)
   }
 
   const switchToProperty = (index: number) => {
@@ -922,7 +946,7 @@ export default function LeadsPage() {
                               <button
                                 onClick={() => {
                                   setIsAddingProperty(false)
-                                  setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+                                  setNewPropertyAddress('')
                                 }}
                                 className="text-gray-400 hover:text-gray-600"
                               >
@@ -932,39 +956,19 @@ export default function LeadsPage() {
                             <div className="space-y-2">
                               <input
                                 type="text"
-                                placeholder="Street Address"
-                                value={newPropertyForm.address}
-                                onChange={(e) => setNewPropertyForm(prev => ({ ...prev, address: e.target.value }))}
+                                placeholder="Full Address (e.g., 123 Main St, Nashville, TN 37203)"
+                                value={newPropertyAddress}
+                                onChange={(e) => setNewPropertyAddress(e.target.value)}
                                 className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
                               />
-                              <div className="grid grid-cols-3 gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="City"
-                                  value={newPropertyForm.city}
-                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, city: e.target.value }))}
-                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="State"
-                                  value={newPropertyForm.state}
-                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, state: e.target.value }))}
-                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
-                                />
-                                <input
-                                  type="text"
-                                  placeholder="ZIP"
-                                  value={newPropertyForm.zipCode}
-                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, zipCode: e.target.value }))}
-                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
-                                />
+                              <div className="text-xs text-gray-500">
+                                Enter the complete address including city, state, and ZIP code
                               </div>
                               <div className="flex justify-end space-x-2">
                                 <button
                                   onClick={() => {
                                     setIsAddingProperty(false)
-                                    setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+                                    setNewPropertyAddress('')
                                   }}
                                   className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100"
                                 >
@@ -972,7 +976,7 @@ export default function LeadsPage() {
                                 </button>
                                 <button
                                   onClick={addNewProperty}
-                                  disabled={!newPropertyForm.address || !newPropertyForm.city || !newPropertyForm.state}
+                                  disabled={!newPropertyAddress.trim()}
                                   className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                                 >
                                   <Check className="h-3 w-3 mr-1" />
@@ -1023,33 +1027,54 @@ export default function LeadsPage() {
                         )}
 
                         {/* Investment Summary - Always Visible */}
-                        {propertyAnalysis?.data?.analysis_summary && (
+                        {propertyAnalysis?.data?.investment_analysis && (
                           <div className="space-y-3">
                             <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
                               <div className="text-xs text-blue-600 font-medium">Investment Grade</div>
                               <div className="text-lg font-bold text-blue-700">
-                                {propertyAnalysis.data.analysis_summary.investment_grade}
+                                {propertyAnalysis.data.investment_analysis.investment_grade || 'N/A'}
                               </div>
                             </div>
                             
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div>
                                 <span className="text-gray-500">ARV</span>
-                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.estimated_arv?.toLocaleString()}</div>
+                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}</div>
                               </div>
                               <div>
                                 <span className="text-gray-500">ROI</span>
-                                <div className="font-medium">{propertyAnalysis.data.analysis_summary.roi_percentage}%</div>
+                                <div className="font-medium">{propertyAnalysis.data.investment_analysis.roi_percentage || 'N/A'}%</div>
                               </div>
                               <div>
                                 <span className="text-gray-500">Reno Est.</span>
-                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.renovation_estimate?.toLocaleString()}</div>
+                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.renovation_estimate?.toLocaleString() || 'N/A'}</div>
                               </div>
                               <div>
                                 <span className="text-gray-500">Profit</span>
-                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.projected_profit?.toLocaleString()}</div>
+                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.projected_profit?.toLocaleString() || 'N/A'}</div>
                               </div>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Error Display for Parsing Issues */}
+                        {propertyAnalysis?.data?.parsing_error && (
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-yellow-600">⚠️</span>
+                              <span className="font-medium text-yellow-800">Analysis Needs Review</span>
+                            </div>
+                            <div className="text-sm text-yellow-700 mb-2">
+                              {propertyAnalysis.data.error_message || 'The AI response could not be automatically parsed. Please review the raw response below.'}
+                            </div>
+                            {propertyAnalysis.data.raw_response && (
+                              <details className="text-xs">
+                                <summary className="cursor-pointer text-yellow-600 hover:text-yellow-800">View Raw Response</summary>
+                                <div className="mt-2 p-2 bg-white rounded border max-h-32 overflow-y-auto">
+                                  <pre className="whitespace-pre-wrap">{propertyAnalysis.data.raw_response}</pre>
+                                </div>
+                              </details>
+                            )}
                           </div>
                         )}
                         
@@ -1203,13 +1228,14 @@ export default function LeadsPage() {
                               <div className="p-3 bg-orange-50 rounded">
                                 <h4 className="font-semibold text-[#04325E] mb-2">🏘️ Market Analysis</h4>
                                 <div className="space-y-2 text-sm">
-                                  <div><span className="font-medium">Neighborhood Grade:</span> <span className="font-bold">{propertyAnalysis.data.market_analysis.neighborhood_grade}</span></div>
-                                  <div><span className="font-medium">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
-                                  <div><span className="font-medium">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average} days</div>
+                                  <div><span className="font-medium">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend || 'N/A'}</div>
+                                  {propertyAnalysis.data.market_analysis.days_on_market_average && (
+                                    <div><span className="font-medium">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average} days</div>
+                                  )}
                                   <div>
                                     <span className="font-medium">Comparable Sales:</span>
                                     <div className="mt-2 space-y-2">
-                                      {formatComparableSales(propertyAnalysis.data.market_analysis.recent_sales_comparison)}
+                                      {formatComparableSales(propertyAnalysis.data.market_analysis.comparable_sales)}
                                     </div>
                                   </div>
                                 </div>
@@ -1231,29 +1257,64 @@ export default function LeadsPage() {
                               </div>
                             )}
 
-                            {/* Fallback - if no structured data, show formatted message */}
-                            {!propertyAnalysis.data?.investment_recommendation && !propertyAnalysis.data?.financial_projections && (
+                            {/* Parsing Error or Manual Review Required */}
+                            {propertyAnalysis.data?.parsing_error && (
+                              <div className="p-3 bg-red-50 rounded border border-red-200">
+                                <div className="flex items-center mb-2">
+                                  <span className="text-red-600">❌</span>
+                                  <h4 className="font-semibold text-red-800 ml-2">Analysis Parsing Error</h4>
+                                </div>
+                                <div className="text-sm text-red-700 mb-2">
+                                  The AI Assistant found property data but couldn't structure it properly. 
+                                  Web searches were performed ({propertyAnalysis.web_searches_performed} searches) 
+                                  but the response needs manual review.
+                                </div>
+                                {propertyAnalysis.data?.raw_analysis_text && (
+                                  <details className="mt-2">
+                                    <summary className="text-xs text-red-600 cursor-pointer hover:text-red-800">
+                                      View raw analysis text
+                                    </summary>
+                                    <div className="mt-2 p-2 bg-red-100 rounded text-xs whitespace-pre-wrap max-h-40 overflow-y-auto">
+                                      {propertyAnalysis.data.raw_analysis_text}
+                                    </div>
+                                  </details>
+                                )}
+                                <button
+                                  onClick={generatePropertyReport}
+                                  className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                >
+                                  Try Generate Again
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Fallback - if no structured data and no parsing error, show formatted message */}
+                            {!propertyAnalysis.data?.investment_recommendation && !propertyAnalysis.data?.financial_projections && !propertyAnalysis.data?.parsing_error && (
                               <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
                                 <div className="flex items-center mb-2">
                                   <span className="text-yellow-600">⚠️</span>
-                                  <h4 className="font-semibold text-yellow-800 ml-2">Assistant Response Processing</h4>
+                                  <h4 className="font-semibold text-yellow-800 ml-2">Incomplete Analysis</h4>
                                 </div>
                                 <div className="text-sm text-yellow-700">
-                                  The AI Assistant provided analysis but it needs to be structured properly. 
+                                  The AI Assistant provided analysis but some sections are missing. 
                                   Please check the property details above for available metrics, or try generating the report again.
                                 </div>
-                                {propertyAnalysis.data?.analysis_text && (
+                                {(propertyAnalysis.data?.analysis_text || propertyAnalysis.data?.raw_analysis_text) && (
                                   <details className="mt-2">
                                     <summary className="text-xs text-yellow-600 cursor-pointer hover:text-yellow-800">
                                       View raw response (for debugging)
                                     </summary>
                                     <div className="mt-2 p-2 bg-yellow-100 rounded text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
-                                      {typeof propertyAnalysis.data === 'string' 
-                                        ? propertyAnalysis.data.substring(0, 500) + (propertyAnalysis.data.length > 500 ? '...' : '')
-                                        : JSON.stringify(propertyAnalysis.data.analysis_text, null, 2).substring(0, 500)}
+                                      {propertyAnalysis.data?.raw_analysis_text || propertyAnalysis.data?.analysis_text || 'No raw text available'}
                                     </div>
                                   </details>
                                 )}
+                                <button
+                                  onClick={generatePropertyReport}
+                                  className="mt-2 px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                >
+                                  Try Generate Again
+                                </button>
                               </div>
                             )}
                           </div>
