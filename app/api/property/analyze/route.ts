@@ -31,23 +31,55 @@ export async function POST(request: NextRequest) {
         throw new Error('APIFY_API_TOKEN not configured')
       }
 
-      // Run the Zillow scraper actor
+      // Create Zillow search URL with proper format
+      const createZillowSearchUrl = (address: string) => {
+        // Create a basic search query state for the address
+        const searchQueryState = {
+          usersSearchTerm: address,
+          mapBounds: {
+            west: -87.0,
+            east: -86.0, 
+            south: 35.5,
+            north: 36.5
+          },
+          isMapVisible: true,
+          isListVisible: true,
+          filterState: {
+            sort: { value: "days" }
+          }
+        }
+        
+        const encodedState = encodeURIComponent(JSON.stringify(searchQueryState))
+        return `https://www.zillow.com/homes/for_sale/?searchQueryState=${encodedState}`
+      }
+
+      const searchUrl = createZillowSearchUrl(fullAddress)
+      console.log('📡 Making Apify request for:', fullAddress)
+      console.log('🔗 Search URL:', searchUrl)
+      
       const runResponse = await fetch(
         `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${apifyToken}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           body: JSON.stringify({
             input: {
-              searchQuery: fullAddress,
-              maxResults: 1
+              searchUrls: [{ url: searchUrl }],
+              extractionMethod: "MAP_MARKERS"
             }
           })
         }
       )
-
+      
+      console.log('📡 Apify response status:', runResponse.status)
+      
       if (!runResponse.ok) {
-        throw new Error(`Apify run failed: ${runResponse.statusText}`)
+        const errorText = await runResponse.text()
+        console.error('❌ Apify error response:', errorText)
+        throw new Error(`Apify run failed: ${runResponse.status} - ${errorText}`)
       }
 
       const runData = await runResponse.json()
