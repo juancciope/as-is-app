@@ -20,10 +20,26 @@ export async function POST(request: NextRequest) {
 
     const fullAddress = `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`
     
+    // First, try to get Zillow data
+    console.log('🏠 Analyzing property:', fullAddress)
+    console.log('🔍 Fetching Zillow data first...')
+    
+    let zillowData = null
+    try {
+      const zillowResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/zillow/zestimate?address=${encodeURIComponent(address)}&city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}${zipCode ? `&zipCode=${encodeURIComponent(zipCode)}` : ''}`)
+      if (zillowResponse.ok) {
+        const zillowResult = await zillowResponse.json()
+        zillowData = zillowResult.property
+        console.log('✅ Zillow data retrieved')
+      } else {
+        console.log('⚠️ Zillow data not available, using mock data')
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching Zillow data:', error)
+    }
+    
     // Default assistant ID with environment variable override
     const assistantId = process.env.OPENAI_ASSISTANT_ID || 'asst_YOUR_ASSISTANT_ID_HERE'
-
-    console.log('🏠 Analyzing property:', fullAddress)
     console.log('🤖 Using Assistant ID:', assistantId.substring(0, 10) + '...')
 
     // Create a thread
@@ -48,48 +64,50 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    // Send structured message to assistant
+    // Send structured message to assistant with Zillow data
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
-      content: `🚨 MANDATORY ZILLOW VERIFICATION REQUIRED 🚨
+      content: `Please analyze this property for investment potential:
 
 PROPERTY TO ANALYZE:
 ${JSON.stringify(analysisRequest, null, 2)}
 
-⚠️ CRITICAL - READ BEFORE PROCEEDING:
-The user has confirmed that previous responses had "completely wrong data" compared to Zillow.
-YOU MUST FOLLOW THESE STEPS EXACTLY:
+${zillowData ? `
+ZILLOW PROPERTY DATA (Use this exact data - DO NOT modify):
+${JSON.stringify(zillowData, null, 2)}
 
-STEP 1: ZILLOW SEARCH (MANDATORY)
-- Go to Zillow.com
-- Search for the EXACT address: "${fullAddress}"
-- Find the specific property listing
-- Extract EXACT data from Zillow (DO NOT estimate or approximate)
+CRITICAL INSTRUCTIONS:
+- Use the EXACT Zillow data provided above for all property details
+- Square footage: ${zillowData.livingArea || 'N/A'}
+- Bedrooms: ${zillowData.bedrooms || 'N/A'}  
+- Bathrooms: ${zillowData.bathrooms || 'N/A'}
+- Year built: ${zillowData.yearBuilt || 'N/A'}
+- Zestimate: $${zillowData.zestimate?.amount || 'N/A'}
+- DO NOT estimate or modify these values
 
-STEP 2: DATA VERIFICATION CHECKPOINT
-Include this verification section in your JSON response:
+Include this verification in your response:
 "zillow_data_verification": {
-  "search_performed": true,
-  "zillow_url_searched": "https://www.zillow.com/homedetails/[actual-url-found]",
-  "data_extraction_date": "[today's date]",
-  "zestimate_amount": [exact amount from Zillow],
-  "property_found_on_zillow": true/false
+  "data_provided": true,
+  "zestimate_amount": ${zillowData.zestimate?.amount || 'null'},
+  "property_details_source": "Zillow API data provided"
 }
+` : `
+⚠️ ZILLOW DATA NOT AVAILABLE
+Since accurate Zillow data could not be retrieved, please:
+1. State clearly that Zillow data is not available
+2. Do NOT provide estimated property details
+3. Request that the user provide current Zillow data
+4. Do NOT proceed with detailed analysis without accurate property data
 
-STEP 3: ACCURATE PROPERTY DETAILS
-Use ONLY Zillow data for:
-- Square footage (living area from Zillow)
-- Bedrooms (exact count from Zillow) 
-- Bathrooms (exact count from Zillow)
-- Year built (exact year from Zillow)
-- Current Zestimate (exact dollar amount)
-- Lot size (as shown on Zillow)
+Include this in your response:
+"zillow_data_verification": {
+  "data_provided": false,
+  "reason": "Zillow data could not be retrieved",
+  "recommendation": "User should provide current Zillow property details"
+}
+`}
 
-❌ DO NOT PROCEED WITHOUT ZILLOW SEARCH FIRST
-❌ DO NOT USE ESTIMATED OR GENERIC DATA
-✅ PROPERTY DETAILS MUST MATCH ZILLOW EXACTLY
-
-Provide your comprehensive analysis in JSON format with verified Zillow data.`
+Provide your comprehensive analysis in JSON format using the exact property data provided.`
     })
 
     // Run the assistant
