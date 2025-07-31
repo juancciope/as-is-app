@@ -735,34 +735,42 @@ export default function LeadsPage() {
                           
                           {/* Property Details from AI */}
                           {propertyAnalysis?.data?.property_details && (
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              {propertyAnalysis.data.property_details.square_footage && (
-                                <div>
-                                  <span className="text-gray-500">Area</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.bedrooms && (
-                                <div>
-                                  <span className="text-gray-500">Beds</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.bathrooms && (
-                                <div>
-                                  <span className="text-gray-500">Baths</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.year_built && (
-                                <div>
-                                  <span className="text-gray-500">Built</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
-                                </div>
-                              )}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-gray-500">Property Details</span>
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                  📊 Zillow Verified
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {propertyAnalysis.data.property_details.square_footage && (
+                                  <div>
+                                    <span className="text-gray-500">Area</span>
+                                    <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
+                                  </div>
+                                )}
+                                
+                                {propertyAnalysis.data.property_details.bedrooms && (
+                                  <div>
+                                    <span className="text-gray-500">Beds</span>
+                                    <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
+                                  </div>
+                                )}
+                                
+                                {propertyAnalysis.data.property_details.bathrooms && (
+                                  <div>
+                                    <span className="text-gray-500">Baths</span>
+                                    <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
+                                  </div>
+                                )}
+                                
+                                {propertyAnalysis.data.property_details.year_built && (
+                                  <div>
+                                    <span className="text-gray-500">Built</span>
+                                    <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>

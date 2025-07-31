@@ -56,7 +56,13 @@ export async function POST(request: NextRequest) {
 PROPERTY DATA:
 ${JSON.stringify(analysisRequest, null, 2)}
 
-Please provide a comprehensive analysis in the expected JSON format.`
+CRITICAL INSTRUCTIONS:
+1. FIRST: Search Zillow.com for this exact address to get accurate property details
+2. Verify ALL property data (square footage, bedrooms, bathrooms, year built) matches Zillow exactly
+3. Use Zillow's current Zestimate as the baseline market value
+4. Include Zillow's sales history and price changes in your analysis
+
+Please provide a comprehensive analysis in the expected JSON format with verified Zillow data.`
     })
 
     // Run the assistant
