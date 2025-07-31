@@ -738,8 +738,14 @@ export default function LeadsPage() {
                             <div>
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs text-gray-500">Property Details</span>
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                  📊 Zillow Verified
+                                <span className={`text-xs px-2 py-0.5 rounded ${
+                                  propertyAnalysis.data?.zillow_data_verification?.scraped_successfully 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {propertyAnalysis.data?.zillow_data_verification?.scraped_successfully 
+                                    ? '✅ Real Zillow Data' 
+                                    : '📊 Market Estimates'}
                                 </span>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm">

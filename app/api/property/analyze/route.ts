@@ -20,10 +20,75 @@ export async function POST(request: NextRequest) {
 
     const fullAddress = `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`
     
+    console.log('🏠 Analyzing property:', fullAddress)
+    console.log('🔍 First, scraping Zillow data using Apify...')
+    
+    // Step 1: Scrape Zillow data using Apify maxcopell/zillow-scraper
+    let zillowData = null
+    try {
+      const apifyToken = process.env.APIFY_API_TOKEN
+      if (!apifyToken) {
+        throw new Error('APIFY_API_TOKEN not configured')
+      }
+
+      // Run the Zillow scraper actor
+      const runResponse = await fetch(
+        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${apifyToken}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: {
+              searchQuery: fullAddress,
+              maxResults: 1
+            }
+          })
+        }
+      )
+
+      if (!runResponse.ok) {
+        throw new Error(`Apify run failed: ${runResponse.statusText}`)
+      }
+
+      const runData = await runResponse.json()
+      const runId = runData.data.id
+      const datasetId = runData.data.defaultDatasetId
+      
+      console.log(`🤖 Apify run started: ${runId}`)
+      
+      // Wait for completion and get results
+      let attempts = 0
+      const maxAttempts = 24 // 2 minutes max (5 second intervals)
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+        attempts++
+        
+        const datasetResponse = await fetch(
+          `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}&clean=true&format=json`
+        )
+
+        if (datasetResponse.ok) {
+          const data = await datasetResponse.json()
+          if (data.length > 0) {
+            zillowData = data[0] // Get first result
+            console.log('✅ Zillow data scraped successfully')
+            break
+          }
+        }
+        
+        console.log(`⏳ Waiting for Zillow data... attempt ${attempts}/${maxAttempts}`)
+      }
+
+      if (!zillowData) {
+        console.log('⚠️ No Zillow data found after waiting')
+      }
+    } catch (error) {
+      console.error('❌ Apify Zillow scraping error:', error)
+    }
+    
     // Default assistant ID with environment variable override
     const assistantId = process.env.OPENAI_ASSISTANT_ID || 'asst_YOUR_ASSISTANT_ID_HERE'
-
-    console.log('🏠 Analyzing property:', fullAddress)
     console.log('🤖 Using Assistant ID:', assistantId.substring(0, 10) + '...')
 
     // Create a thread
@@ -48,7 +113,7 @@ export async function POST(request: NextRequest) {
       ]
     }
 
-    // Send structured message to assistant
+    // Send structured message to assistant with Zillow data
     await openai.beta.threads.messages.create(thread.id, {
       role: "user",
       content: `Please analyze this property for investment potential:
@@ -56,14 +121,44 @@ export async function POST(request: NextRequest) {
 PROPERTY TO ANALYZE:
 ${JSON.stringify(analysisRequest, null, 2)}
 
-INSTRUCTIONS:
-- Provide a comprehensive real estate investment analysis
-- Generate realistic property details based on the address and Middle Tennessee market
-- Include property valuation, renovation estimates, ROI projections, and investment recommendation
-- Use your knowledge of Middle Tennessee real estate market conditions
-- Provide realistic and market-appropriate estimates for the area
+${zillowData ? `
+REAL ZILLOW DATA (scraped via Apify - use this EXACT data):
+${JSON.stringify(zillowData, null, 2)}
 
-Please provide your analysis in the expected JSON format as specified in your instructions.`
+CRITICAL INSTRUCTIONS:
+- Use the EXACT Zillow data provided above for all property details
+- Do NOT modify, estimate, or approximate the scraped Zillow values
+- Square footage: ${zillowData.livingArea || zillowData.sqft || 'N/A'}
+- Bedrooms: ${zillowData.bedrooms || 'N/A'}  
+- Bathrooms: ${zillowData.bathrooms || 'N/A'}
+- Year built: ${zillowData.yearBuilt || 'N/A'}
+- Zestimate: $${zillowData.zestimate || zillowData.price || 'N/A'}
+- Lot size: ${zillowData.lotSize || 'N/A'}
+
+Include this verification in your JSON response:
+"zillow_data_verification": {
+  "data_source": "Apify scraper (maxcopell/zillow-scraper)",
+  "scraped_successfully": true,
+  "zestimate_amount": ${zillowData.zestimate || zillowData.price || 'null'},
+  "property_details_verified": true
+}
+` : `
+⚠️ ZILLOW DATA NOT AVAILABLE
+The Apify Zillow scraper did not return data for this property.
+Please:
+1. Generate realistic estimates based on Middle Tennessee market knowledge
+2. Clearly indicate that estimates are used (not Zillow data)
+3. Include this in your response:
+
+"zillow_data_verification": {
+  "data_source": "Market estimates (Zillow scraping failed)",
+  "scraped_successfully": false,
+  "reason": "Property not found or scraping timeout",
+  "using_estimates": true
+}
+`}
+
+Please provide your comprehensive analysis in the expected JSON format.`
     })
 
     // Run the assistant
