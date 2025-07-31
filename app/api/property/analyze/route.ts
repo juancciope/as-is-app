@@ -19,51 +19,99 @@ export async function POST(request: NextRequest) {
     }
 
     const fullAddress = `${address}, ${city}, ${state}${zipCode ? ` ${zipCode}` : ''}`
-
-    const prompt = `I am looking to purchase distressed properties as an investment and fix them up to flip them. I am located in the middle Tennessee area. 
-
-Please search the web and give me a comprehensive overview of the property at: ${fullAddress}
-
-Include all information I would need to make an investment decision, such as:
-- Current estimated value and recent sales history
-- Property details (square footage, bedrooms, bathrooms, lot size, year built)
-- Neighborhood analysis and comparable sales
-- Local market trends and appreciation rates
-- Potential renovation costs and ARV (After Repair Value)
-- Investment potential and ROI analysis
-- Any liens, tax information, or property issues
-- School ratings and neighborhood amenities
-- Crime rates and safety information
-- Rental income potential if applicable
-
-Format the response in clear sections with headers. Be specific with numbers and data when available.`
+    
+    // Default assistant ID with environment variable override
+    const assistantId = process.env.OPENAI_ASSISTANT_ID || 'asst_YOUR_ASSISTANT_ID_HERE'
 
     console.log('🏠 Analyzing property:', fullAddress)
+    console.log('🤖 Using Assistant ID:', assistantId.substring(0, 10) + '...')
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
-      messages: [
-        {
-          role: "system",
-          content: "You are a real estate investment analyst. Search the web for property information and provide detailed investment analysis. Use current market data and be specific with numbers when available."
-        },
-        {
-          role: "user",
-          content: prompt
+    // Create a thread
+    const thread = await openai.beta.threads.create()
+
+    // Structure the data for the assistant
+    const analysisRequest = {
+      property_address: fullAddress,
+      investor_profile: {
+        location: "Middle Tennessee area",
+        strategy: "Fix and flip distressed properties",
+        focus: "Investment properties for renovation and resale"
+      },
+      analysis_type: "comprehensive_investment_analysis",
+      requested_data: [
+        "property_valuation",
+        "market_analysis", 
+        "renovation_estimates",
+        "roi_projections",
+        "neighborhood_analysis",
+        "investment_recommendation"
+      ]
+    }
+
+    // Send structured message to assistant
+    await openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: `Please analyze this property for investment potential:
+
+PROPERTY DATA:
+${JSON.stringify(analysisRequest, null, 2)}
+
+Please provide a comprehensive analysis in the expected JSON format.`
+    })
+
+    // Run the assistant
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: assistantId
+    })
+
+    // Poll for completion with exponential backoff
+    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id)
+    let attempts = 0
+    const maxAttempts = 30
+    
+    while ((runStatus.status === 'running' || runStatus.status === 'queued') && attempts < maxAttempts) {
+      const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
+      await new Promise(resolve => setTimeout(resolve, delay))
+      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id)
+      attempts++
+    }
+
+    if (runStatus.status === 'completed') {
+      // Get the assistant's response
+      const messages = await openai.beta.threads.messages.list(thread.id)
+      const assistantMessage = messages.data.find(msg => msg.role === 'assistant')
+      
+      if (assistantMessage && assistantMessage.content[0].type === 'text') {
+        const responseText = assistantMessage.content[0].text.value
+        
+        // Try to parse JSON response, fall back to text if not JSON
+        let analysisData
+        try {
+          analysisData = JSON.parse(responseText)
+        } catch {
+          // If not JSON, treat as formatted text
+          analysisData = {
+            analysis_text: responseText,
+            property_address: fullAddress,
+            recommendation: "See detailed analysis above"
+          }
         }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
-    })
 
-    const analysis = completion.choices[0].message.content
-
-    return NextResponse.json({
-      success: true,
-      analysis,
-      address: fullAddress,
-      timestamp: new Date().toISOString()
-    })
+        return NextResponse.json({
+          success: true,
+          data: analysisData,
+          address: fullAddress,
+          timestamp: new Date().toISOString(),
+          method: 'assistant'
+        })
+      } else {
+        throw new Error('No response from assistant')
+      }
+    } else if (runStatus.status === 'failed') {
+      throw new Error(`Assistant run failed: ${runStatus.last_error?.message || 'Unknown error'}`)
+    } else {
+      throw new Error(`Assistant run timeout or failed with status: ${runStatus.status}`)
+    }
 
   } catch (error: any) {
     console.error('Error analyzing property:', error)

@@ -718,10 +718,18 @@ export default function LeadsPage() {
                         
                         <div className="text-xs text-gray-500 mb-2">
                           Generated: {new Date(propertyAnalysis.timestamp).toLocaleString()}
+                          {propertyAnalysis.method && (
+                            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                              🤖 AI Assistant
+                            </span>
+                          )}
                         </div>
                         
                         <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                          {propertyAnalysis.analysis}
+                          {propertyAnalysis.data?.analysis_text || 
+                           (typeof propertyAnalysis.data === 'object' ? 
+                             JSON.stringify(propertyAnalysis.data, null, 2) : 
+                             propertyAnalysis.analysis)}
                         </div>
                       </div>
                     )}
