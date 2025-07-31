@@ -158,10 +158,7 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
-      // If we have address information, fetch Zestimate
-      if (data.contact.address1 && data.contact.city && data.contact.state) {
-        fetchPropertyDetails(data.contact.address1, data.contact.city, data.contact.state, data.contact.postalCode)
-      }
+      // Address info available for AI analysis (dummy Zillow call removed)
     } catch (error) {
       console.error('Error fetching contact details:', error)
       setContactDetails(null)
@@ -170,28 +167,7 @@ export default function LeadsPage() {
     }
   }
 
-  const fetchPropertyDetails = async (address: string, city: string, state: string, zipCode?: string) => {
-    try {
-      const params = new URLSearchParams({
-        address,
-        city,
-        state,
-        ...(zipCode && { zipCode })
-      })
-      
-      const response = await fetch(`/api/zillow/zestimate?${params}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch property details')
-      }
-
-      const data = await response.json()
-      setPropertyDetails(data.property)
-    } catch (error) {
-      console.error('Error fetching property details:', error)
-      setPropertyDetails(null)
-    }
-  }
+  // Removed dummy Zillow API call - now using AI assistant only
 
   const handleSelectLead = (lead: any) => {
     setSelectedLead(lead)
@@ -662,44 +638,65 @@ export default function LeadsPage() {
                             </div>
                           </div>
 
-                          {/* Mock Zestimate - kept for demo */}
-                          {propertyDetails?.zestimate?.amount && (
-                            <div className="text-center p-2 bg-green-50 rounded border border-green-200">
-                              <div className="text-xs text-green-600 font-medium">Zestimate (Demo)</div>
-                              <div className="text-sm font-bold text-green-700">
-                                ${propertyDetails.zestimate.amount.toLocaleString()}
+                          {/* AI Analysis Summary */}
+                          {propertyAnalysis?.data?.analysis_summary && (
+                            <div className="space-y-2">
+                              <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
+                                <div className="text-xs text-blue-600 font-medium">Investment Grade</div>
+                                <div className="text-lg font-bold text-blue-700">
+                                  {propertyAnalysis.data.analysis_summary.investment_grade}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-gray-500">ARV</span>
+                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.estimated_arv?.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">ROI</span>
+                                  <div className="font-medium">{propertyAnalysis.data.analysis_summary.roi_percentage}%</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Reno Est.</span>
+                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.renovation_estimate?.toLocaleString()}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Profit</span>
+                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.projected_profit?.toLocaleString()}</div>
+                                </div>
                               </div>
                             </div>
                           )}
                           
-                          {/* Mock Property Details - kept for demo */}
-                          {propertyDetails && (
+                          {/* Property Details from AI */}
+                          {propertyAnalysis?.data?.property_details && (
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                              {propertyDetails.livingArea && (
+                              {propertyAnalysis.data.property_details.square_footage && (
                                 <div>
                                   <span className="text-gray-500">Area</span>
-                                  <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sf</div>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
                                 </div>
                               )}
                               
-                              {propertyDetails.bedrooms && (
+                              {propertyAnalysis.data.property_details.bedrooms && (
                                 <div>
                                   <span className="text-gray-500">Beds</span>
-                                  <div className="font-medium">{propertyDetails.bedrooms}</div>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
                                 </div>
                               )}
                               
-                              {propertyDetails.bathrooms && (
+                              {propertyAnalysis.data.property_details.bathrooms && (
                                 <div>
                                   <span className="text-gray-500">Baths</span>
-                                  <div className="font-medium">{propertyDetails.bathrooms}</div>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
                                 </div>
                               )}
                               
-                              {propertyDetails.yearBuilt && (
+                              {propertyAnalysis.data.property_details.year_built && (
                                 <div>
                                   <span className="text-gray-500">Built</span>
-                                  <div className="font-medium">{propertyDetails.yearBuilt}</div>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
                                 </div>
                               )}
                             </div>
@@ -725,11 +722,74 @@ export default function LeadsPage() {
                           )}
                         </div>
                         
-                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                          {propertyAnalysis.data?.analysis_text || 
-                           (typeof propertyAnalysis.data === 'object' ? 
-                             JSON.stringify(propertyAnalysis.data, null, 2) : 
-                             propertyAnalysis.analysis)}
+                        <div className="text-sm text-gray-700 max-h-96 overflow-y-auto">
+                          {propertyAnalysis.data?.analysis_text ? (
+                            <div className="whitespace-pre-wrap">{propertyAnalysis.data.analysis_text}</div>
+                          ) : propertyAnalysis.data ? (
+                            <div className="space-y-4">
+                              {/* Investment Recommendation */}
+                              {propertyAnalysis.data.investment_recommendation && (
+                                <div className="p-3 bg-gray-50 rounded">
+                                  <h4 className="font-semibold text-[#04325E] mb-2">Recommendation</h4>
+                                  <div className="text-lg font-bold mb-1 text-green-600">
+                                    {propertyAnalysis.data.investment_recommendation.decision}
+                                  </div>
+                                  <div className="text-sm text-gray-600 mb-2">
+                                    Confidence: {propertyAnalysis.data.investment_recommendation.confidence_level}
+                                  </div>
+                                  {propertyAnalysis.data.investment_recommendation.key_reasons && (
+                                    <div className="text-sm">
+                                      <strong>Reasons:</strong>
+                                      <ul className="list-disc list-inside mt-1">
+                                        {propertyAnalysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
+                                          <li key={i}>{reason}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Financial Projections */}
+                              {propertyAnalysis.data.financial_projections && (
+                                <div>
+                                  <h4 className="font-semibold text-[#04325E] mb-2">Financial Analysis</h4>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div><span className="text-gray-500">Purchase:</span> ${propertyAnalysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
+                                    <div><span className="text-gray-500">Renovation:</span> ${propertyAnalysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
+                                    <div><span className="text-gray-500">Total Investment:</span> ${propertyAnalysis.data.financial_projections.total_investment?.toLocaleString()}</div>
+                                    <div><span className="text-gray-500">Est. Sale:</span> ${propertyAnalysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Market Analysis */}
+                              {propertyAnalysis.data.market_analysis && (
+                                <div>
+                                  <h4 className="font-semibold text-[#04325E] mb-2">Market Analysis</h4>
+                                  <div className="text-sm space-y-1">
+                                    <div><span className="text-gray-500">Neighborhood Grade:</span> {propertyAnalysis.data.market_analysis.neighborhood_grade}</div>
+                                    <div><span className="text-gray-500">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
+                                    <div><span className="text-gray-500">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average}</div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Action Items */}
+                              {propertyAnalysis.data.action_items && (
+                                <div>
+                                  <h4 className="font-semibold text-[#04325E] mb-2">Next Steps</h4>
+                                  <ul className="list-disc list-inside text-sm space-y-1">
+                                    {propertyAnalysis.data.action_items.map((item: string, i: number) => (
+                                      <li key={i}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="whitespace-pre-wrap">{propertyAnalysis.analysis}</div>
+                          )}
                         </div>
                       </div>
                     )}
