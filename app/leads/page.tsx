@@ -723,73 +723,113 @@ export default function LeadsPage() {
                         </div>
                         
                         <div className="text-sm text-gray-700 max-h-96 overflow-y-auto">
-                          {propertyAnalysis.data?.analysis_text ? (
-                            <div className="whitespace-pre-wrap">{propertyAnalysis.data.analysis_text}</div>
-                          ) : propertyAnalysis.data ? (
-                            <div className="space-y-4">
-                              {/* Investment Recommendation */}
-                              {propertyAnalysis.data.investment_recommendation && (
-                                <div className="p-3 bg-gray-50 rounded">
-                                  <h4 className="font-semibold text-[#04325E] mb-2">Recommendation</h4>
-                                  <div className="text-lg font-bold mb-1 text-green-600">
-                                    {propertyAnalysis.data.investment_recommendation.decision}
-                                  </div>
-                                  <div className="text-sm text-gray-600 mb-2">
-                                    Confidence: {propertyAnalysis.data.investment_recommendation.confidence_level}
-                                  </div>
-                                  {propertyAnalysis.data.investment_recommendation.key_reasons && (
-                                    <div className="text-sm">
-                                      <strong>Reasons:</strong>
-                                      <ul className="list-disc list-inside mt-1">
-                                        {propertyAnalysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
-                                          <li key={i}>{reason}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
+                          <div className="space-y-4">
+                            {/* Investment Recommendation */}
+                            {propertyAnalysis.data?.investment_recommendation && (
+                              <div className="p-3 bg-gray-50 rounded">
+                                <h4 className="font-semibold text-[#04325E] mb-2">📋 Investment Recommendation</h4>
+                                <div className={`text-lg font-bold mb-1 ${
+                                  propertyAnalysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
+                                  propertyAnalysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                  {propertyAnalysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
                                 </div>
-                              )}
+                                <div className="text-sm text-gray-600 mb-2">
+                                  Confidence: {propertyAnalysis.data.investment_recommendation.confidence_level}
+                                </div>
+                                {propertyAnalysis.data.investment_recommendation.key_reasons && (
+                                  <div className="text-sm">
+                                    <strong>✅ Reasons:</strong>
+                                    <ul className="list-disc list-inside mt-1 ml-2">
+                                      {propertyAnalysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
+                                        <li key={i}>{reason}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {propertyAnalysis.data.investment_recommendation.concerns && (
+                                  <div className="text-sm mt-2">
+                                    <strong>⚠️ Concerns:</strong>
+                                    <ul className="list-disc list-inside mt-1 ml-2">
+                                      {propertyAnalysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
+                                        <li key={i}>{concern}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
-                              {/* Financial Projections */}
-                              {propertyAnalysis.data.financial_projections && (
-                                <div>
-                                  <h4 className="font-semibold text-[#04325E] mb-2">Financial Analysis</h4>
-                                  <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div><span className="text-gray-500">Purchase:</span> ${propertyAnalysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
-                                    <div><span className="text-gray-500">Renovation:</span> ${propertyAnalysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
-                                    <div><span className="text-gray-500">Total Investment:</span> ${propertyAnalysis.data.financial_projections.total_investment?.toLocaleString()}</div>
-                                    <div><span className="text-gray-500">Est. Sale:</span> ${propertyAnalysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
+                            {/* Financial Projections */}
+                            {propertyAnalysis.data?.financial_projections && (
+                              <div className="p-3 bg-blue-50 rounded">
+                                <h4 className="font-semibold text-[#04325E] mb-2">💰 Financial Analysis</h4>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div className="bg-white p-2 rounded">
+                                    <span className="text-gray-500">Purchase Price</span>
+                                    <div className="font-bold text-lg">${propertyAnalysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
+                                  </div>
+                                  <div className="bg-white p-2 rounded">
+                                    <span className="text-gray-500">Renovation</span>
+                                    <div className="font-bold text-lg">${propertyAnalysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
+                                  </div>
+                                  <div className="bg-white p-2 rounded">
+                                    <span className="text-gray-500">Total Investment</span>
+                                    <div className="font-bold text-lg">${propertyAnalysis.data.financial_projections.total_investment?.toLocaleString()}</div>
+                                  </div>
+                                  <div className="bg-white p-2 rounded">
+                                    <span className="text-gray-500">Expected Sale</span>
+                                    <div className="font-bold text-lg">${propertyAnalysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
+                                  </div>
+                                  <div className="bg-green-100 p-2 rounded col-span-2">
+                                    <span className="text-gray-500">Projected Profit</span>
+                                    <div className="font-bold text-xl text-green-700">${propertyAnalysis.data.financial_projections.gross_profit?.toLocaleString()}</div>
+                                    <div className="text-sm text-green-600">ROI: {propertyAnalysis.data.financial_projections.roi_percentage}%</div>
                                   </div>
                                 </div>
-                              )}
+                              </div>
+                            )}
 
-                              {/* Market Analysis */}
-                              {propertyAnalysis.data.market_analysis && (
-                                <div>
-                                  <h4 className="font-semibold text-[#04325E] mb-2">Market Analysis</h4>
-                                  <div className="text-sm space-y-1">
-                                    <div><span className="text-gray-500">Neighborhood Grade:</span> {propertyAnalysis.data.market_analysis.neighborhood_grade}</div>
-                                    <div><span className="text-gray-500">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
-                                    <div><span className="text-gray-500">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average}</div>
-                                  </div>
+                            {/* Market Analysis */}
+                            {propertyAnalysis.data?.market_analysis && (
+                              <div className="p-3 bg-orange-50 rounded">
+                                <h4 className="font-semibold text-[#04325E] mb-2">🏘️ Market Analysis</h4>
+                                <div className="space-y-2 text-sm">
+                                  <div><span className="font-medium">Neighborhood Grade:</span> <span className="font-bold">{propertyAnalysis.data.market_analysis.neighborhood_grade}</span></div>
+                                  <div><span className="font-medium">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
+                                  <div><span className="font-medium">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average} days</div>
+                                  <div><span className="font-medium">Comparable Sales:</span> {propertyAnalysis.data.market_analysis.recent_sales_comparison}</div>
                                 </div>
-                              )}
+                              </div>
+                            )}
 
-                              {/* Action Items */}
-                              {propertyAnalysis.data.action_items && (
-                                <div>
-                                  <h4 className="font-semibold text-[#04325E] mb-2">Next Steps</h4>
-                                  <ul className="list-disc list-inside text-sm space-y-1">
-                                    {propertyAnalysis.data.action_items.map((item: string, i: number) => (
-                                      <li key={i}>{item}</li>
-                                    ))}
-                                  </ul>
+                            {/* Action Items */}
+                            {propertyAnalysis.data?.action_items && (
+                              <div className="p-3 bg-purple-50 rounded">
+                                <h4 className="font-semibold text-[#04325E] mb-2">✅ Next Steps</h4>
+                                <ul className="space-y-2 text-sm">
+                                  {propertyAnalysis.data.action_items.map((item: string, i: number) => (
+                                    <li key={i} className="flex items-start">
+                                      <span className="text-purple-600 mr-2">•</span>
+                                      <span>{item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Fallback - if no structured data, show text */}
+                            {!propertyAnalysis.data?.investment_recommendation && !propertyAnalysis.data?.financial_projections && (
+                              <div className="p-3 bg-gray-50 rounded">
+                                <div className="whitespace-pre-wrap text-sm">
+                                  {typeof propertyAnalysis.data === 'string' 
+                                    ? propertyAnalysis.data 
+                                    : propertyAnalysis.data?.analysis_text 
+                                    || 'Analysis completed - please check the property details above for key metrics.'}
                                 </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="whitespace-pre-wrap">{propertyAnalysis.analysis}</div>
-                          )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
