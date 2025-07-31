@@ -890,15 +890,29 @@ export default function LeadsPage() {
                               </div>
                             )}
 
-                            {/* Fallback - if no structured data, show text */}
+                            {/* Fallback - if no structured data, show formatted message */}
                             {!propertyAnalysis.data?.investment_recommendation && !propertyAnalysis.data?.financial_projections && (
-                              <div className="p-3 bg-gray-50 rounded">
-                                <div className="whitespace-pre-wrap text-sm">
-                                  {typeof propertyAnalysis.data === 'string' 
-                                    ? propertyAnalysis.data 
-                                    : propertyAnalysis.data?.analysis_text 
-                                    || 'Analysis completed - please check the property details above for key metrics.'}
+                              <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                                <div className="flex items-center mb-2">
+                                  <span className="text-yellow-600">⚠️</span>
+                                  <h4 className="font-semibold text-yellow-800 ml-2">Assistant Response Processing</h4>
                                 </div>
+                                <div className="text-sm text-yellow-700">
+                                  The AI Assistant provided analysis but it needs to be structured properly. 
+                                  Please check the property details above for available metrics, or try generating the report again.
+                                </div>
+                                {propertyAnalysis.data?.analysis_text && (
+                                  <details className="mt-2">
+                                    <summary className="text-xs text-yellow-600 cursor-pointer hover:text-yellow-800">
+                                      View raw response (for debugging)
+                                    </summary>
+                                    <div className="mt-2 p-2 bg-yellow-100 rounded text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
+                                      {typeof propertyAnalysis.data === 'string' 
+                                        ? propertyAnalysis.data.substring(0, 500) + (propertyAnalysis.data.length > 500 ? '...' : '')
+                                        : JSON.stringify(propertyAnalysis.data.analysis_text, null, 2).substring(0, 500)}
+                                    </div>
+                                  </details>
+                                )}
                               </div>
                             )}
                           </div>
