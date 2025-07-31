@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -32,6 +32,8 @@ export default function LeadsPage() {
   const [propertyAnalysis, setPropertyAnalysis] = useState<any>(null)
   const [previousReports, setPreviousReports] = useState<any[]>([])
   const [isLoadingReports, setIsLoadingReports] = useState(false)
+  const [isInvestmentAnalysisExpanded, setIsInvestmentAnalysisExpanded] = useState(true)
+  const [isPreviousReportsExpanded, setIsPreviousReportsExpanded] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
@@ -278,6 +280,35 @@ export default function LeadsPage() {
     setPreviousReports([])
   }
 
+  const deletePropertyReport = async (reportId: string) => {
+    if (!confirm('Are you sure you want to delete this property analysis report?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/property/reports/${reportId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete report')
+      }
+
+      // Remove from local state
+      setPreviousReports(prev => prev.filter(report => report.id !== reportId))
+      
+      // If the deleted report is currently displayed, clear it
+      if (propertyAnalysis?.report_id === reportId) {
+        setPropertyAnalysis(null)
+      }
+
+      console.log('✅ Report deleted successfully')
+    } catch (error) {
+      console.error('Error deleting report:', error)
+      alert('Failed to delete report. Please try again.')
+    }
+  }
+
   const generatePropertyReport = async () => {
     if (!contactDetails?.address1 || !contactDetails?.city || !contactDetails?.state) {
       alert('Address information is required to generate a property report')
@@ -311,6 +342,54 @@ export default function LeadsPage() {
     } finally {
       setIsGeneratingReport(false)
     }
+  }
+
+  // Helper function to format comparable sales data
+  const formatComparableSales = (comparableSales: any) => {
+    if (typeof comparableSales === 'string') {
+      // Try to parse JSON if it's a string
+      try {
+        const parsed = JSON.parse(comparableSales)
+        if (Array.isArray(parsed)) {
+          return parsed.map((comp: any, index: number) => (
+            <div key={index} className="p-2 bg-gray-50 rounded text-xs">
+              <div className="font-medium">{comp.address}</div>
+              <div className="text-gray-600 mt-1">
+                <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
+                {comp.square_footage && (
+                  <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
+                )}
+                {comp.price_per_sqft && (
+                  <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
+                )}
+              </div>
+            </div>
+          ))
+        }
+      } catch (e) {
+        // If parsing fails, display as text
+        return <div className="text-sm">{comparableSales}</div>
+      }
+    } else if (Array.isArray(comparableSales)) {
+      // If it's already an array
+      return comparableSales.map((comp: any, index: number) => (
+        <div key={index} className="p-2 bg-gray-50 rounded text-xs">
+          <div className="font-medium">{comp.address}</div>
+          <div className="text-gray-600 mt-1">
+            <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
+            {comp.square_footage && (
+              <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
+            )}
+            {comp.price_per_sqft && (
+              <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
+            )}
+          </div>
+        </div>
+      ))
+    }
+    
+    // Fallback to string display
+    return <div className="text-sm">{String(comparableSales)}</div>
   }
 
   const renderMessages = () => {
@@ -716,7 +795,7 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Property Information */}
+                    {/* Property Information - Static Summary */}
                     {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
                       <div className="bg-white rounded border border-gray-200 p-3">
                         <div className="flex items-center justify-between mb-2">
@@ -743,97 +822,106 @@ export default function LeadsPage() {
                           </button>
                         </div>
                         
-                        <div className="space-y-2">
-                          {/* Address Display */}
-                          <div className="text-sm text-gray-700">
-                            <div className="font-medium">{contactDetails.address1}</div>
-                            <div>
-                              {contactDetails.city}, {contactDetails.state} {contactDetails.postalCode}
+                        {/* Address Display */}
+                        <div className="text-sm text-gray-700 mb-3">
+                          <div className="font-medium">{contactDetails.address1}</div>
+                          <div>
+                            {contactDetails.city}, {contactDetails.state} {contactDetails.postalCode}
+                          </div>
+                        </div>
+
+                        {/* Investment Summary - Always Visible */}
+                        {propertyAnalysis?.data?.analysis_summary && (
+                          <div className="space-y-3">
+                            <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
+                              <div className="text-xs text-blue-600 font-medium">Investment Grade</div>
+                              <div className="text-lg font-bold text-blue-700">
+                                {propertyAnalysis.data.analysis_summary.investment_grade}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-500">ARV</span>
+                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.estimated_arv?.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">ROI</span>
+                                <div className="font-medium">{propertyAnalysis.data.analysis_summary.roi_percentage}%</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Reno Est.</span>
+                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.renovation_estimate?.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">Profit</span>
+                                <div className="font-medium">${propertyAnalysis.data.analysis_summary.projected_profit?.toLocaleString()}</div>
+                              </div>
                             </div>
                           </div>
-
-                          {/* AI Analysis Summary */}
-                          {propertyAnalysis?.data?.analysis_summary && (
-                            <div className="space-y-2">
-                              <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
-                                <div className="text-xs text-blue-600 font-medium">Investment Grade</div>
-                                <div className="text-lg font-bold text-blue-700">
-                                  {propertyAnalysis.data.analysis_summary.investment_grade}
+                        )}
+                        
+                        {/* Property Details - Always Visible */}
+                        {propertyAnalysis?.data?.property_details && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-gray-500">Property Details</span>
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                🤖 AI Property Analysis
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              {propertyAnalysis.data.property_details.square_footage && (
+                                <div>
+                                  <span className="text-gray-500">Area</span>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
                                 </div>
-                              </div>
+                              )}
                               
-                              <div className="grid grid-cols-2 gap-2 text-sm">
+                              {propertyAnalysis.data.property_details.bedrooms && (
                                 <div>
-                                  <span className="text-gray-500">ARV</span>
-                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.estimated_arv?.toLocaleString()}</div>
+                                  <span className="text-gray-500">Beds</span>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
                                 </div>
+                              )}
+                              
+                              {propertyAnalysis.data.property_details.bathrooms && (
                                 <div>
-                                  <span className="text-gray-500">ROI</span>
-                                  <div className="font-medium">{propertyAnalysis.data.analysis_summary.roi_percentage}%</div>
+                                  <span className="text-gray-500">Baths</span>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
                                 </div>
+                              )}
+                              
+                              {propertyAnalysis.data.property_details.year_built && (
                                 <div>
-                                  <span className="text-gray-500">Reno Est.</span>
-                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.renovation_estimate?.toLocaleString()}</div>
+                                  <span className="text-gray-500">Built</span>
+                                  <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
                                 </div>
-                                <div>
-                                  <span className="text-gray-500">Profit</span>
-                                  <div className="font-medium">${propertyAnalysis.data.analysis_summary.projected_profit?.toLocaleString()}</div>
-                                </div>
-                              </div>
+                              )}
                             </div>
-                          )}
-                          
-                          {/* Property Details from AI */}
-                          {propertyAnalysis?.data?.property_details && (
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-gray-500">Property Details</span>
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                  🤖 AI Property Analysis
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                {propertyAnalysis.data.property_details.square_footage && (
-                                  <div>
-                                    <span className="text-gray-500">Area</span>
-                                    <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
-                                  </div>
-                                )}
-                                
-                                {propertyAnalysis.data.property_details.bedrooms && (
-                                  <div>
-                                    <span className="text-gray-500">Beds</span>
-                                    <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
-                                  </div>
-                                )}
-                                
-                                {propertyAnalysis.data.property_details.bathrooms && (
-                                  <div>
-                                    <span className="text-gray-500">Baths</span>
-                                    <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
-                                  </div>
-                                )}
-                                
-                                {propertyAnalysis.data.property_details.year_built && (
-                                  <div>
-                                    <span className="text-gray-500">Built</span>
-                                    <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Property Analysis Report */}
+                    {/* Investment Analysis Report - Expandable */}
                     {propertyAnalysis && (
                       <div className="bg-white rounded border border-gray-200 p-3">
-                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Investment Analysis
-                        </h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-[#04325E] flex items-center">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Investment Analysis
+                          </h3>
+                          <button
+                            onClick={() => setIsInvestmentAnalysisExpanded(!isInvestmentAnalysisExpanded)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                          >
+                            {isInvestmentAnalysisExpanded ? 
+                              <ChevronUp className="h-4 w-4 text-gray-500" /> : 
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            }
+                          </button>
+                        </div>
                         
                         <div className="text-xs text-gray-500 mb-2">
                           Generated: {new Date(propertyAnalysis.timestamp).toLocaleString()}
@@ -849,7 +937,8 @@ export default function LeadsPage() {
                           )}
                         </div>
                         
-                        <div className="text-sm text-gray-700 max-h-96 overflow-y-auto">
+                        {isInvestmentAnalysisExpanded && (
+                          <div className="text-sm text-gray-700 max-h-96 overflow-y-auto">
                           <div className="space-y-4">
                             {/* Investment Recommendation */}
                             {propertyAnalysis.data?.investment_recommendation && (
@@ -925,11 +1014,12 @@ export default function LeadsPage() {
                                   <div><span className="font-medium">Neighborhood Grade:</span> <span className="font-bold">{propertyAnalysis.data.market_analysis.neighborhood_grade}</span></div>
                                   <div><span className="font-medium">Market Trend:</span> {propertyAnalysis.data.market_analysis.market_trend}</div>
                                   <div><span className="font-medium">Avg Days on Market:</span> {propertyAnalysis.data.market_analysis.days_on_market_average} days</div>
-                                  <div><span className="font-medium">Comparable Sales:</span> {
-                                    typeof propertyAnalysis.data.market_analysis.recent_sales_comparison === 'string' 
-                                      ? propertyAnalysis.data.market_analysis.recent_sales_comparison 
-                                      : JSON.stringify(propertyAnalysis.data.market_analysis.recent_sales_comparison)
-                                  }</div>
+                                  <div>
+                                    <span className="font-medium">Comparable Sales:</span>
+                                    <div className="mt-2 space-y-2">
+                                      {formatComparableSales(propertyAnalysis.data.market_analysis.recent_sales_comparison)}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -975,60 +1065,90 @@ export default function LeadsPage() {
                               </div>
                             )}
                           </div>
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Previous Reports */}
+                    {/* Previous Reports - Expandable */}
                     {previousReports.length > 0 && (
                       <div className="bg-white rounded border border-gray-200 p-3">
-                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Previous Reports ({previousReports.length})
-                        </h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-[#04325E] flex items-center">
+                            <FileText className="h-4 w-4 mr-2" />
+                            Previous Reports ({previousReports.length})
+                          </h3>
+                          <button
+                            onClick={() => setIsPreviousReportsExpanded(!isPreviousReportsExpanded)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                          >
+                            {isPreviousReportsExpanded ? 
+                              <ChevronUp className="h-4 w-4 text-gray-500" /> : 
+                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                            }
+                          </button>
+                        </div>
                         
-                        <div className="space-y-2 max-h-32 overflow-y-auto">
-                          {previousReports.map((report: any, index: number) => (
-                            <div 
-                              key={report.id}
-                              className="text-xs p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100"
-                              onClick={() => {
-                                setPropertyAnalysis({
-                                  success: true,
-                                  data: report.analysis_data,
-                                  address: report.property_address,
-                                  timestamp: report.created_at,
-                                  method: report.method,
-                                  web_searches_performed: report.web_searches_performed,
-                                  sources_found: report.sources_found,
-                                  report_id: report.id,
-                                  from_database: true
-                                })
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-700">
-                                  {new Date(report.created_at).toLocaleDateString()}
-                                </span>
-                                <div className="flex items-center space-x-1">
-                                  {report.method === 'web_search' && (
-                                    <span className="px-1 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">
-                                      Web
-                                    </span>
-                                  )}
-                                  {report.web_searches_performed > 0 && (
-                                    <span className="text-green-600">
-                                      {report.sources_found} sources
-                                    </span>
-                                  )}
+                        {isPreviousReportsExpanded && (
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {previousReports.map((report: any, index: number) => (
+                              <div 
+                                key={report.id}
+                                className="text-xs p-2 bg-gray-50 rounded group"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div 
+                                    className="flex-1 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                                    onClick={() => {
+                                      setPropertyAnalysis({
+                                        success: true,
+                                        data: report.analysis_data,
+                                        address: report.property_address,
+                                        timestamp: report.created_at,
+                                        method: report.method,
+                                        web_searches_performed: report.web_searches_performed,
+                                        sources_found: report.sources_found,
+                                        report_id: report.id,
+                                        from_database: true
+                                      })
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium text-gray-700">
+                                        {new Date(report.created_at).toLocaleDateString()}
+                                      </span>
+                                      <div className="flex items-center space-x-1">
+                                        {report.method === 'web_search' && (
+                                          <span className="px-1 py-0.5 bg-blue-100 text-blue-600 rounded text-xs">
+                                            Web
+                                          </span>
+                                        )}
+                                        {report.web_searches_performed > 0 && (
+                                          <span className="text-green-600">
+                                            {report.sources_found} sources
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-gray-500 mt-1 truncate">
+                                      {report.analysis_data?.investment_recommendation?.decision || 'Analysis available'}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      deletePropertyReport(report.id)
+                                    }}
+                                    className="ml-2 p-1 text-red-500 hover:bg-red-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Delete report"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
                                 </div>
                               </div>
-                              <div className="text-gray-500 mt-1 truncate">
-                                {report.analysis_data?.investment_recommendation?.decision || 'Analysis available'}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
