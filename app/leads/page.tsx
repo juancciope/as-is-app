@@ -902,6 +902,36 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-center space-x-2 py-2">
+                      <button
+                        onClick={() => setIsAddingProperty(true)}
+                        className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Property
+                      </button>
+                      {contactProperties.length > 0 && (
+                        <button
+                          onClick={generatePropertyReport}
+                          disabled={isGeneratingReport}
+                          className="px-3 py-2 bg-[#04325E] text-white text-sm rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        >
+                          {isGeneratingReport ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <TrendingUp className="h-4 w-4 mr-2" />
+                              Generate Report
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+
                     {/* Properties Management */}
                     {contactProperties.length > 0 && (
                       <div className="bg-white rounded border border-gray-200 p-3">
@@ -910,82 +940,7 @@ export default function LeadsPage() {
                             <Home className="h-4 w-4 mr-2" />
                             Properties ({contactProperties.length})
                           </h3>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => setIsAddingProperty(true)}
-                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 flex items-center"
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Property
-                            </button>
-                            <button
-                              onClick={generatePropertyReport}
-                              disabled={isGeneratingReport}
-                              className="px-2 py-1 bg-[#04325E] text-white text-xs rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                            >
-                              {isGeneratingReport ? (
-                                <>
-                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  Analyzing...
-                                </>
-                              ) : (
-                                <>
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  Generate Report
-                                </>
-                              )}
-                            </button>
-                          </div>
                         </div>
-
-                        {/* Add Property Form */}
-                        {isAddingProperty && (
-                          <div className="mb-3 p-3 bg-gray-50 rounded border">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
-                              <button
-                                onClick={() => {
-                                  setIsAddingProperty(false)
-                                  setNewPropertyAddress('')
-                                }}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                placeholder="Full Address (e.g., 123 Main St, Nashville, TN 37203)"
-                                value={newPropertyAddress}
-                                onChange={(e) => setNewPropertyAddress(e.target.value)}
-                                className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
-                              />
-                              <div className="text-xs text-gray-500">
-                                Enter the complete address including city, state, and ZIP code
-                              </div>
-                              <div className="flex justify-end space-x-2">
-                                <button
-                                  onClick={() => {
-                                    setIsAddingProperty(false)
-                                    setNewPropertyAddress('')
-                                  }}
-                                  className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={addNewProperty}
-                                  disabled={!newPropertyAddress.trim()}
-                                  className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Add Property
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
 
                         {/* Property Selector Tabs */}
                         <div className="flex space-x-1 mb-3 overflow-x-auto">
@@ -1402,6 +1357,55 @@ export default function LeadsPage() {
                             ))}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Add Property Form - shown outside properties box */}
+                    {isAddingProperty && (
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
+                          <button
+                            onClick={() => {
+                              setIsAddingProperty(false)
+                              setNewPropertyAddress('')
+                            }}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Full Address (e.g., 123 Main St, Nashville, TN 37203)"
+                            value={newPropertyAddress}
+                            onChange={(e) => setNewPropertyAddress(e.target.value)}
+                            className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
+                          />
+                          <div className="text-xs text-gray-500">
+                            Enter the complete address including city, state, and ZIP code
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => {
+                                setIsAddingProperty(false)
+                                setNewPropertyAddress('')
+                              }}
+                              className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={addNewProperty}
+                              disabled={!newPropertyAddress.trim()}
+                              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            >
+                              <Check className="h-3 w-3 mr-1" />
+                              Add Property
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     )}
 
