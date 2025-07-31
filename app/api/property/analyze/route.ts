@@ -136,7 +136,84 @@ IMPORTANT: You MUST perform a web search for this property address to get curren
     let attempts = 0
     const maxAttempts = 30
     
-    while ((runStatus.status === 'in_progress' || runStatus.status === 'queued') && attempts < maxAttempts) {
+    while ((runStatus.status === 'in_progress' || runStatus.status === 'queued' || runStatus.status === 'requires_action') && attempts < maxAttempts) {
+      // Handle function calls
+      if (runStatus.status === 'requires_action' && runStatus.required_action?.type === 'submit_tool_outputs') {
+        console.log('🔧 Assistant requires function call handling')
+        
+        const toolOutputs = []
+        
+        for (const toolCall of runStatus.required_action.submit_tool_outputs.tool_calls) {
+          console.log(`📞 Function call: ${toolCall.function.name}`)
+          console.log(`📋 Arguments: ${toolCall.function.arguments}`)
+          
+          // Handle search_property_data function
+          if (toolCall.function.name === 'search_property_data') {
+            const args = JSON.parse(toolCall.function.arguments)
+            
+            // For now, return mock data. In production, you'd implement actual search
+            const propertyData = {
+              source: "Zillow",
+              url: `https://www.zillow.com/homedetails/${args.property_address.replace(/\s+/g, '-')}`,
+              data: {
+                address: args.property_address,
+                zestimate: 485000,
+                square_footage: 2456,
+                bedrooms: 4,
+                bathrooms: 2.5,
+                year_built: 1998,
+                lot_size: "0.25 acres",
+                property_type: "Single Family Home",
+                last_sold: {
+                  date: "March 2019",
+                  price: 385000
+                },
+                property_tax: 3850,
+                monthly_hoa: 0,
+                price_per_sqft: 197,
+                neighborhood: "Fieldstone Farms",
+                walk_score: 15,
+                school_ratings: {
+                  elementary: 8,
+                  middle: 7,
+                  high: 8
+                },
+                recent_comps: [
+                  {
+                    address: "245 Halberton Dr",
+                    sold_date: "Jan 2024",
+                    sold_price: 510000,
+                    sqft: 2650,
+                    beds: 4,
+                    baths: 3
+                  },
+                  {
+                    address: "312 Fieldstone Ln",
+                    sold_date: "Dec 2023",
+                    sold_price: 475000,
+                    sqft: 2380,
+                    beds: 4,
+                    baths: 2.5
+                  }
+                ]
+              }
+            }
+            
+            toolOutputs.push({
+              tool_call_id: toolCall.id,
+              output: JSON.stringify(propertyData)
+            })
+          }
+        }
+        
+        // Submit the function results back to the assistant
+        await openai.beta.threads.runs.submitToolOutputs(
+          thread.id,
+          run.id,
+          { tool_outputs: toolOutputs }
+        )
+      }
+      
       const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
       await new Promise(resolve => setTimeout(resolve, delay))
       runStatus = await openai.beta.threads.runs.retrieve(run.id, { thread_id: thread.id })
