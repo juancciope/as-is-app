@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -29,7 +29,9 @@ export default function LeadsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [contactDetails, setContactDetails] = useState<any>(null)
   const [propertyDetails, setPropertyDetails] = useState<any>(null)
+  const [propertyAnalysis, setPropertyAnalysis] = useState<any>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -200,12 +202,50 @@ export default function LeadsPage() {
         fetchContactDetails(lead.contactId)
       }
     }
+    // Reset analysis when switching leads
+    setPropertyAnalysis(null)
   }
 
   const handleBackToLeads = () => {
     setSelectedLead(null)
     setContactDetails(null)
     setPropertyDetails(null)
+    setPropertyAnalysis(null)
+  }
+
+  const generatePropertyReport = async () => {
+    if (!contactDetails?.address1 || !contactDetails?.city || !contactDetails?.state) {
+      alert('Address information is required to generate a property report')
+      return
+    }
+
+    try {
+      setIsGeneratingReport(true)
+      const response = await fetch('/api/property/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          address: contactDetails.address1,
+          city: contactDetails.city,
+          state: contactDetails.state,
+          zipCode: contactDetails.postalCode
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate property report')
+      }
+
+      const data = await response.json()
+      setPropertyAnalysis(data)
+    } catch (error) {
+      console.error('Error generating property report:', error)
+      alert('Failed to generate property report. Please try again.')
+    } finally {
+      setIsGeneratingReport(false)
+    }
   }
 
   const renderMessages = () => {
@@ -587,52 +627,101 @@ export default function LeadsPage() {
                     </div>
 
                     {/* Property Information */}
-                    {propertyDetails && (
+                    {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
                       <div className="bg-white rounded border border-gray-200 p-3">
-                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
-                          <Home className="h-4 w-4 mr-2" />
-                          Property
-                        </h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-[#04325E] flex items-center">
+                            <Home className="h-4 w-4 mr-2" />
+                            Property
+                          </h3>
+                          <button
+                            onClick={generatePropertyReport}
+                            disabled={isGeneratingReport}
+                            className="px-2 py-1 bg-[#04325E] text-white text-xs rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                          >
+                            {isGeneratingReport ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <TrendingUp className="h-3 w-3 mr-1" />
+                                Generate Report
+                              </>
+                            )}
+                          </button>
+                        </div>
                         
                         <div className="space-y-2">
-                          {propertyDetails.zestimate?.amount && (
+                          {/* Address Display */}
+                          <div className="text-sm text-gray-700">
+                            <div className="font-medium">{contactDetails.address1}</div>
+                            <div>
+                              {contactDetails.city}, {contactDetails.state} {contactDetails.postalCode}
+                            </div>
+                          </div>
+
+                          {/* Mock Zestimate - kept for demo */}
+                          {propertyDetails?.zestimate?.amount && (
                             <div className="text-center p-2 bg-green-50 rounded border border-green-200">
-                              <div className="text-xs text-green-600 font-medium">Zestimate</div>
+                              <div className="text-xs text-green-600 font-medium">Zestimate (Demo)</div>
                               <div className="text-sm font-bold text-green-700">
                                 ${propertyDetails.zestimate.amount.toLocaleString()}
                               </div>
                             </div>
                           )}
                           
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            {propertyDetails.livingArea && (
-                              <div>
-                                <span className="text-gray-500">Area</span>
-                                <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sf</div>
-                              </div>
-                            )}
-                            
-                            {propertyDetails.bedrooms && (
-                              <div>
-                                <span className="text-gray-500">Beds</span>
-                                <div className="font-medium">{propertyDetails.bedrooms}</div>
-                              </div>
-                            )}
-                            
-                            {propertyDetails.bathrooms && (
-                              <div>
-                                <span className="text-gray-500">Baths</span>
-                                <div className="font-medium">{propertyDetails.bathrooms}</div>
-                              </div>
-                            )}
-                            
-                            {propertyDetails.yearBuilt && (
-                              <div>
-                                <span className="text-gray-500">Built</span>
-                                <div className="font-medium">{propertyDetails.yearBuilt}</div>
-                              </div>
-                            )}
-                          </div>
+                          {/* Mock Property Details - kept for demo */}
+                          {propertyDetails && (
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              {propertyDetails.livingArea && (
+                                <div>
+                                  <span className="text-gray-500">Area</span>
+                                  <div className="font-medium">{propertyDetails.livingArea.toLocaleString()} sf</div>
+                                </div>
+                              )}
+                              
+                              {propertyDetails.bedrooms && (
+                                <div>
+                                  <span className="text-gray-500">Beds</span>
+                                  <div className="font-medium">{propertyDetails.bedrooms}</div>
+                                </div>
+                              )}
+                              
+                              {propertyDetails.bathrooms && (
+                                <div>
+                                  <span className="text-gray-500">Baths</span>
+                                  <div className="font-medium">{propertyDetails.bathrooms}</div>
+                                </div>
+                              )}
+                              
+                              {propertyDetails.yearBuilt && (
+                                <div>
+                                  <span className="text-gray-500">Built</span>
+                                  <div className="font-medium">{propertyDetails.yearBuilt}</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Property Analysis Report */}
+                    {propertyAnalysis && (
+                      <div className="bg-white rounded border border-gray-200 p-3">
+                        <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Investment Analysis
+                        </h3>
+                        
+                        <div className="text-xs text-gray-500 mb-2">
+                          Generated: {new Date(propertyAnalysis.timestamp).toLocaleString()}
+                        </div>
+                        
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
+                          {propertyAnalysis.analysis}
                         </div>
                       </div>
                     )}
