@@ -57,6 +57,14 @@ export async function POST(request: NextRequest) {
       console.log('📡 Making Apify request for:', fullAddress)
       console.log('🔗 Search URL:', searchUrl)
       
+      // Try with the exact format from documentation
+      const requestBody = {
+        searchUrls: [{ url: searchUrl }],
+        extractionMethod: "MAP_MARKERS"
+      }
+      
+      console.log('📦 Request body:', JSON.stringify(requestBody, null, 2))
+      
       const runResponse = await fetch(
         `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${apifyToken}`,
         {
@@ -65,12 +73,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({
-            input: {
-              searchUrls: [{ url: searchUrl }],
-              extractionMethod: "MAP_MARKERS"
-            }
-          })
+          body: JSON.stringify(requestBody)
         }
       )
       
