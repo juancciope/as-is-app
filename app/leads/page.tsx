@@ -1289,7 +1289,7 @@ export default function LeadsPage() {
                             )}
 
                             {/* Fallback - if no structured data and no parsing error, show formatted message */}
-                            {!propertyAnalysis.data?.investment_recommendation && !propertyAnalysis.data?.financial_projections && !propertyAnalysis.data?.parsing_error && (
+                            {!propertyAnalysis.data?.investment_analysis && !propertyAnalysis.data?.financial_projections && !propertyAnalysis.data?.parsing_error && (
                               <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
                                 <div className="flex items-center mb-2">
                                   <span className="text-yellow-600">⚠️</span>

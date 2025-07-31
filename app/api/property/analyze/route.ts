@@ -35,20 +35,24 @@ export async function POST(request: NextRequest) {
           region: "Tennessee"
         }
       }],
-      input: `Search for property information for the address: ${fullAddress}
+      input: `You are a real estate investment analyst. Search for property information for: ${fullAddress}
 
-Please search Zillow, Redfin, Realtor.com and other real estate websites for this exact property address. After gathering the data, provide a comprehensive real estate investment analysis for a fix-and-flip investor.
+STEP 1: Use web search to find current data from Zillow, Redfin, Realtor.com and other real estate websites for this exact property address.
 
-Return your response as a JSON object with this structure:
+STEP 2: After completing your web searches, provide a comprehensive real estate investment analysis for a fix-and-flip investor.
+
+CRITICAL: Return ONLY a valid JSON object with no additional text, explanations, or markdown formatting. Your entire response must be a single JSON object that starts with { and ends with }.
+
+JSON structure to return:
 
 {
   "property_address": "${fullAddress}",
   "property_details": {
-    "current_estimated_value": 0,
-    "square_footage": 0, 
-    "bedrooms": 0,
-    "bathrooms": 0,
-    "year_built": 0,
+    "current_estimated_value": 285000,
+    "square_footage": 1450, 
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "year_built": 1985,
     "property_type": "Single Family"
   },
   "market_analysis": {
@@ -64,11 +68,11 @@ Return your response as a JSON object with this structure:
     "days_on_market_average": 30
   },
   "investment_analysis": {
-    "estimated_arv": 0,
-    "estimated_purchase_price": 0,
-    "renovation_estimate": 0,
-    "projected_profit": 0,
-    "roi_percentage": 0,
+    "estimated_arv": 320000,
+    "estimated_purchase_price": 200000,
+    "renovation_estimate": 45000,
+    "projected_profit": 55000,
+    "roi_percentage": 22,
     "investment_grade": "B",
     "recommendation": "PROCEED_WITH_CAUTION"
   },
@@ -82,7 +86,9 @@ Return your response as a JSON object with this structure:
     "contingency_10_percent": 3800,
     "total_estimated": 41800
   }
-}`
+}
+
+IMPORTANT: Replace all example values with actual data from your web search. Use numbers (not strings) for all numeric values. If you cannot find specific data, use reasonable estimates based on comparable properties in the area.`
     })
 
     console.log('✅ Web search response received')
@@ -110,6 +116,8 @@ Return your response as a JSON object with this structure:
     // Parse JSON response with improved error handling
     let analysisData
     try {
+      console.log('🔍 Raw output text:', outputText.substring(0, 200) + '...')
+      
       // Clean the output text first
       let cleanText = outputText.trim()
       
@@ -117,22 +125,44 @@ Return your response as a JSON object with this structure:
       const codeBlockMatch = cleanText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
       if (codeBlockMatch && codeBlockMatch[1]) {
         cleanText = codeBlockMatch[1].trim()
+        console.log('📝 Extracted from code block')
       }
       
-      // Find JSON object boundaries
-      const jsonStart = cleanText.indexOf('{')
-      const jsonEnd = cleanText.lastIndexOf('}')
+      // Find the first complete JSON object
+      let jsonStart = cleanText.indexOf('{')
+      let jsonEnd = -1
+      let braceCount = 0
       
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      if (jsonStart !== -1) {
+        for (let i = jsonStart; i < cleanText.length; i++) {
+          if (cleanText[i] === '{') {
+            braceCount++
+          } else if (cleanText[i] === '}') {
+            braceCount--
+            if (braceCount === 0) {
+              jsonEnd = i
+              break
+            }
+          }
+        }
+      }
+      
+      if (jsonStart !== -1 && jsonEnd !== -1) {
         const jsonText = cleanText.substring(jsonStart, jsonEnd + 1)
+        console.log('🎯 Attempting to parse JSON of length:', jsonText.length)
         analysisData = JSON.parse(jsonText)
         console.log('✅ Successfully parsed JSON response')
+        
+        // Validate required structure
+        if (!analysisData.property_address) {
+          analysisData.property_address = fullAddress
+        }
       } else {
         throw new Error('No valid JSON object found in response')
       }
       
-    } catch (parseError) {
-      console.log('⚠️ JSON parsing failed:', parseError)
+    } catch (parseError: any) {
+      console.log('⚠️ JSON parsing failed:', parseError?.message || parseError)
       
       // Create a structured fallback response
       analysisData = {
