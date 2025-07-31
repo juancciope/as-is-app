@@ -32,7 +32,10 @@ export default function LeadsPage() {
   const [propertyAnalysis, setPropertyAnalysis] = useState<any>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
+  const [isResizing, setIsResizing] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  const resizeRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchConversations()
@@ -46,6 +49,42 @@ export default function LeadsPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Resize functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return
+      
+      const newWidth = window.innerWidth - e.clientX
+      const minWidth = 300
+      const maxWidth = Math.min(800, window.innerWidth * 0.6)
+      
+      setSidebarWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)))
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = 'default'
+      document.body.style.userSelect = 'auto'
+    }
+
+    if (isResizing) {
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing])
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+  }
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -532,8 +571,28 @@ export default function LeadsPage() {
           )}
         </div>
 
-        {/* Column 4: Lead Profile Sidebar - Bigger Width, Independent Scroll */}
-        <div className="w-72 border-l border-gray-200 bg-gray-50 flex flex-col">
+        {/* Column 4: Lead Profile Sidebar - Resizable Width, Independent Scroll */}
+        <div 
+          className="border-l border-gray-200 bg-gray-50 flex flex-col relative"
+          style={{ width: `${sidebarWidth}px` }}
+        >
+          {/* Resize handle */}
+          <div
+            ref={resizeRef}
+            className="absolute left-0 top-0 w-1 h-full cursor-ew-resize hover:bg-[#04325E] bg-gray-400 opacity-50 hover:opacity-100 transition-all z-10 group"
+            onMouseDown={handleResizeStart}
+            style={{ marginLeft: '-2px' }}
+            title="Drag to resize sidebar"
+          >
+            {/* Visual grip lines */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex flex-col space-y-1">
+                <div className="w-0.5 h-4 bg-white rounded"></div>
+                <div className="w-0.5 h-4 bg-white rounded"></div>
+                <div className="w-0.5 h-4 bg-white rounded"></div>
+              </div>
+            </div>
+          />
           {selectedLead ? (
             <>
               {/* Profile Header */}
@@ -546,6 +605,11 @@ export default function LeadsPage() {
                   />
                   <h2 className="text-sm font-semibold text-[#04325E] mt-2 truncate">{selectedLead.contactName || 'Unknown'}</h2>
                   <p className="text-xs text-gray-600">Profile</p>
+                  {isResizing && (
+                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                      {sidebarWidth}px
+                    </div>
+                  )}
                 </div>
               </div>
 
