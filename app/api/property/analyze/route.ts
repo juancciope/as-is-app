@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     console.log('🏠 Analyzing property:', fullAddress)
     console.log('🔍 First, scraping Zillow data using Apify...')
     
-    // Step 1: Scrape Zillow data using Apify maxcopell/zillow-scraper
+    // Step 1: Get Zillow URL using search scraper, then get details
     let zillowData = null
     try {
       const apifyToken = process.env.APIFY_API_TOKEN
@@ -31,9 +31,10 @@ export async function POST(request: NextRequest) {
         throw new Error('APIFY_API_TOKEN not configured')
       }
 
+      console.log('🔍 Step 1: Finding Zillow URL for:', fullAddress)
+
       // Create Zillow search URL with proper format
       const createZillowSearchUrl = (address: string) => {
-        // Create a basic search query state for the address
         const searchQueryState = {
           usersSearchTerm: address,
           mapBounds: {
@@ -54,18 +55,9 @@ export async function POST(request: NextRequest) {
       }
 
       const searchUrl = createZillowSearchUrl(fullAddress)
-      console.log('📡 Making Apify request for:', fullAddress)
-      console.log('🔗 Search URL:', searchUrl)
       
-      // Try with the exact format from documentation
-      const requestBody = {
-        searchUrls: [{ url: searchUrl }],
-        extractionMethod: "MAP_MARKERS"
-      }
-      
-      console.log('📦 Request body:', JSON.stringify(requestBody, null, 2))
-      
-      const runResponse = await fetch(
+      // First run: Get the property URL using search scraper
+      const searchResponse = await fetch(
         `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${apifyToken}`,
         {
           method: 'POST',
@@ -73,50 +65,105 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify({
+            searchUrls: [{ url: searchUrl }],
+            extractionMethod: "MAP_MARKERS"
+          })
         }
       )
-      
-      console.log('📡 Apify response status:', runResponse.status)
-      
-      if (!runResponse.ok) {
-        const errorText = await runResponse.text()
-        console.error('❌ Apify error response:', errorText)
-        throw new Error(`Apify run failed: ${runResponse.status} - ${errorText}`)
+
+      if (!searchResponse.ok) {
+        const errorText = await searchResponse.text()
+        throw new Error(`Search scraper failed: ${searchResponse.status} - ${errorText}`)
       }
 
-      const runData = await runResponse.json()
-      const runId = runData.data.id
-      const datasetId = runData.data.defaultDatasetId
+      const searchRunData = await searchResponse.json()
+      const searchDatasetId = searchRunData.data.defaultDatasetId
       
-      console.log(`🤖 Apify run started: ${runId}`)
+      console.log('⏳ Waiting for search results...')
       
-      // Wait for completion and get results
+      // Wait for search results
+      let searchData = null
       let attempts = 0
-      const maxAttempts = 24 // 2 minutes max (5 second intervals)
+      const maxAttempts = 12 // 1 minute max
       
-      while (attempts < maxAttempts) {
+      while (attempts < maxAttempts && !searchData) {
         await new Promise(resolve => setTimeout(resolve, 5000))
         attempts++
         
         const datasetResponse = await fetch(
-          `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}&clean=true&format=json`
+          `https://api.apify.com/v2/datasets/${searchDatasetId}/items?token=${apifyToken}&clean=true&format=json`
         )
 
         if (datasetResponse.ok) {
           const data = await datasetResponse.json()
           if (data.length > 0) {
-            zillowData = data[0] // Get first result
-            console.log('✅ Zillow data scraped successfully')
+            searchData = data.find(item => 
+              item.address && 
+              item.address.toLowerCase().includes(address.toLowerCase()) &&
+              item.detailUrl
+            ) || data[0] // Get first match or fallback to first result
+            console.log('✅ Found property URL:', searchData?.detailUrl)
+            break
+          }
+        }
+      }
+
+      if (!searchData?.detailUrl) {
+        throw new Error('Could not find property URL from search results')
+      }
+
+      // Step 2: Get detailed property data using detail scraper
+      console.log('🔍 Step 2: Getting detailed property data...')
+      
+      const detailResponse = await fetch(
+        `https://api.apify.com/v2/acts/maxcopell~zillow-detail-scraper/runs?token=${apifyToken}`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            startUrls: [{ url: `https://www.zillow.com${searchData.detailUrl}` }],
+            propertyStatus: "FOR_SALE"
+          })
+        }
+      )
+
+      if (!detailResponse.ok) {
+        const errorText = await detailResponse.text()
+        throw new Error(`Detail scraper failed: ${detailResponse.status} - ${errorText}`)
+      }
+
+      const detailRunData = await detailResponse.json()
+      const detailDatasetId = detailRunData.data.defaultDatasetId
+      
+      // Wait for detailed results
+      attempts = 0
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 5000))
+        attempts++
+        
+        const datasetResponse = await fetch(
+          `https://api.apify.com/v2/datasets/${detailDatasetId}/items?token=${apifyToken}&clean=true&format=json`
+        )
+
+        if (datasetResponse.ok) {
+          const data = await datasetResponse.json()
+          if (data.length > 0) {
+            zillowData = data[0] // Get detailed data
+            console.log('✅ Detailed Zillow data scraped successfully')
             break
           }
         }
         
-        console.log(`⏳ Waiting for Zillow data... attempt ${attempts}/${maxAttempts}`)
+        console.log(`⏳ Waiting for detailed data... attempt ${attempts}/${maxAttempts}`)
       }
 
       if (!zillowData) {
-        console.log('⚠️ No Zillow data found after waiting')
+        console.log('⚠️ Using basic search data as fallback')
+        zillowData = searchData // Use search data as fallback
       }
     } catch (error) {
       console.error('❌ Apify Zillow scraping error:', error)
