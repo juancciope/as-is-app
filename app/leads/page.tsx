@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -34,6 +34,15 @@ export default function LeadsPage() {
   const [isLoadingReports, setIsLoadingReports] = useState(false)
   const [isInvestmentAnalysisExpanded, setIsInvestmentAnalysisExpanded] = useState(true)
   const [isPreviousReportsExpanded, setIsPreviousReportsExpanded] = useState(false)
+  const [contactProperties, setContactProperties] = useState<any[]>([])
+  const [selectedPropertyIndex, setSelectedPropertyIndex] = useState(0)
+  const [isAddingProperty, setIsAddingProperty] = useState(false)
+  const [newPropertyForm, setNewPropertyForm] = useState({
+    address: '',
+    city: '',
+    state: '',
+    zipCode: ''
+  })
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
@@ -201,6 +210,18 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
+      // Initialize properties array with primary address
+      const primaryProperty = {
+        id: 'primary',
+        address: data.contact?.address1 || '',
+        city: data.contact?.city || '',
+        state: data.contact?.state || '',
+        zipCode: data.contact?.postalCode || '',
+        isPrimary: true
+      }
+      setContactProperties([primaryProperty])
+      setSelectedPropertyIndex(0)
+      
       // Fetch previous property analysis reports for this address
       if (data.contact?.address1) {
         fetchPreviousReports(data.contact.address1)
@@ -270,6 +291,9 @@ export default function LeadsPage() {
     // Reset analysis when switching leads
     setPropertyAnalysis(null)
     setPreviousReports([])
+    setContactProperties([])
+    setSelectedPropertyIndex(0)
+    setIsAddingProperty(false)
   }
 
   const handleBackToLeads = () => {
@@ -278,6 +302,9 @@ export default function LeadsPage() {
     setPropertyDetails(null)
     setPropertyAnalysis(null)
     setPreviousReports([])
+    setContactProperties([])
+    setSelectedPropertyIndex(0)
+    setIsAddingProperty(false)
   }
 
   const deletePropertyReport = async (reportId: string) => {
@@ -309,9 +336,65 @@ export default function LeadsPage() {
     }
   }
 
+  const addNewProperty = () => {
+    const newProperty = {
+      id: `property-${Date.now()}`,
+      address: newPropertyForm.address,
+      city: newPropertyForm.city,
+      state: newPropertyForm.state,
+      zipCode: newPropertyForm.zipCode,
+      isPrimary: false
+    }
+    
+    setContactProperties(prev => [...prev, newProperty])
+    setSelectedPropertyIndex(contactProperties.length) // Select the new property
+    setIsAddingProperty(false)
+    setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+    
+    // Fetch reports for the new property
+    const fullAddress = `${newProperty.address}, ${newProperty.city}, ${newProperty.state}${newProperty.zipCode ? ` ${newProperty.zipCode}` : ''}`
+    fetchPreviousReports(fullAddress)
+  }
+
+  const switchToProperty = (index: number) => {
+    setSelectedPropertyIndex(index)
+    setPropertyAnalysis(null) // Clear current analysis
+    setPreviousReports([]) // Clear previous reports
+    
+    // Fetch reports for the selected property
+    const property = contactProperties[index]
+    if (property) {
+      const fullAddress = `${property.address}, ${property.city}, ${property.state}${property.zipCode ? ` ${property.zipCode}` : ''}`
+      fetchPreviousReports(fullAddress)
+    }
+  }
+
+  const removeProperty = (index: number) => {
+    if (contactProperties[index]?.isPrimary) {
+      alert('Cannot remove the primary property')
+      return
+    }
+    
+    if (!confirm('Are you sure you want to remove this property?')) {
+      return
+    }
+    
+    setContactProperties(prev => prev.filter((_, i) => i !== index))
+    
+    // Adjust selected index if needed
+    if (selectedPropertyIndex >= index) {
+      const newIndex = Math.max(0, selectedPropertyIndex - 1)
+      setSelectedPropertyIndex(newIndex)
+      if (contactProperties.length > 1) {
+        switchToProperty(newIndex)
+      }
+    }
+  }
+
   const generatePropertyReport = async () => {
-    if (!contactDetails?.address1 || !contactDetails?.city || !contactDetails?.state) {
-      alert('Address information is required to generate a property report')
+    const selectedProperty = contactProperties[selectedPropertyIndex]
+    if (!selectedProperty?.address || !selectedProperty?.city || !selectedProperty?.state) {
+      alert('Property address information is required to generate a report')
       return
     }
 
@@ -323,10 +406,10 @@ export default function LeadsPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          address: contactDetails.address1,
-          city: contactDetails.city,
-          state: contactDetails.state,
-          zipCode: contactDetails.postalCode
+          address: selectedProperty.address,
+          city: selectedProperty.city,
+          state: selectedProperty.state,
+          zipCode: selectedProperty.zipCode
         })
       })
 
@@ -795,40 +878,149 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Property Information - Static Summary */}
-                    {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
+                    {/* Properties Management */}
+                    {contactProperties.length > 0 && (
                       <div className="bg-white rounded border border-gray-200 p-3">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-3">
                           <h3 className="text-sm font-semibold text-[#04325E] flex items-center">
                             <Home className="h-4 w-4 mr-2" />
-                            Property
+                            Properties ({contactProperties.length})
                           </h3>
-                          <button
-                            onClick={generatePropertyReport}
-                            disabled={isGeneratingReport}
-                            className="px-2 py-1 bg-[#04325E] text-white text-xs rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                          >
-                            {isGeneratingReport ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Analyzing...
-                              </>
-                            ) : (
-                              <>
-                                <TrendingUp className="h-3 w-3 mr-1" />
-                                Generate Report
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        
-                        {/* Address Display */}
-                        <div className="text-sm text-gray-700 mb-3">
-                          <div className="font-medium">{contactDetails.address1}</div>
-                          <div>
-                            {contactDetails.city}, {contactDetails.state} {contactDetails.postalCode}
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setIsAddingProperty(true)}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 flex items-center"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Property
+                            </button>
+                            <button
+                              onClick={generatePropertyReport}
+                              disabled={isGeneratingReport}
+                              className="px-2 py-1 bg-[#04325E] text-white text-xs rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                            >
+                              {isGeneratingReport ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  Analyzing...
+                                </>
+                              ) : (
+                                <>
+                                  <TrendingUp className="h-3 w-3 mr-1" />
+                                  Generate Report
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
+
+                        {/* Add Property Form */}
+                        {isAddingProperty && (
+                          <div className="mb-3 p-3 bg-gray-50 rounded border">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
+                              <button
+                                onClick={() => {
+                                  setIsAddingProperty(false)
+                                  setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                placeholder="Street Address"
+                                value={newPropertyForm.address}
+                                onChange={(e) => setNewPropertyForm(prev => ({ ...prev, address: e.target.value }))}
+                                className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
+                              />
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="City"
+                                  value={newPropertyForm.city}
+                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, city: e.target.value }))}
+                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="State"
+                                  value={newPropertyForm.state}
+                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, state: e.target.value }))}
+                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="ZIP"
+                                  value={newPropertyForm.zipCode}
+                                  onChange={(e) => setNewPropertyForm(prev => ({ ...prev, zipCode: e.target.value }))}
+                                  className="px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setIsAddingProperty(false)
+                                    setNewPropertyForm({ address: '', city: '', state: '', zipCode: '' })
+                                  }}
+                                  className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={addNewProperty}
+                                  disabled={!newPropertyForm.address || !newPropertyForm.city || !newPropertyForm.state}
+                                  className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                >
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Add Property
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Property Selector Tabs */}
+                        <div className="flex space-x-1 mb-3 overflow-x-auto">
+                          {contactProperties.map((property, index) => (
+                            <button
+                              key={property.id}
+                              onClick={() => switchToProperty(index)}
+                              className={`flex-shrink-0 px-2 py-1 text-xs rounded flex items-center ${
+                                selectedPropertyIndex === index
+                                  ? 'bg-[#04325E] text-white'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              <Home className="h-3 w-3 mr-1" />
+                              {property.isPrimary ? 'Primary' : `Property ${index}`}
+                              {!property.isPrimary && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    removeProperty(index)
+                                  }}
+                                  className="ml-1 text-red-400 hover:text-red-600"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        {/* Selected Property Address Display */}
+                        {contactProperties[selectedPropertyIndex] && (
+                          <div className="text-sm text-gray-700 mb-3 p-2 bg-blue-50 rounded">
+                            <div className="font-medium">{contactProperties[selectedPropertyIndex].address}</div>
+                            <div>
+                              {contactProperties[selectedPropertyIndex].city}, {contactProperties[selectedPropertyIndex].state} {contactProperties[selectedPropertyIndex].zipCode}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Investment Summary - Always Visible */}
                         {propertyAnalysis?.data?.analysis_summary && (
