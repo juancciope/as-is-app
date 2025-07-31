@@ -90,16 +90,35 @@ Please provide a comprehensive analysis in the expected JSON format with verifie
       if (assistantMessage && assistantMessage.content[0].type === 'text') {
         const responseText = assistantMessage.content[0].text.value
         
-        // Try to parse JSON response, fall back to text if not JSON
+        // Try to parse JSON response, handle markdown code blocks
         let analysisData
         try {
+          // First try direct parsing
           analysisData = JSON.parse(responseText)
         } catch {
-          // If not JSON, treat as formatted text
-          analysisData = {
-            analysis_text: responseText,
-            property_address: fullAddress,
-            recommendation: "See detailed analysis above"
+          try {
+            // Try to extract JSON from markdown code blocks
+            const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/)
+            if (jsonMatch && jsonMatch[1]) {
+              analysisData = JSON.parse(jsonMatch[1])
+            } else {
+              // Try to find any JSON-like content
+              const jsonStart = responseText.indexOf('{')
+              const jsonEnd = responseText.lastIndexOf('}')
+              if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+                const possibleJson = responseText.substring(jsonStart, jsonEnd + 1)
+                analysisData = JSON.parse(possibleJson)
+              } else {
+                throw new Error('No JSON found')
+              }
+            }
+          } catch {
+            // If all parsing fails, treat as formatted text
+            analysisData = {
+              analysis_text: responseText,
+              property_address: fullAddress,
+              recommendation: "See detailed analysis above"
+            }
           }
         }
 
