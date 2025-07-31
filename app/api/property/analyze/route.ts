@@ -65,14 +65,20 @@ Please provide a comprehensive analysis in the expected JSON format.`
     })
 
     // Poll for completion with exponential backoff
-    let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id)
+    let runStatus = await openai.beta.threads.runs.retrieve({
+      thread_id: thread.id,
+      run_id: run.id
+    })
     let attempts = 0
     const maxAttempts = 30
     
     while ((runStatus.status === 'running' || runStatus.status === 'queued') && attempts < maxAttempts) {
       const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
       await new Promise(resolve => setTimeout(resolve, delay))
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id)
+      runStatus = await openai.beta.threads.runs.retrieve({
+        thread_id: thread.id,
+        run_id: run.id
+      })
       attempts++
     }
 
