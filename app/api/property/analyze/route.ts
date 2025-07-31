@@ -148,6 +148,7 @@ IMPORTANT: You MUST perform a web search for this property address to get curren
           console.log(`📋 Arguments: ${toolCall.function.arguments}`)
           
           // Handle search_property_data function
+          console.log(`🔍 Handling function: ${toolCall.function.name}`)
           if (toolCall.function.name === 'search_property_data') {
             const args = JSON.parse(toolCall.function.arguments)
             
@@ -203,15 +204,31 @@ IMPORTANT: You MUST perform a web search for this property address to get curren
               tool_call_id: toolCall.id,
               output: JSON.stringify(propertyData)
             })
+          } else {
+            // Handle unknown function
+            console.log(`⚠️ Unknown function called: ${toolCall.function.name}`)
+            toolOutputs.push({
+              tool_call_id: toolCall.id,
+              output: JSON.stringify({
+                error: `Unknown function: ${toolCall.function.name}`
+              })
+            })
           }
         }
         
         // Submit the function results back to the assistant
-        await openai.beta.threads.runs.submitToolOutputs(
-          thread.id,
-          run.id,
-          { tool_outputs: toolOutputs }
-        )
+        console.log('📤 Submitting tool outputs:', toolOutputs)
+        try {
+          await openai.beta.threads.runs.submitToolOutputs(
+            thread.id,
+            run.id,
+            { tool_outputs: toolOutputs }
+          )
+          console.log('✅ Tool outputs submitted successfully')
+        } catch (submitError: any) {
+          console.error('❌ Error submitting tool outputs:', submitError)
+          throw submitError
+        }
       }
       
       const delay = Math.min(1000 * Math.pow(1.5, attempts), 5000) // Exponential backoff, max 5s
@@ -271,8 +288,14 @@ IMPORTANT: You MUST perform a web search for this property address to get curren
         throw new Error('No response from assistant')
       }
     } else if (runStatus.status === 'failed') {
+      console.error('❌ Run failed:', runStatus.last_error)
       throw new Error(`Assistant run failed: ${runStatus.last_error?.message || 'Unknown error'}`)
+    } else if (runStatus.status === 'requires_action') {
+      console.error('❌ Run still requires action after max attempts')
+      console.error('Last run status:', JSON.stringify(runStatus, null, 2))
+      throw new Error('Assistant is waiting for function response but function handling failed')
     } else {
+      console.error('❌ Unexpected run status:', runStatus.status)
       throw new Error(`Assistant run timeout or failed with status: ${runStatus.status}`)
     }
 
