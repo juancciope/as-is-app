@@ -6,7 +6,7 @@ import Sidebar from '@/components/layout/sidebar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'AS-IS CRM',
+  title: 'CRM',
   description: 'Real estate CRM for managing properties and leads',
 };
 

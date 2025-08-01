@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { 
   LayoutDashboard, 
@@ -43,7 +44,16 @@ export default function Sidebar() {
       `}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-center h-16 px-4 bg-gray-800">
-            <h2 className="text-xl font-semibold text-white">AS-IS CRM</h2>
+            <div className="flex items-center space-x-2">
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={32}
+                height={32}
+                className="h-8 w-8"
+              />
+              <h2 className="text-xl font-semibold text-white">CRM</h2>
+            </div>
           </div>
 
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
