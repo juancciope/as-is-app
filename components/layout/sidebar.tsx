@@ -43,16 +43,16 @@ export default function Sidebar() {
         lg:translate-x-0 lg:static lg:inset-0
       `}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-center h-16 px-4 bg-white border-b border-gray-200">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center h-20 px-4 bg-white border-b border-gray-200">
+            <div className="flex items-center space-x-4">
               <Image
                 src="/logo.png"
                 alt="Logo"
-                width={40}
-                height={40}
-                className="h-10 w-10"
+                width={56}
+                height={56}
+                className="h-14 w-14"
               />
-              <h2 className="text-xl font-semibold text-gray-800">CRM</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">CRM</h2>
             </div>
           </div>
 
