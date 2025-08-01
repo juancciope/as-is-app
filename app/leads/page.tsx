@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Download } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -393,104 +393,6 @@ export default function LeadsPage() {
     }
   }
 
-  const exportContactWithProperties = () => {
-    if (!contactDetails) {
-      alert('No contact data available to export')
-      return
-    }
-
-    // Helper function to escape CSV values
-    const escapeCSV = (value: any): string => {
-      if (typeof value !== 'string') value = String(value)
-      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-        return '"' + value.replace(/"/g, '""') + '"'
-      }
-      return value
-    }
-
-    // Create CSV headers for contact and property information
-    const headers = [
-      'Contact Name',
-      'Email', 
-      'Phone',
-      'Contact Address',
-      'Contact City',
-      'Contact State', 
-      'Contact ZIP',
-      'Property Address',
-      'Property City',
-      'Property State',
-      'Property ZIP',
-      'Property Type',
-      'Investment Grade',
-      'Estimated ARV',
-      'Renovation Estimate',
-      'Projected Profit',
-      'ROI Percentage',
-      'Market Trend',
-      'Property Analysis Date'
-    ]
-
-    const csvRows = [headers.join(',')]
-
-    const contactName = contactDetails.name || 
-                       (contactDetails.firstName && contactDetails.lastName ? 
-                        `${contactDetails.firstName} ${contactDetails.lastName}` : 
-                        contactDetails.firstName || contactDetails.lastName || '')
-
-    // If there are properties, create a row for each property
-    if (contactProperties.length > 0) {
-      contactProperties.forEach(property => {
-        const row = [
-          escapeCSV(contactName),
-          escapeCSV(contactDetails.email || ''),
-          escapeCSV(contactDetails.phone || ''),
-          escapeCSV(contactDetails.address1 || ''),
-          escapeCSV(contactDetails.city || ''),
-          escapeCSV(contactDetails.state || ''),
-          escapeCSV(contactDetails.postalCode || ''),
-          escapeCSV(property.address || ''),
-          escapeCSV(property.city || ''),
-          escapeCSV(property.state || ''),
-          escapeCSV(property.zipCode || ''),
-          escapeCSV(property.isPrimary ? 'Primary' : 'Additional'),
-          escapeCSV(propertyAnalysis?.data?.investment_analysis?.investment_grade || ''),
-          escapeCSV(propertyAnalysis?.data?.investment_analysis?.estimated_arv || ''),
-          escapeCSV(propertyAnalysis?.data?.investment_analysis?.renovation_estimate || ''),
-          escapeCSV(propertyAnalysis?.data?.investment_analysis?.projected_profit || ''),
-          escapeCSV(propertyAnalysis?.data?.investment_analysis?.roi_percentage || ''),
-          escapeCSV(propertyAnalysis?.data?.market_analysis?.market_trend || ''),
-          escapeCSV(propertyAnalysis?.timestamp || '')
-        ]
-        csvRows.push(row.join(','))
-      })
-    } else {
-      // If no properties, just export contact info
-      const row = [
-        escapeCSV(contactName),
-        escapeCSV(contactDetails.email || ''),
-        escapeCSV(contactDetails.phone || ''),
-        escapeCSV(contactDetails.address1 || ''),
-        escapeCSV(contactDetails.city || ''),
-        escapeCSV(contactDetails.state || ''),  
-        escapeCSV(contactDetails.postalCode || ''),
-        '', '', '', '', '', '', '', '', '', '', '', ''
-      ]
-      csvRows.push(row.join(','))
-    }
-
-    // Create and download CSV
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `contact-export-${contactName.replace(/[^a-zA-Z0-9]/g, '_') || 'unknown'}-${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
 
   const removeProperty = (index: number) => {
     if (contactProperties[index]?.isPrimary) {
@@ -1029,13 +931,6 @@ export default function LeadsPage() {
                           )}
                         </button>
                       )}
-                      <button
-                        onClick={exportContactWithProperties}
-                        className="px-3 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 flex items-center"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export Contact
-                      </button>
                     </div>
 
                     {/* Properties Management */}

@@ -310,6 +310,101 @@ export default function Home() {
     window.URL.revokeObjectURL(url);
   };
 
+  const exportContacts = () => {
+    if (contacts.length === 0) {
+      alert('No contacts available to export');
+      return;
+    }
+
+    // Helper function to escape CSV values
+    const escapeCSV = (value: any): string => {
+      if (typeof value !== 'string') value = String(value);
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return '"' + value.replace(/"/g, '""') + '"';
+      }
+      return value;
+    };
+
+    // Create CSV headers for contact and property information
+    const headers = [
+      'Contact Name',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Phone',
+      'Contact Address',
+      'Contact City',
+      'Contact State',
+      'Contact ZIP',
+      'Property Address',
+      'Property City',
+      'Property County',
+      'Property Sale Date',
+      'Property Source',
+      'Total Properties',
+      'Contact Created Date'
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    // Create a row for each contact with their properties
+    contacts.forEach(contact => {
+      if (contact.properties && contact.properties.length > 0) {
+        // Create one row per property
+        contact.properties.forEach((property: any) => {
+          const row = [
+            escapeCSV(contact.full_name || ''),
+            escapeCSV(contact.first_name || ''),
+            escapeCSV(contact.last_name || ''),
+            escapeCSV(contact.emails.length > 0 ? contact.emails[0].email : ''),
+            escapeCSV(contact.phones.length > 0 ? contact.phones[0].number : ''),
+            escapeCSV(contact.address || ''),
+            escapeCSV(contact.city || ''),
+            escapeCSV(contact.state || ''),
+            escapeCSV(contact.zip || ''),
+            escapeCSV(property.address || ''),
+            escapeCSV(property.city || ''),
+            escapeCSV(property.county || ''),
+            escapeCSV(property.sale_date ? new Date(property.sale_date).toLocaleDateString() : ''),
+            escapeCSV(property.source || ''),
+            escapeCSV(contact.properties.length),
+            escapeCSV(new Date(contact.created_at).toLocaleDateString())
+          ];
+          csvRows.push(row.join(','));
+        });
+      } else {
+        // Contact without properties
+        const row = [
+          escapeCSV(contact.full_name || ''),
+          escapeCSV(contact.first_name || ''),
+          escapeCSV(contact.last_name || ''),
+          escapeCSV(contact.emails.length > 0 ? contact.emails[0].email : ''),
+          escapeCSV(contact.phones.length > 0 ? contact.phones[0].number : ''),
+          escapeCSV(contact.address || ''),
+          escapeCSV(contact.city || ''),
+          escapeCSV(contact.state || ''),
+          escapeCSV(contact.zip || ''),
+          '', '', '', '', '', // Empty property fields
+          escapeCSV(0), // Total properties
+          escapeCSV(new Date(contact.created_at).toLocaleDateString())
+        ];
+        csvRows.push(row.join(','));
+      }
+    });
+
+    // Create and download CSV
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `contacts-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   // Show error state if there's an error
   if (error) {
     return (
@@ -524,6 +619,17 @@ export default function Home() {
                 <UserCheck className="h-4 w-4" />
                 Contacts ({contacts.length})
               </Button>
+              {activeTab === 'contacts' && contacts.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportContacts}
+                  className="flex items-center gap-2 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Contacts
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
