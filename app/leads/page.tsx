@@ -943,6 +943,7 @@ export default function LeadsPage() {
                 onSend={sendMessage}
                 disabled={isSending}
                 sendDisabled={isSending}
+                attachButton={false}
               />
             </ChatContainer>
           </MainContainer>
@@ -1024,26 +1025,54 @@ export default function LeadsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           {selectedLead ? (
             <>
-              {/* Chat Header - Fixed */}
-              <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white">
-                <Avatar 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                  name={selectedLead.contactName || 'Unknown'} 
-                />
-                <div className="ml-3 flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-[#04325E] truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                  <p className="text-sm text-gray-600 truncate">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
+              {/* Chat Header - Redesigned to match card styling */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
+                <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar 
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+                        name={selectedLead.contactName || 'Unknown'} 
+                        size="sm"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-semibold truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <MapPin className="h-3 w-3 text-white/80" />
+                          <p className="text-sm text-white/90 truncate">
+                            {contactDetails?.address1 
+                              ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
+                              : 'No address available'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Click to Call Button */}
+                      {selectedLead.contactPhone && (
+                        <a
+                          href={`tel:${selectedLead.contactPhone}`}
+                          className="flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          <Phone className="h-3 w-3 mr-1" />
+                          Call
+                        </a>
+                      )}
+                      {/* Star Button */}
+                      <button 
+                        className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                        onClick={() => console.log('Star clicked')}
+                      >
+                        <Star className={`h-4 w-4 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-white/80'}`} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button 
-                  className="p-2 hover:bg-gray-100 rounded transition-colors"
-                  onClick={() => console.log('Star clicked')}
-                >
-                  <Star className={`h-5 w-5 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-gray-400'}`} />
-                </button>
               </div>
 
-              {/* Chat Container - Fixed Height, Independent Scroll */}
-              <div className="flex-1 min-h-0" ref={chatContainerRef}>
+              {/* Chat Container - Card Style Design */}
+              <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" ref={chatContainerRef}>
                 <MainContainer style={{ height: '100%' }}>
                   <ChatContainer style={{ height: '100%' }}>
                     <MessageList 
@@ -1064,6 +1093,7 @@ export default function LeadsPage() {
                       onSend={sendMessage}
                       disabled={isSending}
                       sendDisabled={isSending}
+                      attachButton={false}
                     />
                   </ChatContainer>
                 </MainContainer>
@@ -1104,24 +1134,6 @@ export default function LeadsPage() {
           </div>
           {selectedLead ? (
             <>
-              {/* Profile Header */}
-              <div className="flex-shrink-0 p-3 border-b border-gray-200 bg-white">
-                <div className="text-center">
-                  <Avatar 
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=04325E&color=fff`}
-                    name={selectedLead.contactName || 'Unknown'} 
-                    size="sm"
-                  />
-                  <h2 className="text-sm font-semibold text-[#04325E] mt-2 truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                  <p className="text-xs text-gray-600">Profile</p>
-                  {isResizing && (
-                    <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                      {sidebarWidth}px
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Profile Content */}
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
                 {isLoadingProfile ? (
