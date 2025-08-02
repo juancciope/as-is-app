@@ -45,6 +45,7 @@ export default function LeadsPage() {
   const [isResizing, setIsResizing] = useState(false)
   const [showMobileProperties, setShowMobileProperties] = useState(false)
   const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
+  const [isLoadingContactData, setIsLoadingContactData] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -63,8 +64,8 @@ export default function LeadsPage() {
 
   // Auto-save contact properties to database when they change
   useEffect(() => {
-    // Only auto-save if we have a contact, properties, and we're not in the middle of loading
-    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails) {
+    // Only auto-save if we have a contact, properties, we're not loading, and contact details are loaded
+    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData) {
       // Use a debounced save to avoid too many database calls
       const timeoutId = setTimeout(() => {
         console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
@@ -73,7 +74,7 @@ export default function LeadsPage() {
       
       return () => clearTimeout(timeoutId)
     }
-  }, [contactProperties, selectedLead?.contactId, contactDetails])
+  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData])
 
   // Resize functionality
   useEffect(() => {
@@ -213,6 +214,7 @@ export default function LeadsPage() {
   const fetchContactDetails = async (contactId: string) => {
     try {
       setIsLoadingProfile(true)
+      setIsLoadingContactData(true) // Prevent auto-save during data loading
       const response = await fetch(`/api/ghl/contact/${contactId}`)
       
       if (!response.ok) {
@@ -262,6 +264,7 @@ export default function LeadsPage() {
       setContactDetails(null)
     } finally {
       setIsLoadingProfile(false)
+      setIsLoadingContactData(false) // Allow auto-save after loading is complete
     }
   }
 
