@@ -45,6 +45,7 @@ export default function LeadsPage() {
   const [isResizing, setIsResizing] = useState(false)
   const [showMobileProperties, setShowMobileProperties] = useState(false)
   const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
+  const [contactReportsCache, setContactReportsCache] = useState<{[contactId: string]: any[]}>({}) // Cache reports by contact ID
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -219,8 +220,11 @@ export default function LeadsPage() {
         analysis: null,
         previousReports: []
       }
-      setContactProperties([primaryProperty])
-      setSelectedPropertyIndex(0)
+      // Only set contact properties if not already cached
+      if (!contactReportsCache[contactId]) {
+        setContactProperties([primaryProperty])
+        setSelectedPropertyIndex(0)
+      }
       
       // Fetch previous property analysis reports for this address
       if (data.contact?.address1) {
@@ -286,14 +290,21 @@ export default function LeadsPage() {
       fetchMessages(lead.id)
       // Fetch contact details for the profile sidebar
       if (lead.contactId) {
+        // Check if we have cached contact properties for this contact
+        if (contactReportsCache[lead.contactId]) {
+          setContactProperties(contactReportsCache[lead.contactId])
+          setSelectedPropertyIndex(0)
+        } else {
+          // Only clear if we don't have cached data
+          setContactProperties([])
+          setSelectedPropertyIndex(0)
+        }
         fetchContactDetails(lead.contactId)
       }
     }
-    // Reset analysis when switching leads
+    // Reset only temporary states, keep contact properties if cached
     setPropertyAnalysis(null)
     setPreviousReports([])
-    setContactProperties([])
-    setSelectedPropertyIndex(0)
     setIsAddingProperty(false)
   }
 
@@ -452,11 +463,17 @@ export default function LeadsPage() {
       const data = await response.json()
       
       // Update the specific property with its analysis
-      setContactProperties(prev => prev.map(p => 
+      const updatedProperties = contactProperties.map(p => 
         p.id === propertyId 
           ? { ...p, analysis: data }
           : p
-      ))
+      )
+      setContactProperties(updatedProperties)
+      
+      // Update cache if we have a selected lead with contactId
+      if (selectedLead?.contactId) {
+        updateContactCache(selectedLead.contactId, updatedProperties)
+      }
       
       // Refresh previous reports for this property
       const fullAddress = `${property.address}, ${property.city}, ${property.state}${property.zipCode ? ` ${property.zipCode}` : ''}`
@@ -470,6 +487,16 @@ export default function LeadsPage() {
     }
   }
 
+  // Helper function to update contact reports cache
+  const updateContactCache = (contactId: string, properties: any[]) => {
+    if (contactId) {
+      setContactReportsCache(prev => ({
+        ...prev,
+        [contactId]: properties
+      }))
+    }
+  }
+
   const fetchPreviousReportsForProperty = async (propertyId: string, address: string) => {
     try {
       setIsLoadingReports(true)
@@ -479,11 +506,17 @@ export default function LeadsPage() {
         const reports = await response.json()
         
         // Update the specific property with its reports
-        setContactProperties(prev => prev.map(p => 
+        const updatedProperties = contactProperties.map(p => 
           p.id === propertyId 
             ? { ...p, previousReports: reports }
             : p
-        ))
+        )
+        setContactProperties(updatedProperties)
+        
+        // Update cache if we have a selected lead with contactId
+        if (selectedLead?.contactId) {
+          updateContactCache(selectedLead.contactId, updatedProperties)
+        }
       }
     } catch (error) {
       console.error('Error fetching previous reports:', error)
@@ -513,10 +546,16 @@ export default function LeadsPage() {
         isPrimary: false
       }
 
-      setContactProperties(prev => [...prev, newProperty])
+      const updatedProperties = [...contactProperties, newProperty]
+      setContactProperties(updatedProperties)
       setIsAddingProperty(false)
       setNewPropertyAddress('')
       setSelectedPlaceData(null)
+      
+      // Update cache if we have a selected lead with contactId
+      if (selectedLead?.contactId) {
+        updateContactCache(selectedLead.contactId, updatedProperties)
+      }
       
       // Auto-generate report for new property if it has complete address info
       if (newProperty.city && newProperty.state) {
@@ -543,7 +582,13 @@ export default function LeadsPage() {
       return
     }
 
-    setContactProperties(prev => prev.filter(p => p.id !== propertyId))
+    const updatedProperties = contactProperties.filter(p => p.id !== propertyId)
+    setContactProperties(updatedProperties)
+    
+    // Update cache if we have a selected lead with contactId
+    if (selectedLead?.contactId) {
+      updateContactCache(selectedLead.contactId, updatedProperties)
+    }
   }
 
   const extractAddressComponents = (place: any) => {
