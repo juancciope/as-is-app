@@ -49,6 +49,9 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
         // Update internal config
         this.config.apiKey = newTokens.access_token
         
+        // Update headers with new token
+        this.updateHeaders()
+        
         // Call the callback to persist the new tokens
         if (this.onTokenRefresh) {
           await this.onTokenRefresh(newTokens.access_token, newTokens.refresh_token)
@@ -214,17 +217,15 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
     return data.contact
   }
 
-  // Add getter to update headers dynamically
-  get headers(): HeadersInit {
-    return {
+  // Update headers with new token
+  private updateHeaders() {
+    this.headers = {
       'Authorization': `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
       'Version': '2021-04-15'
     }
-  }
-
-  get contactsHeaders(): HeadersInit {
-    return {
+    
+    this.contactsHeaders = {
       'Authorization': `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
       'Version': '2021-07-28'

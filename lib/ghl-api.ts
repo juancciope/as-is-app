@@ -61,9 +61,9 @@ export interface GHLContact {
 }
 
 export class GoHighLevelAPI {
-  private config: GHLConfig
-  private headers: HeadersInit
-  private contactsHeaders: HeadersInit
+  protected config: GHLConfig
+  protected headers: HeadersInit
+  protected contactsHeaders: HeadersInit
 
   constructor(config: GHLConfig) {
     this.config = {
