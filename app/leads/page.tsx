@@ -65,7 +65,9 @@ export default function LeadsPage() {
   useEffect(() => {
     if (selectedLead?.contactId && contactProperties.length > 0) {
       // Use a debounced save to avoid too many database calls
+      // But add a flag to prevent saving when we're just loading data
       const timeoutId = setTimeout(() => {
+        console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
         saveContactProperties(selectedLead.contactId, contactProperties)
       }, 1000) // Wait 1 second after last change
       
@@ -220,6 +222,8 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
+      console.log('🔄 Fetching contact details for:', contactId, 'Contact name:', data.contact?.firstName, data.contact?.lastName)
+      
       // Load saved properties for this contact from database
       const savedProperties = await loadContactProperties(contactId)
       
@@ -227,7 +231,7 @@ export default function LeadsPage() {
         // Restore saved properties from database
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
-        console.log('✅ Loaded properties from database:', savedProperties.length)
+        console.log('✅ Loaded', savedProperties.length, 'properties from database for contact:', contactId)
       } else {
         // Initialize properties array with primary address
         const primaryProperty = {
@@ -308,6 +312,7 @@ export default function LeadsPage() {
     if (!contactId) return
     
     try {
+      console.log('💾 Saving properties for contact:', contactId, 'Properties:', properties.length)
       const response = await fetch(`/api/contact-properties/${contactId}`, {
         method: 'POST',
         headers: {
@@ -320,7 +325,7 @@ export default function LeadsPage() {
         throw new Error('Failed to save contact properties')
       }
 
-      console.log('✅ Contact properties saved to database')
+      console.log('✅ Contact properties saved to database for contact:', contactId)
     } catch (error) {
       console.error('❌ Error saving contact properties to database:', error)
     }
@@ -331,6 +336,7 @@ export default function LeadsPage() {
     if (!contactId) return []
     
     try {
+      console.log('🔍 Loading properties for contact:', contactId)
       const response = await fetch(`/api/contact-properties/${contactId}`)
       
       if (!response.ok) {
@@ -338,6 +344,7 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
+      console.log('📦 Loaded properties data:', data)
       return data.properties || []
     } catch (error) {
       console.error('❌ Error loading contact properties from database:', error)
