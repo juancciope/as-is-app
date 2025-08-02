@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap } from 'lucide-react'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -851,51 +851,119 @@ export default function LeadsPage() {
               </div>
 
               {/* Profile Content */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div className="flex-1 overflow-y-auto p-3 space-y-4">
                 {isLoadingProfile ? (
                   <div className="flex items-center justify-center p-8">
                     <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                   </div>
                 ) : (
                   <>
-                    {/* Contact Information */}
-                    <div className="bg-white rounded border border-gray-200 p-3">
-                      <h3 className="text-sm font-semibold text-[#04325E] mb-2 flex items-center">
-                        <User className="h-4 w-4 mr-2" />
-                        Contact
-                      </h3>
+                    {/* Contact Header */}
+                    <div className="bg-gradient-to-r from-[#04325E] to-[#0a4976] rounded-lg p-4 text-white">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h2 className="text-lg font-semibold truncate">
+                            {contactDetails?.name || 
+                             (contactDetails?.firstName && contactDetails?.lastName ? 
+                              `${contactDetails.firstName} ${contactDetails.lastName}` : 
+                              contactDetails?.firstName || contactDetails?.lastName || 'Contact')}
+                          </h2>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 font-medium">
+                              <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                              Active Lead
+                            </span>
+                            {contactProperties.length > 0 && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium">
+                                {contactProperties.length} {contactProperties.length === 1 ? 'Property' : 'Properties'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                       
-                      <div className="space-y-2 text-sm">
+                      {/* Quick Actions */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex space-x-2">
+                          {contactDetails?.phone && (
+                            <a 
+                              href={`tel:${contactDetails.phone}`}
+                              className="flex items-center px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
+                            >
+                              <Phone className="h-3 w-3 mr-1" />
+                              Call
+                            </a>
+                          )}
+                          {contactDetails?.email && (
+                            <a 
+                              href={`mailto:${contactDetails.email}`}
+                              className="flex items-center px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs transition-colors"
+                            >
+                              <Mail className="h-3 w-3 mr-1" />
+                              Email
+                            </a>
+                          )}
+                        </div>
+                        <div className="text-xs opacity-75">
+                          Last updated: {new Date().toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Summary Card */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                          <User className="h-4 w-4 mr-2 text-gray-600" />
+                          Contact Details
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-3">
                         {contactDetails?.email && (
                           <div className="flex items-center">
-                            <Mail className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <a href={`mailto:${contactDetails.email}`} className="text-blue-600 hover:text-blue-800 truncate">
-                              {contactDetails.email}
-                            </a>
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                              <Mail className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                              <a href={`mailto:${contactDetails.email}`} className="text-sm text-blue-600 hover:text-blue-800 truncate block">
+                                {contactDetails.email}
+                              </a>
+                            </div>
                           </div>
                         )}
                         
                         {contactDetails?.phone && (
                           <div className="flex items-center">
-                            <Phone className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                            <a href={`tel:${contactDetails.phone}`} className="text-blue-600 hover:text-blue-800">
-                              {contactDetails.phone}
-                            </a>
+                            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                              <Phone className="h-4 w-4 text-green-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
+                              <a href={`tel:${contactDetails.phone}`} className="text-sm text-green-600 hover:text-green-800">
+                                {contactDetails.phone}
+                              </a>
+                            </div>
                           </div>
                         )}
                         
                         {(contactDetails?.address1 || contactDetails?.city || contactDetails?.state) && (
                           <div className="flex items-start">
-                            <MapPin className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
-                            <div className="text-gray-700">
-                              {contactDetails?.address1 && (
-                                <div className="truncate">{contactDetails.address1}</div>
-                              )}
-                              <div className="truncate">
-                                {contactDetails?.city && contactDetails.city}
-                                {contactDetails?.city && contactDetails?.state && ', '}
-                                {contactDetails?.state && contactDetails.state}
-                                {contactDetails?.postalCode && ` ${contactDetails.postalCode}`}
+                            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3 mt-0.5">
+                              <MapPin className="h-4 w-4 text-orange-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-gray-500 uppercase tracking-wide">Address</p>
+                              <div className="text-sm text-gray-700">
+                                {contactDetails?.address1 && (
+                                  <div className="truncate">{contactDetails.address1}</div>
+                                )}
+                                <div className="truncate">
+                                  {contactDetails?.city && contactDetails.city}
+                                  {contactDetails?.city && contactDetails?.state && ', '}
+                                  {contactDetails?.state && contactDetails.state}
+                                  {contactDetails?.postalCode && ` ${contactDetails.postalCode}`}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -903,177 +971,279 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-center space-x-2 py-2">
-                      <button
-                        onClick={() => setIsAddingProperty(true)}
-                        className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Property
-                      </button>
-                      {contactProperties.length > 0 && (
-                        <button
-                          onClick={generatePropertyReport}
-                          disabled={isGeneratingReport}
-                          className="px-3 py-2 bg-[#04325E] text-white text-sm rounded hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                        >
-                          {isGeneratingReport ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Analyzing...
-                            </>
-                          ) : (
-                            <>
-                              <TrendingUp className="h-4 w-4 mr-2" />
-                              Generate Report
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Properties Management */}
-                    {contactProperties.length > 0 && (
-                      <div className="bg-white rounded border border-gray-200 p-3">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-semibold text-[#04325E] flex items-center">
-                            <Home className="h-4 w-4 mr-2" />
-                            Properties ({contactProperties.length})
+                    {/* Investment Snapshot */}
+                    {propertyAnalysis?.data?.investment_analysis && (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-200">
+                          <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                            <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
+                            Investment Overview
                           </h3>
                         </div>
+                        <div className="p-4">
+                          {/* Investment Grade - Hero Metric */}
+                          <div className="text-center mb-4">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-2">
+                              <span className="text-xl font-bold text-white">
+                                {propertyAnalysis.data.investment_analysis.investment_grade?.charAt(0) || 'N'}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-500">Investment Grade</div>
+                            <div className="text-lg font-bold text-gray-900">
+                              {propertyAnalysis.data.investment_analysis.investment_grade || 'Not Rated'}
+                            </div>
+                          </div>
+                          
+                          {/* Key Metrics Grid */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-blue-50 rounded-lg p-3 text-center">
+                              <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">ARV</div>
+                              <div className="text-lg font-bold text-blue-900">
+                                ${propertyAnalysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}
+                              </div>
+                            </div>
+                            <div className="bg-green-50 rounded-lg p-3 text-center">
+                              <div className="text-xs text-green-600 font-medium uppercase tracking-wide">ROI</div>
+                              <div className="text-lg font-bold text-green-900">
+                                {propertyAnalysis.data.investment_analysis.roi_percentage || 'N/A'}%
+                              </div>
+                            </div>
+                            <div className="bg-orange-50 rounded-lg p-3 text-center">
+                              <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Renovation</div>
+                              <div className="text-lg font-bold text-orange-900">
+                                ${propertyAnalysis.data.investment_analysis.renovation_estimate?.toLocaleString() || 'N/A'}
+                              </div>
+                            </div>
+                            <div className="bg-purple-50 rounded-lg p-3 text-center">
+                              <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">Profit</div>
+                              <div className="text-lg font-bold text-purple-900">
+                                ${propertyAnalysis.data.investment_analysis.projected_profit?.toLocaleString() || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                        {/* Property Selector Tabs */}
-                        <div className="flex space-x-1 mb-3 overflow-x-auto">
+                    {/* Property Portfolio */}
+                    {contactProperties.length > 0 && (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                              <Home className="h-4 w-4 mr-2 text-gray-600" />
+                              Property Portfolio ({contactProperties.length})
+                            </h3>
+                          </div>
+                        </div>
+                        <div className="p-4 space-y-3">
                           {contactProperties.map((property, index) => (
-                            <button
+                            <div
                               key={property.id}
                               onClick={() => switchToProperty(index)}
-                              className={`flex-shrink-0 px-2 py-1 text-xs rounded flex items-center ${
+                              className={`border rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                                 selectedPropertyIndex === index
-                                  ? 'bg-[#04325E] text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  ? 'border-[#04325E] bg-blue-50 shadow-sm'
+                                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                               }`}
                             >
-                              <Home className="h-3 w-3 mr-1" />
-                              {property.isPrimary ? 'Primary' : `Property ${index}`}
-                              {!property.isPrimary && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    removeProperty(index)
-                                  }}
-                                  className="ml-1 text-red-400 hover:text-red-600"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              )}
-                            </button>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className={`w-3 h-3 rounded-full ${
+                                      property.isPrimary ? 'bg-blue-500' : 'bg-gray-400'
+                                    }`}></div>
+                                    <span className="text-xs font-medium text-gray-600">
+                                      {property.isPrimary ? 'Primary Property' : `Property ${index + 1}`}
+                                    </span>
+                                    {selectedPropertyIndex === index && (
+                                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                        Active
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="font-medium text-sm text-gray-900 truncate">
+                                    {property.address}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {property.city}, {property.state} {property.zipCode}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 ml-2">
+                                  {!property.isPrimary && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        removeProperty(index)
+                                      }}
+                                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           ))}
                         </div>
-                        
-                        {/* Selected Property Address Display */}
-                        {contactProperties[selectedPropertyIndex] && (
-                          <div className="text-sm text-gray-700 mb-3 p-2 bg-blue-50 rounded">
-                            <div className="font-medium">{contactProperties[selectedPropertyIndex].address}</div>
-                            <div>
+                      </div>
+                    )}
+
+                    {/* Active Property Analysis */}
+                    {contactProperties[selectedPropertyIndex] && (
+                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                          <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                            <FileText className="h-4 w-4 mr-2 text-gray-600" />
+                            Active Property Analysis
+                          </h3>
+                        </div>
+                        <div className="p-4">
+                          {/* Current Property Info */}
+                          <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                            <div className="font-medium text-sm text-blue-900">
+                              {contactProperties[selectedPropertyIndex].address}
+                            </div>
+                            <div className="text-xs text-blue-700">
                               {contactProperties[selectedPropertyIndex].city}, {contactProperties[selectedPropertyIndex].state} {contactProperties[selectedPropertyIndex].zipCode}
                             </div>
                           </div>
-                        )}
 
-                        {/* Investment Summary - Always Visible */}
-                        {propertyAnalysis?.data?.investment_analysis && (
-                          <div className="space-y-3">
-                            <div className="text-center p-2 bg-blue-50 rounded border border-blue-200">
-                              <div className="text-xs text-blue-600 font-medium">Investment Grade</div>
-                              <div className="text-lg font-bold text-blue-700">
-                                {propertyAnalysis.data.investment_analysis.investment_grade || 'N/A'}
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <span className="text-gray-500">ARV</span>
-                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}</div>
-                              </div>
-                              <div>
-                                <span className="text-gray-500">ROI</span>
-                                <div className="font-medium">{propertyAnalysis.data.investment_analysis.roi_percentage || 'N/A'}%</div>
-                              </div>
-                              <div>
-                                <span className="text-gray-500">Reno Est.</span>
-                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.renovation_estimate?.toLocaleString() || 'N/A'}</div>
-                              </div>
-                              <div>
-                                <span className="text-gray-500">Profit</span>
-                                <div className="font-medium">${propertyAnalysis.data.investment_analysis.projected_profit?.toLocaleString() || 'N/A'}</div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Error Display for Parsing Issues */}
-                        {propertyAnalysis?.data?.parsing_error && (
-                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-yellow-600">⚠️</span>
-                              <span className="font-medium text-yellow-800">Analysis Needs Review</span>
-                            </div>
-                            <div className="text-sm text-yellow-700 mb-2">
-                              {propertyAnalysis.data.error_message || 'The AI response could not be automatically parsed. Please review the raw response below.'}
-                            </div>
-                            {propertyAnalysis.data.raw_response && (
-                              <details className="text-xs">
-                                <summary className="cursor-pointer text-yellow-600 hover:text-yellow-800">View Raw Response</summary>
-                                <div className="mt-2 p-2 bg-white rounded border max-h-32 overflow-y-auto">
-                                  <pre className="whitespace-pre-wrap">{propertyAnalysis.data.raw_response}</pre>
+                          {/* Property Details */}
+                          {propertyAnalysis?.data?.property_details && (
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                              {propertyAnalysis.data.property_details.square_footage && (
+                                <div className="text-center">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wide">Area</div>
+                                  <div className="font-semibold text-gray-900">
+                                    {propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf
+                                  </div>
                                 </div>
-                              </details>
+                              )}
+                              {propertyAnalysis.data.property_details.bedrooms && (
+                                <div className="text-center">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wide">Bedrooms</div>
+                                  <div className="font-semibold text-gray-900">
+                                    {propertyAnalysis.data.property_details.bedrooms}
+                                  </div>
+                                </div>
+                              )}
+                              {propertyAnalysis.data.property_details.bathrooms && (
+                                <div className="text-center">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wide">Bathrooms</div>
+                                  <div className="font-semibold text-gray-900">
+                                    {propertyAnalysis.data.property_details.bathrooms}
+                                  </div>
+                                </div>
+                              )}
+                              {propertyAnalysis.data.property_details.year_built && (
+                                <div className="text-center">
+                                  <div className="text-xs text-gray-500 uppercase tracking-wide">Built</div>
+                                  <div className="font-semibold text-gray-900">
+                                    {propertyAnalysis.data.property_details.year_built}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Analysis Status */}
+                          {propertyAnalysis && (
+                            <div className="text-xs text-gray-500 text-center">
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                                🤖 AI Analysis Complete
+                              </span>
+                              <div className="mt-1">
+                                {new Date(propertyAnalysis.timestamp).toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Center */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                          <Zap className="h-4 w-4 mr-2 text-gray-600" />
+                          Actions
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        <button
+                          onClick={() => setIsAddingProperty(true)}
+                          className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add New Property
+                        </button>
+                        
+                        {contactProperties.length > 0 && (
+                          <button
+                            onClick={generatePropertyReport}
+                            disabled={isGeneratingReport}
+                            className="w-full flex items-center justify-center px-4 py-3 bg-[#04325E] text-white text-sm font-medium rounded-lg hover:bg-[#032847] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {isGeneratingReport ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Analyzing Property...
+                              </>
+                            ) : (
+                              <>
+                                <TrendingUp className="h-4 w-4 mr-2" />
+                                Generate Investment Report
+                              </>
                             )}
-                          </div>
+                          </button>
                         )}
                         
-                        {/* Property Details - Always Visible */}
-                        {propertyAnalysis?.data?.property_details && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-gray-500">Property Details</span>
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                🤖 AI Property Analysis
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              {propertyAnalysis.data.property_details.square_footage && (
-                                <div>
-                                  <span className="text-gray-500">Area</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.square_footage.toLocaleString()} sf</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.bedrooms && (
-                                <div>
-                                  <span className="text-gray-500">Beds</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.bedrooms}</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.bathrooms && (
-                                <div>
-                                  <span className="text-gray-500">Baths</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.bathrooms}</div>
-                                </div>
-                              )}
-                              
-                              {propertyAnalysis.data.property_details.year_built && (
-                                <div>
-                                  <span className="text-gray-500">Built</span>
-                                  <div className="font-medium">{propertyAnalysis.data.property_details.year_built}</div>
-                                </div>
-                              )}
-                            </div>
+                        {/* Next Steps */}
+                        {propertyAnalysis?.data?.action_items && (
+                          <div className="pt-3 border-t border-gray-200">
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Next Steps</h4>
+                            <ul className="space-y-2">
+                              {propertyAnalysis.data.action_items.slice(0, 3).map((item: string, i: number) => (
+                                <li key={i} className="flex items-start text-xs text-gray-600">
+                                  <span className="text-blue-500 mr-2 mt-0.5">•</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Error Display for Parsing Issues */}
+                    {propertyAnalysis?.data?.parsing_error && (
+                      <div className="bg-white rounded-lg border border-yellow-200 overflow-hidden">
+                        <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-200">
+                          <h3 className="text-sm font-semibold text-yellow-800 flex items-center">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Analysis Needs Review
+                          </h3>
+                        </div>
+                        <div className="p-4">
+                          <div className="text-sm text-yellow-700 mb-3">
+                            {propertyAnalysis.data.error_message || 'The AI response could not be automatically parsed. Please review the raw response below.'}
+                          </div>
+                          {propertyAnalysis.data.raw_response && (
+                            <details className="text-xs">
+                              <summary className="cursor-pointer text-yellow-600 hover:text-yellow-800 font-medium">View Raw Response</summary>
+                              <div className="mt-2 p-3 bg-yellow-100 rounded border max-h-32 overflow-y-auto">
+                                <pre className="whitespace-pre-wrap text-yellow-900">{propertyAnalysis.data.raw_response}</pre>
+                              </div>
+                            </details>
+                          )}
+                          <button
+                            onClick={generatePropertyReport}
+                            className="mt-3 w-full px-3 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition-colors"
+                          >
+                            Retry Analysis
+                          </button>
+                        </div>
                       </div>
                     )}
 
