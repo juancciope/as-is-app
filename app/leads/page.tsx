@@ -61,6 +61,13 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Auto-save contact properties when they change
+  useEffect(() => {
+    if (selectedLead?.contactId && contactProperties.length > 0) {
+      saveContactProperties(selectedLead.contactId, contactProperties)
+    }
+  }, [contactProperties, selectedLead?.contactId])
+
   // Resize functionality
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -208,24 +215,41 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
-      // Initialize properties array with primary address
-      const primaryProperty = {
-        id: 'primary',
-        address: data.contact?.address1 || '',
-        city: data.contact?.city || '',
-        state: data.contact?.state || '',
-        zipCode: data.contact?.postalCode || '',
-        isPrimary: true,
-        analysis: null,
-        previousReports: []
+      // Try to restore saved properties for this contact
+      let savedProperties = null
+      try {
+        const saved = localStorage.getItem(`contact_properties_${contactId}`)
+        if (saved) {
+          savedProperties = JSON.parse(saved)
+        }
+      } catch (error) {
+        console.error('Error restoring contact properties:', error)
       }
-      setContactProperties([primaryProperty])
-      setSelectedPropertyIndex(0)
       
-      // Fetch previous property analysis reports for this address
-      if (data.contact?.address1) {
-        const fullAddress = `${primaryProperty.address}, ${primaryProperty.city}, ${primaryProperty.state}${primaryProperty.zipCode ? ` ${primaryProperty.zipCode}` : ''}`
-        fetchPreviousReportsForProperty(primaryProperty.id, fullAddress)
+      if (savedProperties && savedProperties.length > 0) {
+        // Restore saved properties
+        setContactProperties(savedProperties)
+        setSelectedPropertyIndex(0)
+      } else {
+        // Initialize properties array with primary address
+        const primaryProperty = {
+          id: 'primary',
+          address: data.contact?.address1 || '',
+          city: data.contact?.city || '',
+          state: data.contact?.state || '',
+          zipCode: data.contact?.postalCode || '',
+          isPrimary: true,
+          analysis: null,
+          previousReports: []
+        }
+        setContactProperties([primaryProperty])
+        setSelectedPropertyIndex(0)
+        
+        // Fetch previous property analysis reports for this address
+        if (data.contact?.address1) {
+          const fullAddress = `${primaryProperty.address}, ${primaryProperty.city}, ${primaryProperty.state}${primaryProperty.zipCode ? ` ${primaryProperty.zipCode}` : ''}`
+          fetchPreviousReportsForProperty(primaryProperty.id, fullAddress)
+        }
       }
       
     } catch (error) {
@@ -278,9 +302,25 @@ export default function LeadsPage() {
     }
   }
 
+  // Helper function to save contact properties to localStorage
+  const saveContactProperties = (contactId: string, properties: any[]) => {
+    if (contactId && properties.length > 0) {
+      try {
+        localStorage.setItem(`contact_properties_${contactId}`, JSON.stringify(properties))
+      } catch (error) {
+        console.error('Error saving contact properties:', error)
+      }
+    }
+  }
+
   // Removed dummy Zillow API call - now using AI assistant only
 
   const handleSelectLead = (lead: any) => {
+    // Save current contact's properties before switching
+    if (selectedLead?.contactId && contactProperties.length > 0) {
+      saveContactProperties(selectedLead.contactId, contactProperties)
+    }
+    
     setSelectedLead(lead)
     if (lead) {
       fetchMessages(lead.id)
