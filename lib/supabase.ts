@@ -213,6 +213,26 @@ export interface PropertyAnalysisReport {
   updated_at: string
 }
 
+// Contact Properties for GHL integration
+export interface ContactProperty {
+  id: string
+  address: string
+  city: string
+  state: string
+  zipCode: string
+  isPrimary: boolean
+  analysis?: any
+  previousReports?: any[]
+}
+
+export interface ContactProperties {
+  id: string
+  contact_id: string // GHL contact ID
+  properties: ContactProperty[] // Array of properties for this contact
+  created_at: string
+  updated_at: string
+}
+
 export interface PropertyWithEvents extends Property {
   events: DistressEvent[]
   contacts: Contact[]

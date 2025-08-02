@@ -61,10 +61,15 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Auto-save contact properties when they change
+  // Auto-save contact properties to database when they change
   useEffect(() => {
     if (selectedLead?.contactId && contactProperties.length > 0) {
-      saveContactProperties(selectedLead.contactId, contactProperties)
+      // Use a debounced save to avoid too many database calls
+      const timeoutId = setTimeout(() => {
+        saveContactProperties(selectedLead.contactId, contactProperties)
+      }, 1000) // Wait 1 second after last change
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [contactProperties, selectedLead?.contactId])
 
@@ -215,21 +220,14 @@ export default function LeadsPage() {
       const data = await response.json()
       setContactDetails(data.contact)
       
-      // Try to restore saved properties for this contact
-      let savedProperties = null
-      try {
-        const saved = localStorage.getItem(`contact_properties_${contactId}`)
-        if (saved) {
-          savedProperties = JSON.parse(saved)
-        }
-      } catch (error) {
-        console.error('Error restoring contact properties:', error)
-      }
+      // Load saved properties for this contact from database
+      const savedProperties = await loadContactProperties(contactId)
       
       if (savedProperties && savedProperties.length > 0) {
-        // Restore saved properties
+        // Restore saved properties from database
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
+        console.log('✅ Loaded properties from database:', savedProperties.length)
       } else {
         // Initialize properties array with primary address
         const primaryProperty = {
@@ -244,6 +242,9 @@ export default function LeadsPage() {
         }
         setContactProperties([primaryProperty])
         setSelectedPropertyIndex(0)
+        
+        // Save initial property to database
+        await saveContactProperties(contactId, [primaryProperty])
         
         // Fetch previous property analysis reports for this address
         if (data.contact?.address1) {
@@ -302,23 +303,54 @@ export default function LeadsPage() {
     }
   }
 
-  // Helper function to save contact properties to localStorage
-  const saveContactProperties = (contactId: string, properties: any[]) => {
-    if (contactId && properties.length > 0) {
-      try {
-        localStorage.setItem(`contact_properties_${contactId}`, JSON.stringify(properties))
-      } catch (error) {
-        console.error('Error saving contact properties:', error)
+  // Helper function to save contact properties to database
+  const saveContactProperties = async (contactId: string, properties: any[]) => {
+    if (!contactId) return
+    
+    try {
+      const response = await fetch(`/api/contact-properties/${contactId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ properties })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save contact properties')
       }
+
+      console.log('✅ Contact properties saved to database')
+    } catch (error) {
+      console.error('❌ Error saving contact properties to database:', error)
+    }
+  }
+
+  // Helper function to load contact properties from database
+  const loadContactProperties = async (contactId: string): Promise<any[]> => {
+    if (!contactId) return []
+    
+    try {
+      const response = await fetch(`/api/contact-properties/${contactId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load contact properties')
+      }
+
+      const data = await response.json()
+      return data.properties || []
+    } catch (error) {
+      console.error('❌ Error loading contact properties from database:', error)
+      return []
     }
   }
 
   // Removed dummy Zillow API call - now using AI assistant only
 
-  const handleSelectLead = (lead: any) => {
+  const handleSelectLead = async (lead: any) => {
     // Save current contact's properties before switching
     if (selectedLead?.contactId && contactProperties.length > 0) {
-      saveContactProperties(selectedLead.contactId, contactProperties)
+      await saveContactProperties(selectedLead.contactId, contactProperties)
     }
     
     setSelectedLead(lead)
