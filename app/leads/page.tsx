@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap } from 'lucide-react'
+import { AddressAutocomplete } from '@/components/ui/google-places-autocomplete'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -981,25 +982,12 @@ export default function LeadsPage() {
                           </h3>
                         </div>
                         <div className="p-4">
-                          {/* Investment Grade - Hero Metric */}
-                          <div className="text-center mb-4">
-                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mb-2">
-                              <span className="text-xl font-bold text-white">
-                                {propertyAnalysis.data.investment_analysis.investment_grade?.charAt(0) || 'N'}
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-500">Investment Grade</div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {propertyAnalysis.data.investment_analysis.investment_grade || 'Not Rated'}
-                            </div>
-                          </div>
-                          
-                          {/* Key Metrics Grid */}
+                          {/* Key Metrics Grid - Removed duplicate Investment Grade */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="bg-blue-50 rounded-lg p-3 text-center">
-                              <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">ARV</div>
+                              <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Grade</div>
                               <div className="text-lg font-bold text-blue-900">
-                                ${propertyAnalysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}
+                                {propertyAnalysis.data.investment_analysis.investment_grade || 'N/A'}
                               </div>
                             </div>
                             <div className="bg-green-50 rounded-lg p-3 text-center">
@@ -1009,9 +997,9 @@ export default function LeadsPage() {
                               </div>
                             </div>
                             <div className="bg-orange-50 rounded-lg p-3 text-center">
-                              <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Renovation</div>
+                              <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">ARV</div>
                               <div className="text-lg font-bold text-orange-900">
-                                ${propertyAnalysis.data.investment_analysis.renovation_estimate?.toLocaleString() || 'N/A'}
+                                ${propertyAnalysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}
                               </div>
                             </div>
                             <div className="bg-purple-50 rounded-lg p-3 text-center">
@@ -1171,13 +1159,60 @@ export default function LeadsPage() {
                         </h3>
                       </div>
                       <div className="p-4 space-y-3">
-                        <button
-                          onClick={() => setIsAddingProperty(true)}
-                          className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add New Property
-                        </button>
+                        {!isAddingProperty ? (
+                          <button
+                            onClick={() => setIsAddingProperty(true)}
+                            className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add New Property
+                          </button>
+                        ) : (
+                          <div className="bg-gray-50 rounded-lg p-4 border border-green-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
+                              <button
+                                onClick={() => {
+                                  setIsAddingProperty(false)
+                                  setNewPropertyAddress('')
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              <AddressAutocomplete
+                                value={newPropertyAddress}
+                                onChange={setNewPropertyAddress}
+                                placeholder="Start typing an address..."
+                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              />
+                              <div className="text-xs text-gray-500">
+                                Enter the complete address including city, state, and ZIP code
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setIsAddingProperty(false)
+                                    setNewPropertyAddress('')
+                                  }}
+                                  className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={addNewProperty}
+                                  disabled={!newPropertyAddress.trim()}
+                                  className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Add Property
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         
                         {contactProperties.length > 0 && (
                           <button
@@ -1531,54 +1566,6 @@ export default function LeadsPage() {
                       </div>
                     )}
 
-                    {/* Add Property Form - shown outside properties box */}
-                    {isAddingProperty && (
-                      <div className="bg-white rounded border border-gray-200 p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
-                          <button
-                            onClick={() => {
-                              setIsAddingProperty(false)
-                              setNewPropertyAddress('')
-                            }}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Full Address (e.g., 123 Main St, Nashville, TN 37203)"
-                            value={newPropertyAddress}
-                            onChange={(e) => setNewPropertyAddress(e.target.value)}
-                            className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-[#04325E]"
-                          />
-                          <div className="text-xs text-gray-500">
-                            Enter the complete address including city, state, and ZIP code
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => {
-                                setIsAddingProperty(false)
-                                setNewPropertyAddress('')
-                              }}
-                              className="px-2 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={addNewProperty}
-                              disabled={!newPropertyAddress.trim()}
-                              className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                            >
-                              <Check className="h-3 w-3 mr-1" />
-                              Add Property
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Tags */}
                     {contactDetails?.tags && contactDetails.tags.length > 0 && (
