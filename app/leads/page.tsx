@@ -523,12 +523,27 @@ export default function LeadsPage() {
 
       const data = await response.json()
       
+      console.log('📊 Generated report for property:', propertyId, data)
+      
       // Update the specific property with its analysis
-      setContactProperties(prev => prev.map(p => 
+      const updatedProperties = contactProperties.map(p => 
         p.id === propertyId 
           ? { ...p, analysis: data }
           : p
-      ))
+      )
+      
+      setContactProperties(updatedProperties)
+      
+      // IMMEDIATELY save to database with the new report
+      if (selectedLead?.contactId) {
+        try {
+          await saveContactProperties(selectedLead.contactId, updatedProperties)
+          console.log('✅ Report saved to database immediately')
+        } catch (saveError) {
+          console.error('❌ Failed to save report to database:', saveError)
+          alert('Report generated but failed to save to database. It may not persist.')
+        }
+      }
       
       // Refresh previous reports for this property
       const fullAddress = `${property.address}, ${property.city}, ${property.state}${property.zipCode ? ` ${property.zipCode}` : ''}`
@@ -551,12 +566,26 @@ export default function LeadsPage() {
       if (response.ok) {
         const reports = await response.json()
         
+        console.log('📋 Loaded previous reports for property:', propertyId, reports)
+        
         // Update the specific property with its reports
-        setContactProperties(prev => prev.map(p => 
+        const updatedProperties = contactProperties.map(p => 
           p.id === propertyId 
             ? { ...p, previousReports: reports }
             : p
-        ))
+        )
+        
+        setContactProperties(updatedProperties)
+        
+        // IMMEDIATELY save to database with the previous reports
+        if (selectedLead?.contactId) {
+          try {
+            await saveContactProperties(selectedLead.contactId, updatedProperties)
+            console.log('✅ Previous reports saved to database immediately')
+          } catch (saveError) {
+            console.error('❌ Failed to save previous reports to database:', saveError)
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching previous reports:', error)
@@ -568,6 +597,11 @@ export default function LeadsPage() {
   const handleAddProperty = async () => {
     if (!newPropertyAddress.trim()) {
       alert('Please enter a property address')
+      return
+    }
+
+    if (!selectedLead?.contactId) {
+      alert('No contact selected')
       return
     }
 
@@ -583,10 +617,26 @@ export default function LeadsPage() {
         city: addressComponents.city || '',
         state: addressComponents.state || '',
         zipCode: addressComponents.zipCode || '',
-        isPrimary: false
+        isPrimary: false,
+        analysis: null,
+        previousReports: []
       }
 
-      setContactProperties(prev => [...prev, newProperty])
+      console.log('➕ Adding new property:', newProperty)
+
+      // Update state immediately
+      const updatedProperties = [...contactProperties, newProperty]
+      setContactProperties(updatedProperties)
+      
+      // IMMEDIATELY save to database - don't rely on debounced auto-save
+      try {
+        await saveContactProperties(selectedLead.contactId, updatedProperties)
+        console.log('✅ Property saved to database immediately')
+      } catch (saveError) {
+        console.error('❌ Failed to save property to database:', saveError)
+        alert('Failed to save property to database. It may not persist.')
+      }
+
       setIsAddingProperty(false)
       setNewPropertyAddress('')
       setSelectedPlaceData(null)
@@ -603,7 +653,7 @@ export default function LeadsPage() {
     }
   }
 
-  const handleDeleteProperty = (propertyId: string) => {
+  const handleDeleteProperty = async (propertyId: string) => {
     const property = contactProperties.find(p => p.id === propertyId)
     if (!property) return
 
@@ -616,7 +666,25 @@ export default function LeadsPage() {
       return
     }
 
-    setContactProperties(prev => prev.filter(p => p.id !== propertyId))
+    if (!selectedLead?.contactId) {
+      alert('No contact selected')
+      return
+    }
+
+    console.log('🗑️ Deleting property:', propertyId)
+
+    // Update state immediately
+    const updatedProperties = contactProperties.filter(p => p.id !== propertyId)
+    setContactProperties(updatedProperties)
+    
+    // IMMEDIATELY save to database
+    try {
+      await saveContactProperties(selectedLead.contactId, updatedProperties)
+      console.log('✅ Property deletion saved to database immediately')
+    } catch (saveError) {
+      console.error('❌ Failed to save property deletion to database:', saveError)
+      alert('Failed to save changes to database. Changes may not persist.')
+    }
   }
 
   const extractAddressComponents = (place: any) => {
@@ -625,18 +693,20 @@ export default function LeadsPage() {
       return parseAddress(place.formatted_address || '')
     }
 
-    let address = ''
+    let streetNumber = ''
+    let route = ''
     let city = ''
     let state = ''
     let zipCode = ''
 
+    // First pass: collect all components
     place.address_components.forEach((component: any) => {
       const types = component.types
       
       if (types.includes('street_number')) {
-        address = component.long_name + ' ' + address
+        streetNumber = component.long_name
       } else if (types.includes('route')) {
-        address = address + component.long_name
+        route = component.long_name
       } else if (types.includes('locality') || types.includes('sublocality')) {
         city = component.long_name
       } else if (types.includes('administrative_area_level_1')) {
@@ -646,8 +716,21 @@ export default function LeadsPage() {
       }
     })
 
+    // Second pass: properly format the street address
+    const fullAddress = [streetNumber, route].filter(Boolean).join(' ').trim()
+
+    console.log('🏠 Address parsing:', {
+      input: place.formatted_address,
+      streetNumber,
+      route,
+      fullAddress,
+      city,
+      state,
+      zipCode
+    })
+
     return {
-      address: address.trim() || place.formatted_address || '',
+      address: fullAddress || place.formatted_address || '',
       city: city || '',
       state: state || '',
       zipCode: zipCode || ''

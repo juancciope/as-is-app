@@ -12,87 +12,76 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Execute the migration SQL
-    const migrationSQL = `
-      -- Create contact_properties table for storing GHL contact property data
-      CREATE TABLE IF NOT EXISTS contact_properties (
-          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-          contact_id VARCHAR(255) NOT NULL UNIQUE,
-          properties JSONB NOT NULL DEFAULT '[]'::jsonb,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-
-      -- Create index on contact_id for faster lookups
-      CREATE INDEX IF NOT EXISTS idx_contact_properties_contact_id 
-      ON contact_properties (contact_id);
-
-      -- Create index on updated_at for caching and sync logic
-      CREATE INDEX IF NOT EXISTS idx_contact_properties_updated_at 
-      ON contact_properties (updated_at);
-
-      -- Add RLS (Row Level Security) policies
-      ALTER TABLE contact_properties ENABLE ROW LEVEL SECURITY;
-
-      -- Policy to allow all operations
-      DROP POLICY IF EXISTS "Allow all operations on contact_properties" ON contact_properties;
-      CREATE POLICY "Allow all operations on contact_properties" 
-      ON contact_properties 
-      FOR ALL 
-      USING (true);
-
-      -- Function to automatically update updated_at timestamp
-      CREATE OR REPLACE FUNCTION update_contact_properties_updated_at()
-      RETURNS TRIGGER AS $$
-      BEGIN
-          NEW.updated_at = NOW();
-          RETURN NEW;
-      END;
-      $$ LANGUAGE plpgsql;
-
-      -- Trigger to automatically update updated_at on row updates
-      DROP TRIGGER IF EXISTS trigger_update_contact_properties_updated_at ON contact_properties;
-      CREATE TRIGGER trigger_update_contact_properties_updated_at
-          BEFORE UPDATE ON contact_properties
-          FOR EACH ROW
-          EXECUTE FUNCTION update_contact_properties_updated_at();
-    `
-
-    const { error } = await supabaseAdmin.rpc('exec_sql', { sql: migrationSQL })
-
-    if (error) {
-      console.error('Migration error:', error)
+    // Try to create table directly using a simple insert operation to test if it exists
+    let tableExists = false
+    try {
+      const { error: testError } = await supabaseAdmin
+        .from('contact_properties')
+        .select('id')
+        .limit(1)
       
-      // Try alternative approach using individual statements
-      const statements = [
-        `CREATE TABLE IF NOT EXISTS contact_properties (
-          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-          contact_id VARCHAR(255) NOT NULL UNIQUE,
-          properties JSONB NOT NULL DEFAULT '[]'::jsonb,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )`,
-        `CREATE INDEX IF NOT EXISTS idx_contact_properties_contact_id ON contact_properties (contact_id)`,
-        `CREATE INDEX IF NOT EXISTS idx_contact_properties_updated_at ON contact_properties (updated_at)`,
-        `ALTER TABLE contact_properties ENABLE ROW LEVEL SECURITY`,
-        `DROP POLICY IF EXISTS "Allow all operations on contact_properties" ON contact_properties`,
-        `CREATE POLICY "Allow all operations on contact_properties" ON contact_properties FOR ALL USING (true)`
-      ]
+      if (!testError) {
+        tableExists = true
+      }
+    } catch (error) {
+      console.log('Table does not exist, will create it')
+    }
 
-      const results = []
-      for (const statement of statements) {
-        try {
-          const { error: stmtError } = await supabaseAdmin.rpc('exec_sql', { sql: statement })
-          results.push({ statement, success: !stmtError, error: stmtError?.message })
-        } catch (err) {
-          results.push({ statement, success: false, error: (err as Error).message })
-        }
+    if (tableExists) {
+      return NextResponse.json({
+        success: true,
+        message: 'Contact properties table already exists',
+        tableExists: true
+      })
+    }
+
+    // Create table by inserting a test record and letting Supabase auto-create schema
+    // This is a workaround since we can't execute raw SQL easily
+    try {
+      // Try to insert a test record to trigger table creation
+      const { error: insertError } = await supabaseAdmin
+        .from('contact_properties')
+        .insert({
+          contact_id: 'test-migration',
+          properties: []
+        })
+      
+      if (insertError) {
+        console.error('Table creation via insert failed:', insertError)
+        
+        // Table doesn't exist and we can't create it with this method
+        return NextResponse.json({
+          success: false,
+          error: 'Cannot create table automatically',
+          message: 'Please create the table manually in Supabase dashboard',
+          sql: `
+            CREATE TABLE contact_properties (
+              id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+              contact_id VARCHAR(255) NOT NULL UNIQUE,
+              properties JSONB NOT NULL DEFAULT '[]'::jsonb,
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            
+            CREATE INDEX idx_contact_properties_contact_id ON contact_properties (contact_id);
+            ALTER TABLE contact_properties ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY "Allow all operations on contact_properties" ON contact_properties FOR ALL USING (true);
+          `
+        })
       }
 
+      // Clean up test record
+      await supabaseAdmin
+        .from('contact_properties')
+        .delete()
+        .eq('contact_id', 'test-migration')
+
+    } catch (error) {
+      console.error('Table creation failed:', error)
       return NextResponse.json({
         success: false,
-        message: 'Migration partially failed, tried individual statements',
-        results
+        error: 'Table creation failed',
+        details: (error as Error).message
       })
     }
 
