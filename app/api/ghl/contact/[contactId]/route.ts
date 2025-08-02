@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoHighLevelAPI } from '@/lib/ghl-api'
+import { GoHighLevelAPIWithRefresh } from '@/lib/ghl-api-with-refresh'
+import { VercelEnvUpdater } from '@/lib/vercel-env-updater'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,9 +23,27 @@ export async function GET(
     console.log('🔑 Using token:', accessToken.substring(0, 10) + '...')
     console.log('📍 Location ID:', locationId)
 
-    const ghl = new GoHighLevelAPI({
+    const ghl = new GoHighLevelAPIWithRefresh({
       apiKey: accessToken,
-      locationId: locationId || ''
+      locationId: locationId || '',
+      clientId: process.env.GHL_CLIENT_ID,
+      clientSecret: process.env.GHL_CLIENT_SECRET,
+      refreshToken: process.env.GHL_REFRESH_TOKEN,
+      onTokenRefresh: async (newAccessToken, newRefreshToken) => {
+        const vercelApiToken = process.env.VERCEL_API_TOKEN
+        const vercelProjectId = process.env.VERCEL_PROJECT_ID
+        const vercelTeamId = process.env.VERCEL_TEAM_ID
+        
+        if (vercelApiToken && vercelProjectId) {
+          try {
+            const vercelUpdater = new VercelEnvUpdater(vercelApiToken, vercelProjectId, vercelTeamId)
+            await vercelUpdater.updateGHLTokens(newAccessToken, newRefreshToken)
+            console.log('✅ Automatically updated GHL tokens in Vercel')
+          } catch (error) {
+            console.error('❌ Failed to update Vercel env vars:', error)
+          }
+        }
+      }
     })
 
     const contact = await ghl.getContact(params.contactId)

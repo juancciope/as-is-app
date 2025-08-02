@@ -120,7 +120,7 @@ export default function LeadsPage() {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await fetch('/api/ghl/conversations')
+      const response = await fetch('/api/ghl/conversations?starred=true')
       
       if (!response.ok) {
         const data = await response.json()
@@ -996,12 +996,7 @@ export default function LeadsPage() {
           ) : leads.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>No conversations found</p>
-              {debugInfo && (
-                <div className="mt-4 p-2 bg-gray-100 rounded text-xs text-left">
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
-                </div>
-              )}
+              <p>No starred conversations found</p>
             </div>
           ) : (
             leads.map((lead) => (
@@ -1340,7 +1335,7 @@ export default function LeadsPage() {
             ) : leads.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No conversations found</p>
+                <p>No starred conversations found</p>
               </div>
             ) : (
               leads.map((lead) => (
