@@ -957,23 +957,22 @@ export default function LeadsPage() {
         <div className="flex-shrink-0 bg-white w-full">
           <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <button 
                   onClick={handleBackToLeads}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
                 >
                   <ArrowLeft className="h-5 w-5 text-white" />
                 </button>
-                <Avatar 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                  name={selectedLead.contactName || 'Unknown'} 
-                  size="sm"
-                />
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <MapPin className="h-3 w-3 text-white/80" />
-                    <p className="text-sm text-white/90 truncate">
+                  <div className="flex items-start gap-1 mt-1">
+                    <MapPin className="h-3 w-3 text-white/80 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-white/90 leading-tight overflow-hidden" style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical'
+                    }}>
                       {contactDetails?.address1 
                         ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
                         : 'No address available'
