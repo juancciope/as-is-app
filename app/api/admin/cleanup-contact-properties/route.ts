@@ -24,19 +24,41 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Delete all records from contact_properties table
-    const { error: deleteError, count } = await supabaseAdmin
+    // First get all record IDs
+    const { data: allRecords, error: fetchError } = await supabaseAdmin
       .from('contact_properties')
-      .delete()
-      .gte('created_at', '1900-01-01') // This will match all records
-
-    if (deleteError) {
-      console.error('Error deleting contact properties:', deleteError)
+      .select('id')
+    
+    if (fetchError) {
       return NextResponse.json({
-        error: 'Failed to delete contact properties',
-        details: deleteError.message
+        error: 'Failed to fetch records for deletion',
+        details: fetchError.message
       }, { status: 500 })
     }
+
+    if (!allRecords || allRecords.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No records to delete',
+        deletedCount: 0,
+        remainingRecords: 0
+      })
+    }
+
+    // Delete each record individually
+    let deletedCount = 0
+    for (const record of allRecords) {
+      const { error: deleteError } = await supabaseAdmin
+        .from('contact_properties')
+        .delete()
+        .eq('id', record.id)
+      
+      if (!deleteError) {
+        deletedCount++
+      }
+    }
+
+    // deleteError variable no longer exists in this context, remove this check
 
     // Verify deletion
     const { data: remainingRecords, error: countError } = await supabaseAdmin
@@ -50,7 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'All contact properties data has been deleted',
-      deletedCount: count,
+      deletedCount: deletedCount,
       remainingRecords: remainingRecords?.length || 0,
       note: 'Fresh data will be created when users visit contacts'
     })
