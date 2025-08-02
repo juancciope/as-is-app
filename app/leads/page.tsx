@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart } from 'lucide-react'
+import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { AddressAutocomplete } from '@/components/ui/google-places-autocomplete'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
@@ -43,6 +43,7 @@ export default function LeadsPage() {
   const [generatingReportForProperty, setGeneratingReportForProperty] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
   const [isResizing, setIsResizing] = useState(false)
+  const [showMobileProperties, setShowMobileProperties] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -902,51 +903,244 @@ export default function LeadsPage() {
   if (isMobile && selectedLead) {
     return (
       <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden">
-        {/* Mobile Chat Header */}
-        <div className="flex-shrink-0 flex items-center p-4 border-b border-gray-200 bg-white w-full">
-          <button 
-            onClick={handleBackToLeads}
-            className="mr-3 p-2 hover:bg-gray-100 rounded-full active:bg-gray-200 transition-colors"
-          >
-            <ArrowLeft className="h-6 w-6 text-gray-700" />
-          </button>
-          <Avatar 
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-            name={selectedLead.contactName || 'Unknown'} 
-            size="sm"
-          />
-          <div className="ml-3 flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-[#04325E] truncate">{selectedLead.contactName || 'Unknown'}</h2>
-            <p className="text-sm text-gray-600 truncate">{selectedLead.contactPhone || selectedLead.contactEmail || 'No contact info'}</p>
+        {/* Mobile Chat Header - Enhanced Design */}
+        <div className="flex-shrink-0 bg-white w-full">
+          <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handleBackToLeads}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5 text-white" />
+                </button>
+                <Avatar 
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
+                  name={selectedLead.contactName || 'Unknown'} 
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold truncate">{selectedLead.contactName || 'Unknown'}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MapPin className="h-3 w-3 text-white/80" />
+                    <p className="text-sm text-white/90 truncate">
+                      {contactDetails?.address1 
+                        ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
+                        : 'No address available'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Click to Call Button */}
+                {selectedLead.contactPhone && (
+                  <a
+                    href={`tel:${selectedLead.contactPhone}`}
+                    className="flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <Phone className="h-3 w-3 mr-1" />
+                    Call
+                  </a>
+                )}
+                {/* Properties/Reports Toggle Button */}
+                <button 
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  onClick={() => setShowMobileProperties(!showMobileProperties)}
+                >
+                  <Building className="h-4 w-4 text-white/80" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Chat Container - Fixed Height */}
-        <div className="flex-1 min-h-0 w-full overflow-hidden" ref={chatContainerRef}>
-          <MainContainer style={{ height: '100%' }}>
-            <ChatContainer style={{ height: '100%' }}>
-              <MessageList 
-                typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                style={{ height: '100%' }}
-              >
-                {isLoadingMessages ? (
-                  <div className="flex items-center justify-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        {/* Mobile Content - Chat or Properties */}
+        <div className="flex-1 min-h-0 w-full overflow-hidden">
+          {showMobileProperties ? (
+            // Mobile Properties/Reports View
+            <div className="h-full overflow-y-auto p-4 bg-gray-50">
+              <div className="space-y-4">
+                {/* Contact Details */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[#04325E]">Contact Details</h3>
+                    <button 
+                      className="text-gray-400 hover:text-gray-600"
+                      onClick={() => setShowMobileProperties(false)}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                ) : (
-                  renderMessages()
-                )}
-              </MessageList>
-              
-              <MessageInput 
-                placeholder="Type a message..." 
-                onSend={sendMessage}
-                disabled={isSending}
-                sendDisabled={isSending}
-                attachButton={false}
-              />
-            </ChatContainer>
-          </MainContainer>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{selectedLead.contactPhone || 'No phone'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">{selectedLead.contactEmail || 'No email'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm">
+                        {contactDetails?.address1 
+                          ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
+                          : 'No address available'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Properties Section */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[#04325E]">Properties</h3>
+                    <button
+                      onClick={() => setIsAddingProperty(!isAddingProperty)}
+                      className="flex items-center px-3 py-2 bg-[#04325E] text-white rounded-lg text-sm font-medium hover:bg-[#0a4976] transition-colors"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Property
+                    </button>
+                  </div>
+
+                  {/* Add Property Form */}
+                  {isAddingProperty && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
+                      <AddressAutocomplete
+                        value={newPropertyAddress}
+                        onChange={setNewPropertyAddress}
+                        placeholder="Enter property address..."
+                        className="p-3 border border-gray-300 rounded-lg text-sm w-full"
+                        onPlaceSelected={(place) => {
+                          if (place.formatted_address) {
+                            setNewPropertyAddress(place.formatted_address)
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={handleAddProperty}
+                          disabled={!newPropertyAddress.trim()}
+                          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Add
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsAddingProperty(false)
+                            setNewPropertyAddress('')
+                          }}
+                          className="flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Properties List */}
+                  <div className="space-y-3">
+                    {contactProperties.map((property, index) => (
+                      <div key={property.id} className="border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Home className="h-4 w-4 text-[#04325E]" />
+                              <h4 className="font-medium text-sm text-[#04325E]">
+                                {property.address}
+                              </h4>
+                            </div>
+                            
+                            {/* Property Analysis */}
+                            {property.analysis && (
+                              <div className="mt-3 space-y-2">
+                                {/* Quick Metrics */}
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="bg-blue-50 p-2 rounded">
+                                    <div className="text-blue-600 font-medium">ARV</div>
+                                    <div className="text-blue-800">${property.analysis.investment_overview?.arv?.toLocaleString()}</div>
+                                  </div>
+                                  <div className="bg-green-50 p-2 rounded">
+                                    <div className="text-green-600 font-medium">Investment Grade</div>
+                                    <div className="text-green-800">{property.analysis.investment_overview?.investment_grade}</div>
+                                  </div>
+                                </div>
+                                
+                                {/* Analysis Sections - Collapsible */}
+                                <details className="bg-gray-50 rounded p-2">
+                                  <summary className="text-xs font-medium text-gray-700 cursor-pointer">Investment Overview</summary>
+                                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                                    <div>Estimated Repair Cost: ${property.analysis.investment_overview?.estimated_repair_cost?.toLocaleString()}</div>
+                                    <div>Max Offer: ${property.analysis.investment_overview?.max_offer?.toLocaleString()}</div>
+                                    <div>Potential Profit: ${property.analysis.investment_overview?.potential_profit?.toLocaleString()}</div>
+                                  </div>
+                                </details>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex flex-col gap-1 ml-2">
+                            <button
+                              onClick={() => generatePropertyReport(property.id)}
+                              disabled={generatingReportForProperty === property.id}
+                              className="p-2 bg-[#04325E] text-white rounded hover:bg-[#0a4976] disabled:opacity-50 transition-colors"
+                            >
+                              {generatingReportForProperty === property.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <BarChart className="h-3 w-3" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteProperty(property.id)}
+                              className="p-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Mobile Chat View
+            <div className="h-full" ref={chatContainerRef}>
+              <MainContainer style={{ height: '100%' }}>
+                <ChatContainer style={{ height: '100%' }}>
+                  <MessageList 
+                    typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
+                    style={{ height: '100%' }}
+                  >
+                    {isLoadingMessages ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                      </div>
+                    ) : (
+                      renderMessages()
+                    )}
+                  </MessageList>
+                  
+                  <MessageInput 
+                    placeholder="Type a message..." 
+                    onSend={sendMessage}
+                    disabled={isSending}
+                    sendDisabled={isSending}
+                    attachButton={false}
+                  />
+                </ChatContainer>
+              </MainContainer>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -1025,52 +1219,6 @@ export default function LeadsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           {selectedLead ? (
             <>
-              {/* Chat Header - Redesigned to match card styling */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
-                <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar 
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedLead.contactName || 'Unknown')}&background=FE8F00&color=fff`}
-                        name={selectedLead.contactName || 'Unknown'} 
-                        size="sm"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-semibold truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MapPin className="h-3 w-3 text-white/80" />
-                          <p className="text-sm text-white/90 truncate">
-                            {contactDetails?.address1 
-                              ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
-                              : 'No address available'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Click to Call Button */}
-                      {selectedLead.contactPhone && (
-                        <a
-                          href={`tel:${selectedLead.contactPhone}`}
-                          className="flex items-center px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-medium transition-colors"
-                        >
-                          <Phone className="h-3 w-3 mr-1" />
-                          Call
-                        </a>
-                      )}
-                      {/* Star Button */}
-                      <button 
-                        className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                        onClick={() => console.log('Star clicked')}
-                      >
-                        <Star className={`h-4 w-4 ${selectedLead.starred ? 'text-[#FE8F00] fill-current' : 'text-white/80'}`} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Chat Container - Card Style Design */}
               <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" ref={chatContainerRef}>
                 <MainContainer style={{ height: '100%' }}>
