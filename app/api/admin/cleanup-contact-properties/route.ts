@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete all records from contact_properties table
-    const { error: deleteError } = await supabaseAdmin
+    const { error: deleteError, count } = await supabaseAdmin
       .from('contact_properties')
       .delete()
-      .neq('id', 'impossible-id') // This will match all records
+      .gte('created_at', '1900-01-01') // This will match all records
 
     if (deleteError) {
       console.error('Error deleting contact properties:', deleteError)
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'All contact properties data has been deleted',
+      deletedCount: count,
       remainingRecords: remainingRecords?.length || 0,
       note: 'Fresh data will be created when users visit contacts'
     })
