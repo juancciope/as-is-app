@@ -63,9 +63,9 @@ export default function LeadsPage() {
 
   // Auto-save contact properties to database when they change
   useEffect(() => {
-    if (selectedLead?.contactId && contactProperties.length > 0) {
+    // Only auto-save if we have a contact, properties, and we're not in the middle of loading
+    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails) {
       // Use a debounced save to avoid too many database calls
-      // But add a flag to prevent saving when we're just loading data
       const timeoutId = setTimeout(() => {
         console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
         saveContactProperties(selectedLead.contactId, contactProperties)
@@ -73,7 +73,7 @@ export default function LeadsPage() {
       
       return () => clearTimeout(timeoutId)
     }
-  }, [contactProperties, selectedLead?.contactId])
+  }, [contactProperties, selectedLead?.contactId, contactDetails])
 
   // Resize functionality
   useEffect(() => {
@@ -355,10 +355,21 @@ export default function LeadsPage() {
   // Removed dummy Zillow API call - now using AI assistant only
 
   const handleSelectLead = async (lead: any) => {
+    console.log('🔄 Switching to new lead:', lead.contactId, 'Name:', lead.contactName)
+    
     // Save current contact's properties before switching
     if (selectedLead?.contactId && contactProperties.length > 0) {
+      console.log('💾 Saving previous contact properties before switch:', selectedLead.contactId)
       await saveContactProperties(selectedLead.contactId, contactProperties)
     }
+    
+    // IMMEDIATELY clear all state to prevent contamination
+    setPropertyAnalysis(null)
+    setPreviousReports([])
+    setContactProperties([]) // Clear properties BEFORE setting new lead
+    setSelectedPropertyIndex(0)
+    setIsAddingProperty(false)
+    setContactDetails(null) // Clear contact details too
     
     setSelectedLead(lead)
     if (lead) {
@@ -368,12 +379,6 @@ export default function LeadsPage() {
         fetchContactDetails(lead.contactId)
       }
     }
-    // Reset states when switching leads
-    setPropertyAnalysis(null)
-    setPreviousReports([])
-    setContactProperties([])
-    setSelectedPropertyIndex(0)
-    setIsAddingProperty(false)
   }
 
   const handleBackToLeads = () => {
