@@ -491,6 +491,56 @@ export default function LeadsPage() {
     }
   }
 
+  const handleAddProperty = async () => {
+    if (!newPropertyAddress.trim()) {
+      alert('Please enter a property address')
+      return
+    }
+
+    try {
+      const parsedAddress = parseAddress(newPropertyAddress)
+      const newProperty = {
+        id: Date.now().toString(),
+        address: parsedAddress.address || newPropertyAddress,
+        city: parsedAddress.city || '',
+        state: parsedAddress.state || '',
+        zipCode: parsedAddress.zipCode || '',
+        isPrimary: false
+      }
+
+      setContactProperties(prev => [...prev, newProperty])
+      setIsAddingProperty(false)
+      setNewPropertyAddress('')
+      
+      // Auto-generate report for new property if it has complete address info
+      if (newProperty.city && newProperty.state) {
+        setTimeout(() => {
+          generatePropertyReport(newProperty.id)
+        }, 500)
+      }
+    } catch (error) {
+      console.error('Error adding property:', error)
+      alert('Failed to add property. Please try again.')
+    }
+  }
+
+  const handleDeleteProperty = (propertyId: string) => {
+    const property = contactProperties.find(p => p.id === propertyId)
+    if (!property) return
+
+    if (property.isPrimary) {
+      alert('Cannot delete the primary property')
+      return
+    }
+
+    if (!confirm('Are you sure you want to delete this property?')) {
+      return
+    }
+
+    setContactProperties(prev => prev.filter(p => p.id !== propertyId))
+  }
+
+
   // Property Analysis Section Component
   const PropertyAnalysisSection = ({ property }: { property: any }) => {
     const [isExpanded, setIsExpanded] = useState(false)
