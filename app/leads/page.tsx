@@ -220,9 +220,25 @@ export default function LeadsPage() {
         analysis: null,
         previousReports: []
       }
-      // Only set contact properties if not already cached
-      if (!contactReportsCache[contactId]) {
+      // Always set the primary property, then merge with cache if available
+      const cachedProperties = contactReportsCache[contactId] || []
+      
+      if (cachedProperties.length === 0) {
+        // No cached properties, use the primary property
         setContactProperties([primaryProperty])
+        setSelectedPropertyIndex(0)
+      } else {
+        // Use cached properties but ensure primary property has latest contact data
+        const updatedCachedProperties = cachedProperties.map(p => 
+          p.isPrimary ? {
+            ...p,
+            address: primaryProperty.address,
+            city: primaryProperty.city,
+            state: primaryProperty.state,
+            zipCode: primaryProperty.zipCode
+          } : p
+        )
+        setContactProperties(updatedCachedProperties)
         setSelectedPropertyIndex(0)
       }
       
@@ -291,11 +307,12 @@ export default function LeadsPage() {
       // Fetch contact details for the profile sidebar
       if (lead.contactId) {
         // Check if we have cached contact properties for this contact
-        if (contactReportsCache[lead.contactId]) {
-          setContactProperties(contactReportsCache[lead.contactId])
+        const cachedProperties = contactReportsCache[lead.contactId]
+        if (cachedProperties && cachedProperties.length > 0) {
+          setContactProperties(cachedProperties)
           setSelectedPropertyIndex(0)
         } else {
-          // Only clear if we don't have cached data
+          // Clear and let fetchContactDetails handle it
           setContactProperties([])
           setSelectedPropertyIndex(0)
         }
