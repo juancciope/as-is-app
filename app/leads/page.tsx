@@ -1155,11 +1155,17 @@ export default function LeadsPage() {
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                   <div className="bg-blue-50 p-2 rounded">
                                     <div className="text-blue-600 font-medium">ARV</div>
-                                    <div className="text-blue-800">${property.analysis.investment_overview?.arv?.toLocaleString()}</div>
+                                    <div className="text-blue-800">
+                                      ${property.analysis.data?.investment_analysis?.estimated_arv?.toLocaleString() || 
+                                        property.analysis.investment_overview?.arv?.toLocaleString() || 'N/A'}
+                                    </div>
                                   </div>
                                   <div className="bg-green-50 p-2 rounded">
                                     <div className="text-green-600 font-medium">Investment Grade</div>
-                                    <div className="text-green-800">{property.analysis.investment_overview?.investment_grade}</div>
+                                    <div className="text-green-800">
+                                      {property.analysis.data?.investment_analysis?.investment_grade || 
+                                       property.analysis.investment_overview?.investment_grade || 'N/A'}
+                                    </div>
                                   </div>
                                 </div>
                                 
@@ -1167,11 +1173,27 @@ export default function LeadsPage() {
                                 <details className="bg-gray-50 rounded p-2">
                                   <summary className="text-xs font-medium text-gray-700 cursor-pointer">Investment Overview</summary>
                                   <div className="mt-2 text-xs text-gray-600 space-y-1">
-                                    <div>Estimated Repair Cost: ${property.analysis.investment_overview?.estimated_repair_cost?.toLocaleString()}</div>
-                                    <div>Max Offer: ${property.analysis.investment_overview?.max_offer?.toLocaleString()}</div>
-                                    <div>Potential Profit: ${property.analysis.investment_overview?.potential_profit?.toLocaleString()}</div>
+                                    <div>Estimated Repair Cost: ${(property.analysis.data?.investment_analysis?.estimated_repair_cost || 
+                                      property.analysis.investment_overview?.estimated_repair_cost || 0).toLocaleString()}</div>
+                                    <div>Max Offer: ${(property.analysis.data?.investment_analysis?.max_offer || 
+                                      property.analysis.investment_overview?.max_offer || 0).toLocaleString()}</div>
+                                    <div>Potential Profit: ${(property.analysis.data?.investment_analysis?.estimated_profit || 
+                                      property.analysis.investment_overview?.potential_profit || 0).toLocaleString()}</div>
+                                    <div>ROI: {property.analysis.data?.investment_analysis?.roi_percentage || 'N/A'}%</div>
                                   </div>
                                 </details>
+                                
+                                {/* Additional Analysis Sections */}
+                                {property.analysis.data?.active_property_analysis && (
+                                  <details className="bg-gray-50 rounded p-2">
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">Market Analysis</summary>
+                                    <div className="mt-2 text-xs text-gray-600 space-y-1">
+                                      <div>Property Condition: {property.analysis.data.active_property_analysis.property_condition || 'N/A'}</div>
+                                      <div>Market Trend: {property.analysis.data.active_property_analysis.market_trend || 'N/A'}</div>
+                                      <div>Days on Market: {property.analysis.data.active_property_analysis.days_on_market || 'N/A'}</div>
+                                    </div>
+                                  </details>
+                                )}
                               </div>
                             )}
                           </div>
