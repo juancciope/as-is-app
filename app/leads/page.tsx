@@ -44,6 +44,7 @@ export default function LeadsPage() {
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
   const [isResizing, setIsResizing] = useState(false)
   const [showMobileProperties, setShowMobileProperties] = useState(false)
+  const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -498,19 +499,24 @@ export default function LeadsPage() {
     }
 
     try {
-      const parsedAddress = parseAddress(newPropertyAddress)
+      // Use Google Places data if available, otherwise fall back to parsing
+      const addressComponents = selectedPlaceData 
+        ? extractAddressComponents(selectedPlaceData)
+        : parseAddress(newPropertyAddress)
+      
       const newProperty = {
         id: Date.now().toString(),
-        address: parsedAddress.address || newPropertyAddress,
-        city: parsedAddress.city || '',
-        state: parsedAddress.state || '',
-        zipCode: parsedAddress.zipCode || '',
+        address: addressComponents.address || newPropertyAddress,
+        city: addressComponents.city || '',
+        state: addressComponents.state || '',
+        zipCode: addressComponents.zipCode || '',
         isPrimary: false
       }
 
       setContactProperties(prev => [...prev, newProperty])
       setIsAddingProperty(false)
       setNewPropertyAddress('')
+      setSelectedPlaceData(null)
       
       // Auto-generate report for new property if it has complete address info
       if (newProperty.city && newProperty.state) {
@@ -540,6 +546,40 @@ export default function LeadsPage() {
     setContactProperties(prev => prev.filter(p => p.id !== propertyId))
   }
 
+  const extractAddressComponents = (place: any) => {
+    if (!place.address_components) {
+      // Fallback to simple parsing if no address_components
+      return parseAddress(place.formatted_address || '')
+    }
+
+    let address = ''
+    let city = ''
+    let state = ''
+    let zipCode = ''
+
+    place.address_components.forEach((component: any) => {
+      const types = component.types
+      
+      if (types.includes('street_number')) {
+        address = component.long_name + ' ' + address
+      } else if (types.includes('route')) {
+        address = address + component.long_name
+      } else if (types.includes('locality') || types.includes('sublocality')) {
+        city = component.long_name
+      } else if (types.includes('administrative_area_level_1')) {
+        state = component.short_name // Use short name for state (e.g., "TN" instead of "Tennessee")
+      } else if (types.includes('postal_code')) {
+        zipCode = component.long_name
+      }
+    })
+
+    return {
+      address: address.trim() || place.formatted_address || '',
+      city: city || '',
+      state: state || '',
+      zipCode: zipCode || ''
+    }
+  }
 
   // Property Analysis Section Component
   const PropertyAnalysisSection = ({ property }: { property: any }) => {
@@ -1067,6 +1107,7 @@ export default function LeadsPage() {
                         onPlaceSelected={(place) => {
                           if (place.formatted_address) {
                             setNewPropertyAddress(place.formatted_address)
+                            setSelectedPlaceData(place) // Store the full place data
                           }
                         }}
                       />
@@ -1083,6 +1124,7 @@ export default function LeadsPage() {
                           onClick={() => {
                             setIsAddingProperty(false)
                             setNewPropertyAddress('')
+                            setSelectedPlaceData(null)
                           }}
                           className="flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors"
                         >
