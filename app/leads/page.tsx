@@ -55,6 +55,8 @@ export default function LeadsPage() {
     onCancel: () => void
   } | null>(null)
   const [showMobileAddressModal, setShowMobileAddressModal] = useState(false)
+  const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('all')
+  const [conversationStatuses, setConversationStatuses] = useState<Record<string, 'pending' | 'replied'>>({})
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -70,6 +72,39 @@ export default function LeadsPage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Toggle conversation status between pending and replied
+  const toggleConversationStatus = (contactId: string) => {
+    setConversationStatuses(prev => {
+      const currentStatus = prev[contactId] || 'pending'
+      const newStatus = currentStatus === 'pending' ? 'replied' : 'pending'
+      const updated = { ...prev, [contactId]: newStatus }
+      
+      // TODO: Save to database/localStorage
+      localStorage.setItem('conversationStatuses', JSON.stringify(updated))
+      
+      return updated
+    })
+  }
+
+  // Load conversation statuses from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('conversationStatuses')
+    if (saved) {
+      try {
+        setConversationStatuses(JSON.parse(saved))
+      } catch (error) {
+        console.error('Error loading conversation statuses:', error)
+      }
+    }
+  }, [])
+
+  // Filter conversations based on current filter
+  const filteredLeads = leads.filter(lead => {
+    const status = conversationStatuses[lead.contactId] || 'pending'
+    if (conversationFilter === 'all') return true
+    return status === conversationFilter
+  })
 
   // REMOVED AUTO-SAVE - All saves are now explicit and immediate
 
@@ -1237,6 +1272,32 @@ export default function LeadsPage() {
           <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
         </div>
         
+        {/* Filter Tabs */}
+        <div className="flex-shrink-0 bg-white border-b border-gray-200">
+          <div className="flex">
+            {[
+              { key: 'all', label: 'All', count: leads.length },
+              { key: 'pending', label: 'Pending', count: leads.filter(lead => (conversationStatuses[lead.contactId] || 'pending') === 'pending').length },
+              { key: 'replied', label: 'Replied', count: leads.filter(lead => conversationStatuses[lead.contactId] === 'replied').length }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setConversationFilter(tab.key as any)}
+                className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  conversationFilter === tab.key
+                    ? 'border-[#04325E] text-[#04325E] bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        
         {/* Mobile Leads List */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
           {isLoading ? (
@@ -1260,7 +1321,7 @@ export default function LeadsPage() {
               <p>No starred conversations found</p>
             </div>
           ) : (
-            leads.map((lead) => (
+            filteredLeads.map((lead) => (
               <div
                 key={lead.id}
                 onClick={() => handleSelectLead(lead)}
@@ -1276,12 +1337,35 @@ export default function LeadsPage() {
                           {lead.unreadCount}
                         </span>
                       )}
+                      {/* Status Indicator */}
+                      <span className={`ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
+                        conversationStatuses[lead.contactId] === 'replied'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {conversationStatuses[lead.contactId] === 'replied' ? 'Replied' : 'Pending'}
+                      </span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1 truncate w-full">{lead.lastMessageBody || 'No messages'}</p>
                     <p className="text-xs text-gray-500 mt-1 truncate w-full">
                       {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
                     </p>
                   </div>
+                  
+                  {/* Mark as Replied Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation() // Prevent selecting the conversation
+                      toggleConversationStatus(lead.contactId)
+                    }}
+                    className={`ml-2 p-2 rounded-lg transition-colors flex-shrink-0 ${
+                      conversationStatuses[lead.contactId] === 'replied'
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Check className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             ))
@@ -1704,6 +1788,29 @@ export default function LeadsPage() {
             <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
           </div>
           
+          {/* Filter Tabs - Desktop */}
+          <div className="flex-shrink-0 bg-white border-b border-gray-200">
+            <div className="flex text-sm">
+              {[
+                { key: 'all', label: 'All', count: leads.length },
+                { key: 'pending', label: 'Pending', count: leads.filter(lead => (conversationStatuses[lead.contactId] || 'pending') === 'pending').length },
+                { key: 'replied', label: 'Replied', count: leads.filter(lead => conversationStatuses[lead.contactId] === 'replied').length }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setConversationFilter(tab.key as any)}
+                  className={`flex-1 px-3 py-2 font-medium border-b-2 transition-colors ${
+                    conversationFilter === tab.key
+                      ? 'border-[#04325E] text-[#04325E] bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              ))}
+            </div>
+          </div>
+          
           {/* Conversations List - Scrollable */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
@@ -1727,7 +1834,7 @@ export default function LeadsPage() {
                 <p>No starred conversations found</p>
               </div>
             ) : (
-              leads.map((lead) => (
+              filteredLeads.map((lead) => (
                 <div
                   key={lead.id}
                   onClick={() => handleSelectLead(lead)}
