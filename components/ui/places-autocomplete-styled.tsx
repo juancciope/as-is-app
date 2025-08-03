@@ -227,7 +227,8 @@ export function PlacesAutocompleteStyled({
         }
         
         gmp-place-autocomplete [role="option"]:hover,
-        gmp-place-autocomplete [role="option"][aria-selected="true"] {
+        gmp-place-autocomplete [role="option"][aria-selected="true"],
+        gmp-place-autocomplete [role="option"].selected {
           background: #f9fafb !important;
           color: #374151 !important;
         }
@@ -265,19 +266,35 @@ export function PlacesAutocompleteStyled({
         /* Ensure all text elements are visible with dark color */
         gmp-place-autocomplete,
         gmp-place-autocomplete *,
-        gmp-place-autocomplete input,
-        gmp-place-autocomplete [role="option"],
         gmp-place-autocomplete span,
         gmp-place-autocomplete div {
           color: #374151 !important;
-          background-color: transparent !important;
         }
         
-        /* Specifically target input states */
+        /* Force input to always have white background and dark text */
+        gmp-place-autocomplete input,
         gmp-place-autocomplete input:focus,
         gmp-place-autocomplete input:active,
-        gmp-place-autocomplete input[aria-expanded="true"] {
+        gmp-place-autocomplete input[aria-expanded="true"],
+        gmp-place-autocomplete input[aria-expanded="false"] {
           background-color: white !important;
+          color: #374151 !important;
+        }
+        
+        /* Force dropdown items to have solid backgrounds */
+        gmp-place-autocomplete [role="option"],
+        gmp-place-autocomplete [role="option"] *,
+        gmp-place-autocomplete [role="listbox"],
+        gmp-place-autocomplete [role="listbox"] * {
+          background-color: white !important;
+          color: #374151 !important;
+        }
+        
+        /* Override any selection highlighting */
+        gmp-place-autocomplete [role="option"]:hover *,
+        gmp-place-autocomplete [role="option"][aria-selected="true"] *,
+        gmp-place-autocomplete [role="option"].selected * {
+          background-color: #f9fafb !important;
           color: #374151 !important;
         }
         
