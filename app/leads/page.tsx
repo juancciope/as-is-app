@@ -1308,9 +1308,21 @@ export default function LeadsPage() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-semibold truncate">{selectedLead.contactName || 'Unknown'}</h2>
-                  <div className="flex items-start gap-1 mt-1">
+                  <button
+                    onClick={() => {
+                      const fullAddress = contactDetails?.address1 
+                        ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
+                        : null;
+                      if (fullAddress && fullAddress !== 'No address available') {
+                        const encodedAddress = encodeURIComponent(fullAddress);
+                        window.open(`https://www.google.com/search?q=${encodedAddress}`, '_blank');
+                      }
+                    }}
+                    className="flex items-start gap-1 mt-1 text-left hover:bg-white/10 p-1 -m-1 rounded transition-colors"
+                    disabled={!contactDetails?.address1}
+                  >
                     <MapPin className="h-3 w-3 text-white/80 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-white/90 leading-tight overflow-hidden" style={{
+                    <p className="text-xs text-white/90 leading-tight overflow-hidden hover:underline" style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical'
@@ -1320,7 +1332,7 @@ export default function LeadsPage() {
                         : 'No address available'
                       }
                     </p>
-                  </div>
+                  </button>
                 </div>
               </div>
               <div className="flex items-center gap-2">
