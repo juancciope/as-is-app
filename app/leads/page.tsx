@@ -63,23 +63,7 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Auto-save contact properties to database when they change
-  useEffect(() => {
-    // Only auto-save if we have a contact, properties, we're not loading, and contact details are loaded
-    // Also skip auto-save if we're loading profile data or reports to prevent race conditions
-    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData && !isLoadingProfile && !isLoadingReports) {
-      // Use a debounced save to avoid too many database calls
-      const timeoutId = setTimeout(() => {
-        console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
-        console.log('⏰ Properties being saved:', contactProperties.map(p => ({ id: p.id, address: p.address })))
-        saveContactProperties(selectedLead.contactId, contactProperties)
-      }, 1000) // Wait 1 second after last change
-      
-      return () => clearTimeout(timeoutId)
-    } else {
-      console.log('🚫 Auto-save SKIPPED. Contact:', !!selectedLead?.contactId, 'Properties:', contactProperties.length, 'Details:', !!contactDetails, 'Loading contact:', isLoadingContactData, 'Loading profile:', isLoadingProfile, 'Loading reports:', isLoadingReports)
-    }
-  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData, isLoadingProfile, isLoadingReports])
+  // REMOVED AUTO-SAVE - All saves are now explicit and immediate
 
   // Resize functionality
   useEffect(() => {
@@ -219,88 +203,68 @@ export default function LeadsPage() {
   const fetchContactDetails = async (contactId: string) => {
     try {
       setIsLoadingProfile(true)
-      setIsLoadingContactData(true) // Prevent auto-save during data loading
-      const response = await fetch(`/api/ghl/contact/${contactId}`)
+      console.log('🔄 Loading contact:', contactId)
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch contact details')
-      }
-
+      // Step 1: Get contact details from GHL
+      const response = await fetch(`/api/ghl/contact/${contactId}`)
+      if (!response.ok) throw new Error('Failed to fetch contact details')
+      
       const data = await response.json()
       setContactDetails(data.contact)
       
-      console.log('🔄 Fetching contact details for:', contactId, 'Contact name:', data.contact?.firstName, data.contact?.lastName)
-      console.log('🔍 GHL API Response:', JSON.stringify(data, null, 2))
-      console.log('🏠 Contact address data:', {
-        address1: data.contact?.address1,
-        city: data.contact?.city,
-        state: data.contact?.state,
-        postalCode: data.contact?.postalCode
-      })
+      // Step 2: Load or create properties for this specific contact
+      await loadPropertiesForContact(contactId, data.contact)
       
-      // Load saved properties for this contact from database
+    } catch (error) {
+      console.error('❌ Error loading contact:', error)
+      setContactDetails(null)
+      setContactProperties([])
+    } finally {
+      setIsLoadingProfile(false)
+    }
+  }
+
+  const loadPropertiesForContact = async (contactId: string, contactData: any) => {
+    try {
+      console.log('📦 Loading properties for contact:', contactId)
+      
+      // Step 1: Try to load saved properties from database
       const savedProperties = await loadContactProperties(contactId)
       
       if (savedProperties && savedProperties.length > 0) {
-        // Restore saved properties from database
-        console.log('📂 PATH A: Loading saved properties from database')
+        console.log('✅ Loaded saved properties:', savedProperties.length)
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
-        console.log('✅ Loaded', savedProperties.length, 'properties from database for contact:', contactId)
-      } else if (data.contact && data.contact.address1) {
-        // Only create initial property if we have valid contact data with an address
-        console.log('🏗️ PATH B: Creating initial property from GHL contact data')
-        console.log('🔍 VERIFY: Using contact data for ID:', contactId, 'Contact ID in data:', data.contact.id)
-        console.log('🔍 VERIFY: Address being used:', data.contact.address1)
-        
-        // CRITICAL: Verify we're using the correct contact's data
-        if (data.contact.id !== contactId) {
-          console.error('❌ CRITICAL ERROR: Contact ID mismatch!', {
-            expectedContactId: contactId,
-            actualContactId: data.contact.id,
-            addressBeingUsed: data.contact.address1
-          })
-          setContactProperties([])
-          return
-        }
-        
-        const primaryProperty = {
+        return
+      }
+      
+      // Step 2: Create initial property from GHL contact data
+      if (contactData?.address1) {
+        const newProperty = {
           id: 'primary',
-          address: data.contact.address1,
-          city: data.contact.city || '',
-          state: data.contact.state || '',
-          zipCode: data.contact.postalCode || '',
+          address: contactData.address1,
+          city: contactData.city || '',
+          state: contactData.state || '',
+          zipCode: contactData.postalCode || '',
           isPrimary: true,
           analysis: null,
           previousReports: []
         }
-        setContactProperties([primaryProperty])
+        
+        console.log('🏠 Creating new property:', newProperty.address)
+        setContactProperties([newProperty])
         setSelectedPropertyIndex(0)
         
-        // Save initial property to database immediately to prevent race conditions
-        console.log('🏠 Creating initial property for contact:', contactId, 'Address:', primaryProperty.address)
-        console.log('🔍 DOUBLE-CHECK: Saving property with address', primaryProperty.address, 'for contact', contactId)
-        await saveContactProperties(contactId, [primaryProperty])
-        
-        // Fetch previous property analysis reports for this address
-        const fullAddress = `${primaryProperty.address}, ${primaryProperty.city}, ${primaryProperty.state}${primaryProperty.zipCode ? ` ${primaryProperty.zipCode}` : ''}`
-        fetchPreviousReportsForProperty(primaryProperty.id, fullAddress)
+        // Save immediately
+        await saveContactProperties(contactId, [newProperty])
       } else {
-        // No valid contact data - don't create any properties
-        console.log('❌ PATH C: No valid contact data for:', contactId, 'Not creating properties')
-        console.log('❌ Validation failed - contact exists:', !!data.contact, 'address1 exists:', !!data.contact?.address1)
+        console.log('❌ No address data for contact')
         setContactProperties([])
       }
       
     } catch (error) {
-      console.error('Error fetching contact details:', error)
-      setContactDetails(null)
-      // CRITICAL: If GHL API fails, don't create any properties - this prevents contamination
+      console.error('❌ Error loading properties:', error)
       setContactProperties([])
-      console.log('❌ GHL API failed for contact:', contactId, 'Not creating properties to prevent contamination')
-    } finally {
-      setIsLoadingProfile(false)
-      setIsLoadingContactData(false) // Allow auto-save after loading is complete
     }
   }
 
@@ -404,37 +368,27 @@ export default function LeadsPage() {
 
   // Removed dummy Zillow API call - now using AI assistant only
 
-  const handleSelectLead = async (lead: any) => {
-    console.log('🔄 Switching to new lead:', lead.contactId, 'Name:', lead.contactName)
+  const handleSelectLead = (lead: any) => {
+    console.log('🔄 Switching to contact:', lead.contactId)
     
-    // Save current contact's properties before switching
-    if (selectedLead?.contactId && contactProperties.length > 0) {
-      console.log('💾 Saving previous contact properties before switch:', selectedLead.contactId)
-      await saveContactProperties(selectedLead.contactId, contactProperties)
-    }
-    
-    // IMMEDIATELY clear all state to prevent contamination - AGGRESSIVE RESET
+    // Clear all state
     setPropertyAnalysis(null)
     setPreviousReports([])
-    setContactProperties([]) // Clear properties BEFORE setting new lead
+    setContactProperties([])
     setSelectedPropertyIndex(0)
     setIsAddingProperty(false)
-    setContactDetails(null) // Clear contact details too
+    setContactDetails(null)
     setNewPropertyAddress('')
     setSelectedPlaceData(null)
     setGeneratingReportForProperty(null)
     
-    // Force React to re-render with clean state
-    console.log('🧹 AGGRESSIVE STATE RESET for new contact:', lead.contactId)
-    setForceRefreshKey(prev => prev + 1) // Force component refresh
-    
+    // Set new lead and load data
     setSelectedLead(lead)
-    if (lead) {
+    if (lead?.id) {
       fetchMessages(lead.id)
-      // Fetch contact details for the profile sidebar
-      if (lead.contactId) {
-        fetchContactDetails(lead.contactId)
-      }
+    }
+    if (lead?.contactId) {
+      fetchContactDetails(lead.contactId)
     }
   }
 
@@ -525,20 +479,11 @@ export default function LeadsPage() {
     setIsAddingProperty(false)
     setNewPropertyAddress('')
     
-    // Fetch reports for the new property using the original full address
-    const fullAddress = newPropertyAddress
-    fetchPreviousReportsForProperty(newProperty.id, fullAddress)
+    // Reports will be loaded when needed
   }
 
   const switchToProperty = (index: number) => {
     setSelectedPropertyIndex(index)
-    
-    // Fetch reports for the selected property if not already loaded
-    const property = contactProperties[index]
-    if (property && (!property.previousReports || property.previousReports.length === 0)) {
-      const fullAddress = `${property.address}, ${property.city}, ${property.state}${property.zipCode ? ` ${property.zipCode}` : ''}`
-      fetchPreviousReportsForProperty(property.id, fullAddress)
-    }
   }
 
 
@@ -603,20 +548,10 @@ export default function LeadsPage() {
       
       setContactProperties(updatedProperties)
       
-      // IMMEDIATELY save to database with the new report
+      // Save to database
       if (selectedLead?.contactId) {
-        try {
-          await saveContactProperties(selectedLead.contactId, updatedProperties)
-          console.log('✅ Report saved to database immediately')
-        } catch (saveError) {
-          console.error('❌ Failed to save report to database:', saveError)
-          alert('Report generated but failed to save to database. It may not persist.')
-        }
+        await saveContactProperties(selectedLead.contactId, updatedProperties)
       }
-      
-      // Refresh previous reports for this property
-      const fullAddress = `${property.address}, ${property.city}, ${property.state}${property.zipCode ? ` ${property.zipCode}` : ''}`
-      await fetchPreviousReportsForProperty(propertyId, fullAddress)
       
     } catch (error) {
       console.error('Error generating property report:', error)
@@ -627,58 +562,21 @@ export default function LeadsPage() {
   }
 
 
-  const fetchPreviousReportsForProperty = async (propertyId: string, address: string) => {
-    try {
-      setIsLoadingReports(true)
-      const response = await fetch(`/api/property/reports?address=${encodeURIComponent(address)}`)
-      
-      if (response.ok) {
-        const reports = await response.json()
-        
-        console.log('📋 Loaded previous reports for property:', propertyId, reports)
-        
-        // Update the specific property with its reports
-        const updatedProperties = contactProperties.map(p => 
-          p.id === propertyId 
-            ? { ...p, previousReports: reports }
-            : p
-        )
-        
-        setContactProperties(updatedProperties)
-        
-        // CRITICAL FIX: Immediately save with explicit contact ID to prevent contamination
-        // This ensures we save to the correct contact, not whatever selectedLead.contactId might be in the auto-save
-        if (selectedLead?.contactId) {
-          console.log('💾 IMMEDIATE SAVE: Previous reports for contact:', selectedLead.contactId, 'property:', propertyId)
-          await saveContactProperties(selectedLead.contactId, updatedProperties)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching previous reports:', error)
-    } finally {
-      setIsLoadingReports(false)
-    }
-  }
+  // REMOVED fetchPreviousReportsForProperty - source of contamination
 
   const handleAddProperty = async () => {
-    if (!newPropertyAddress.trim()) {
+    if (!newPropertyAddress.trim() || !selectedLead?.contactId) {
       alert('Please enter a property address')
       return
     }
 
-    if (!selectedLead?.contactId) {
-      alert('No contact selected')
-      return
-    }
-
     try {
-      // Use Google Places data if available, otherwise fall back to parsing
       const addressComponents = selectedPlaceData 
         ? extractAddressComponents(selectedPlaceData)
         : parseAddress(newPropertyAddress)
       
       const newProperty = {
-        id: Date.now().toString(),
+        id: `property-${Date.now()}`,
         address: addressComponents.address || newPropertyAddress,
         city: addressComponents.city || '',
         state: addressComponents.state || '',
@@ -688,34 +586,22 @@ export default function LeadsPage() {
         previousReports: []
       }
 
-      console.log('➕ Adding new property:', newProperty)
+      console.log('➕ Adding property:', newProperty.address)
 
-      // Update state immediately
       const updatedProperties = [...contactProperties, newProperty]
       setContactProperties(updatedProperties)
       
-      // IMMEDIATELY save to database - don't rely on debounced auto-save
-      try {
-        await saveContactProperties(selectedLead.contactId, updatedProperties)
-        console.log('✅ Property saved to database immediately')
-      } catch (saveError) {
-        console.error('❌ Failed to save property to database:', saveError)
-        alert('Failed to save property to database. It may not persist.')
-      }
-
+      // Save immediately
+      await saveContactProperties(selectedLead.contactId, updatedProperties)
+      
+      // Clear form
       setIsAddingProperty(false)
       setNewPropertyAddress('')
       setSelectedPlaceData(null)
       
-      // Auto-generate report for new property if it has complete address info
-      if (newProperty.city && newProperty.state) {
-        setTimeout(() => {
-          generatePropertyReport(newProperty.id)
-        }, 500)
-      }
     } catch (error) {
-      console.error('Error adding property:', error)
-      alert('Failed to add property. Please try again.')
+      console.error('❌ Error adding property:', error)
+      alert('Failed to add property')
     }
   }
 
