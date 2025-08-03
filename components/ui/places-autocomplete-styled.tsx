@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
 
 declare global {
@@ -19,15 +19,6 @@ interface PlacesAutocompleteStyledProps {
   disabled?: boolean;
 }
 
-interface PlacePrediction {
-  place_id: string;
-  description: string;
-  structured_formatting?: {
-    main_text: string;
-    secondary_text: string;
-  };
-}
-
 export function PlacesAutocompleteStyled({
   value,
   onChange,
@@ -36,21 +27,16 @@ export function PlacesAutocompleteStyled({
   className = "",
   disabled = false
 }: PlacesAutocompleteStyledProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const autocompleteServiceRef = useRef<any>(null);
-  const placesServiceRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const autocompleteElementRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [predictions, setPredictions] = useState<PlacePrediction[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   useEffect(() => {
     if (disabled) return;
 
-    const initPlacesAPI = async () => {
+    const initAutocomplete = async () => {
       try {
         if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
           throw new Error('Google Maps API key not found');
@@ -65,154 +51,157 @@ export function PlacesAutocompleteStyled({
 
         await loader.load();
 
-        // Initialize Autocomplete Service for getting predictions
-        autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
-        
-        // Initialize Places Service for getting place details (requires a map)
-        const mapDiv = document.createElement('div');
-        const map = new window.google.maps.Map(mapDiv);
-        placesServiceRef.current = new window.google.maps.places.PlacesService(map);
+        // Import Places library and create PlaceAutocompleteElement
+        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary("places");
 
+        if (!containerRef.current || autocompleteElementRef.current) {
+          return;
+        }
+
+        // Create the autocomplete element with US region restriction
+        const autocomplete = new PlaceAutocompleteElement({
+          includedRegionCodes: ['us']
+        });
+        
+        // FORCE LIGHT THEME - This fixes the invisible text issue!
+        autocomplete.style.colorScheme = 'light';
+        
+        // Also set CSS variables for explicit white background and black text
+        autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
+        autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
+
+        // Listen for place selection
+        autocomplete.addEventListener('gmp-select', async (event: any) => {
+          try {
+            console.log('🔥 PLACE SELECTION EVENT:', event);
+            const { placePrediction } = event;
+            
+            if (!placePrediction) {
+              console.warn('❌ No place prediction in selection event');
+              return;
+            }
+
+            // Convert to Place object and fetch required fields
+            const place = placePrediction.toPlace();
+            await place.fetchFields({ 
+              fields: ['formattedAddress', 'displayName', 'location', 'addressComponents'] 
+            });
+
+            const fullAddress = place.formattedAddress;
+            console.log('✅ Selected address:', fullAddress);
+            console.log('📍 Place object:', place);
+
+            if (fullAddress) {
+              console.log('🎯 Calling onChange with:', fullAddress);
+              onChange(fullAddress);
+
+              // FORCE CSS UPDATES: Since Shadow DOM is closed, force CSS updates through style injection
+              console.log('🚀 Forcing CSS updates for text visibility...');
+              
+              // Method 1: Inject styles into document head to override any Google styles
+              const injectForceStyles = () => {
+                const styleId = 'gmp-force-visible-text';
+                let existingStyle = document.getElementById(styleId);
+                
+                if (existingStyle) {
+                  existingStyle.remove();
+                }
+                
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                  /* CRITICAL: Force text visibility in Google Places Autocomplete after selection */
+                  gmp-place-autocomplete {
+                    --gmp-mat-color-on-surface: #000000 !important;
+                    --gmp-mat-color-surface: #ffffff !important;
+                    color-scheme: light !important;
+                  }
+                  
+                  /* Target all possible input states with maximum specificity */
+                  gmp-place-autocomplete * {
+                    color: #000000 !important;
+                    background-color: #ffffff !important;
+                    -webkit-text-fill-color: #000000 !important;
+                  }
+                `;
+                
+                document.head.appendChild(style);
+                console.log('🔧 Injected critical CSS styles');
+              };
+              
+              // Method 2: Force the autocomplete element itself to update
+              const forceElementUpdate = () => {
+                // Trigger a reflow to force style recalculation
+                autocomplete.style.display = 'none';
+                autocomplete.offsetHeight; // Force reflow
+                autocomplete.style.display = 'block';
+                
+                // Set CSS custom properties directly on the element
+                autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000', 'important');
+                autocomplete.style.setProperty('--gmp-mat-color-surface', '#ffffff', 'important');
+                autocomplete.style.colorScheme = 'light';
+                
+                console.log('🔧 Forced element style update');
+              };
+              
+              // Execute immediately and with delays
+              [0, 10, 50, 100, 200, 500].forEach(delay => {
+                setTimeout(() => {
+                  console.log(`🔍 Applying CSS force update after ${delay}ms`);
+                  injectForceStyles();
+                  forceElementUpdate();
+                }, delay);
+              });
+
+              if (onPlaceSelected) {
+                const placeData = {
+                  formatted_address: fullAddress,
+                  display_name: place.displayName,
+                  location: place.location,
+                  address_components: place.addressComponents,
+                  place: place
+                };
+                console.log('📦 Calling onPlaceSelected with:', placeData);
+                onPlaceSelected(placeData);
+              }
+            } else {
+              console.warn('❌ No formatted address found');
+            }
+          } catch (error) {
+            console.error('💥 Error handling place selection:', error);
+            setError('Error selecting place');
+          }
+        });
+
+        // Append to container
+        containerRef.current.appendChild(autocomplete);
+        autocompleteElementRef.current = autocomplete;
         setIsLoaded(true);
         setIsLoading(false);
         setError(null);
-        console.log('✅ Places API initialized successfully');
 
       } catch (error) {
-        console.error('Error initializing Places API:', error);
-        setError('Failed to load Places API');
+        console.error('Error initializing Places Autocomplete:', error);
+        setError('Failed to load autocomplete');
         setIsLoading(false);
         setIsLoaded(false);
       }
     };
 
-    initPlacesAPI();
-  }, [disabled]);
+    initAutocomplete();
 
-  // Handle input changes and fetch predictions
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    onChange(inputValue);
-
-    if (!inputValue.trim() || !autocompleteServiceRef.current) {
-      setPredictions([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    try {
-      // Get place predictions for US addresses
-      autocompleteServiceRef.current.getPlacePredictions(
-        {
-          input: inputValue,
-          componentRestrictions: { country: 'us' },
-          types: ['address']
-        },
-        (predictions: any[], status: any) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-            console.log('🔍 Got predictions:', predictions.length);
-            setPredictions(predictions);
-            setShowDropdown(true);
-            setSelectedIndex(-1);
-          } else {
-            setPredictions([]);
-            setShowDropdown(false);
-          }
+    // Cleanup
+    return () => {
+      if (autocompleteElementRef.current && containerRef.current) {
+        try {
+          containerRef.current.removeChild(autocompleteElementRef.current);
+          autocompleteElementRef.current = null;
+        } catch (error) {
+          console.warn('Cleanup error:', error);
         }
-      );
-    } catch (error) {
-      console.error('Error fetching predictions:', error);
-      setPredictions([]);
-      setShowDropdown(false);
-    }
-  };
-
-  // Handle prediction selection
-  const handlePredictionSelect = async (prediction: PlacePrediction) => {
-    try {
-      console.log('🎯 Selected prediction:', prediction.description);
-      
-      // Set the input value immediately - this ensures visible text!
-      onChange(prediction.description);
-      setShowDropdown(false);
-      setPredictions([]);
-
-      // Get detailed place information
-      if (placesServiceRef.current && onPlaceSelected) {
-        placesServiceRef.current.getDetails(
-          {
-            placeId: prediction.place_id,
-            fields: ['formatted_address', 'name', 'geometry', 'address_components']
-          },
-          (place: any, status: any) => {
-            if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-              console.log('✅ Got place details:', place);
-              
-              const placeData = {
-                formatted_address: place.formatted_address,
-                display_name: place.name,
-                location: place.geometry?.location,
-                address_components: place.address_components,
-                place: place
-              };
-              
-              onPlaceSelected(placeData);
-            } else {
-              console.warn('❌ Failed to get place details:', status);
-            }
-          }
-        );
-      }
-    } catch (error) {
-      console.error('Error selecting prediction:', error);
-    }
-  };
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || predictions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(prev => 
-          prev < predictions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < predictions.length) {
-          handlePredictionSelect(predictions[selectedIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowDropdown(false);
-        setPredictions([]);
-        setSelectedIndex(-1);
-        break;
-    }
-  };
-
-  // Handle clicks outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [onChange, onPlaceSelected, disabled]);
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,82 +231,124 @@ export function PlacesAutocompleteStyled({
   }
 
   return (
-    <div className="relative">
-      {/* Custom Places Autocomplete Input */}
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        placeholder={isLoading ? "Loading address autocomplete..." : placeholder}
-        disabled={disabled || isLoading}
-        className={`${className} w-full pr-10`}
-        autoComplete="off"
-      />
+    <>
+      {/* HYPER-FOCUSED: Make input text visible after address selection */}
+      <style jsx global>{`
+        /* Force light theme and use CSS variables for consistent styling */
+        gmp-place-autocomplete {
+          /* Force light theme regardless of system settings */
+          color-scheme: light !important;
+          
+          /* CSS Variables provided by Google for customization */
+          --gmp-mat-color-surface: #FFFFFF !important;
+          --gmp-mat-color-on-surface: #000000 !important;
+          
+          /* Ensure full width */
+          width: 100% !important;
+          display: block !important;
+        }
+        
+        /* NUCLEAR OPTION: Force input text to be visible in ALL possible states */
+        gmp-place-autocomplete input,
+        gmp-place-autocomplete input:focus,
+        gmp-place-autocomplete input:active,
+        gmp-place-autocomplete input:hover,
+        gmp-place-autocomplete input[value]:not([value=""]),
+        gmp-place-autocomplete input:not(:placeholder-shown),
+        gmp-place-autocomplete input[aria-expanded="false"]:not(:placeholder-shown),
+        gmp-place-autocomplete input.has-value {
+          color: #000000 !important;
+          background-color: #ffffff !important;
+          -webkit-text-fill-color: #000000 !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          font-family: inherit !important;
+          font-size: 0.875rem !important;
+          line-height: 1.25rem !important;
+          text-shadow: none !important;
+          text-indent: 0 !important;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
+          text-transform: none !important;
+          font-weight: normal !important;
+          font-style: normal !important;
+        }
+        
+        /* Target any possible pseudo-elements that might be hiding text */
+        gmp-place-autocomplete input::before,
+        gmp-place-autocomplete input::after,
+        gmp-place-autocomplete input::placeholder {
+          display: none !important;
+        }
+        
+        /* Force any overlays or masks to be transparent */
+        gmp-place-autocomplete::before,
+        gmp-place-autocomplete::after,
+        gmp-place-autocomplete *::before,
+        gmp-place-autocomplete *::after {
+          background: transparent !important;
+          color: transparent !important;
+        }
+        
+        /* Ensure no elements are covering the input */
+        gmp-place-autocomplete > * {
+          position: relative !important;
+          z-index: 1 !important;
+        }
+        
+        /* Force text selection to be visible */
+        gmp-place-autocomplete input::selection {
+          background: #3b82f6 !important;
+          color: #ffffff !important;
+        }
+        
+        /* Override any webkit-specific hiding */
+        gmp-place-autocomplete input:-webkit-autofill,
+        gmp-place-autocomplete input:-webkit-autofill:hover,
+        gmp-place-autocomplete input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #000000 !important;
+          -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+          background-color: #ffffff !important;
+          color: #000000 !important;
+        }
+        
+        /* Style the dropdown to match */
+        gmp-place-autocomplete [role="listbox"] {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          border-radius: 0.5rem !important;
+        }
+        
+        /* Hover state for dropdown items */
+        gmp-place-autocomplete [role="option"]:hover {
+          background-color: #f9fafb !important;
+        }
+      `}</style>
       
-      {/* Clear button */}
-      {value && !disabled && (
-        <button
-          type="button"
-          onClick={() => {
-            onChange('');
-            setPredictions([]);
-            setShowDropdown(false);
-            inputRef.current?.focus();
-          }}
-          className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-      
-      {/* Icon */}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-        <MapPin className={`h-4 w-4 ${isLoaded ? 'text-green-600' : isLoading ? 'text-gray-400' : 'text-red-400'}`} />
-      </div>
-      
-      {/* Predictions Dropdown */}
-      {showDropdown && predictions.length > 0 && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
-        >
-          {predictions.map((prediction, index) => (
-            <div
-              key={prediction.place_id}
-              onClick={() => handlePredictionSelect(prediction)}
-              className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
-                index === selectedIndex ? 'bg-blue-50 border-blue-200' : ''
-              }`}
-            >
-              <div className="flex items-start">
-                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 mr-3 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  {prediction.structured_formatting ? (
-                    <>
-                      <div className="font-medium text-gray-900 truncate">
-                        {prediction.structured_formatting.main_text}
-                      </div>
-                      <div className="text-sm text-gray-500 truncate">
-                        {prediction.structured_formatting.secondary_text}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="font-medium text-gray-900">
-                      {prediction.description}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+      <div className="relative">
+        {/* Container for Google Places Autocomplete Element */}
+        <div 
+          ref={containerRef}
+          className={`${isLoaded ? 'block' : 'hidden'} w-full`}
+        />
+        
+        {/* Loading fallback */}
+        {isLoading && (
+          <input
+            type="text"
+            value={value}
+            onChange={handleFallbackChange}
+            placeholder="Loading address autocomplete..."
+            disabled={true}
+            className={`${className} animate-pulse`}
+            autoComplete="off"
+          />
+        )}
+        
+        {/* Icon overlay */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <MapPin className={`h-4 w-4 ${isLoaded ? 'text-green-600' : isLoading ? 'text-gray-400' : 'text-red-400'}`} />
         </div>
-      )}
-      
-      {error && (
-        <p className="text-xs text-red-600 mt-1">{error}</p>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
