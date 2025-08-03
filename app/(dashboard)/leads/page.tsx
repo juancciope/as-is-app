@@ -218,12 +218,11 @@ export default function LeadsPage() {
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0 && chatContainerRef.current) {
-      const messageList = chatContainerRef.current.querySelector('.cs-message-list__scroll-wrapper')
-      if (messageList) {
-        setTimeout(() => {
-          messageList.scrollTop = messageList.scrollHeight
-        }, 100)
-      }
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+        }
+      }, 100)
     }
   }, [messages])
 
@@ -1470,8 +1469,8 @@ export default function LeadsPage() {
     return (
       <div className="fixed inset-0 bg-white flex flex-col">
         {/* Fixed Mobile Chat Header */}
-        <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
-          <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white rounded-t-lg">
+        <div className="bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
+          <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <button 
@@ -1830,8 +1829,8 @@ export default function LeadsPage() {
             // Mobile Chat View - Messaging App Layout
             <>
               {/* Scrollable Messages Area */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden pt-32 pb-20" ref={chatContainerRef}>
-                <div className="px-4 py-2">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={chatContainerRef}>
+                <div className="px-4 py-2 pb-2">
                   {isLoadingMessages ? (
                     <div className="flex items-center justify-center p-8">
                       <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -1852,22 +1851,29 @@ export default function LeadsPage() {
               </div>
 
               {/* Fixed Message Input at Bottom */}
-              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
-                <MainContainer>
-                  <ChatContainer>
-                    <MessageInput 
-                      placeholder="Type a message..." 
-                      onSend={sendMessage}
-                      disabled={isSending}
-                      sendDisabled={isSending}
-                      attachButton={false}
-                      style={{
-                        margin: 0,
-                        borderRadius: '20px'
-                      }}
-                    />
-                  </ChatContainer>
-                </MainContainer>
+              <div className="bg-white border-t border-gray-200 px-4 py-3">
+                <div className="max-w-full">
+                  <MessageInput 
+                    placeholder="Type a message..." 
+                    onSend={sendMessage}
+                    disabled={isSending}
+                    sendDisabled={isSending}
+                    attachButton={false}
+                    style={{
+                      margin: 0,
+                      borderRadius: '20px',
+                      maxWidth: '100%'
+                    }}
+                    onFocus={() => {
+                      // Scroll to bottom when input is focused
+                      setTimeout(() => {
+                        if (chatContainerRef.current) {
+                          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                        }
+                      }, 300);
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}
