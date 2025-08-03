@@ -63,6 +63,13 @@ export function PlacesAutocompleteLegacy({
           
           if (place && place.formatted_address) {
             const formattedAddress = place.formatted_address;
+            console.log('🎯 Place selected from autocomplete:', formattedAddress);
+            
+            // Force update the input value directly
+            if (inputRef.current) {
+              inputRef.current.value = formattedAddress;
+            }
+            
             setLocalValue(formattedAddress);
             onChange(formattedAddress);
             
