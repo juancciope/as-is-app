@@ -66,17 +66,20 @@ export default function LeadsPage() {
   // Auto-save contact properties to database when they change
   useEffect(() => {
     // Only auto-save if we have a contact, properties, we're not loading, and contact details are loaded
-    // Also skip auto-save if we're loading profile data to prevent race conditions during initial property creation
-    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData && !isLoadingProfile) {
+    // Also skip auto-save if we're loading profile data or reports to prevent race conditions
+    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData && !isLoadingProfile && !isLoadingReports) {
       // Use a debounced save to avoid too many database calls
       const timeoutId = setTimeout(() => {
         console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
+        console.log('⏰ Properties being saved:', contactProperties.map(p => ({ id: p.id, address: p.address })))
         saveContactProperties(selectedLead.contactId, contactProperties)
       }, 1000) // Wait 1 second after last change
       
       return () => clearTimeout(timeoutId)
+    } else {
+      console.log('🚫 Auto-save SKIPPED. Contact:', !!selectedLead?.contactId, 'Properties:', contactProperties.length, 'Details:', !!contactDetails, 'Loading contact:', isLoadingContactData, 'Loading profile:', isLoadingProfile, 'Loading reports:', isLoadingReports)
     }
-  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData, isLoadingProfile])
+  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData, isLoadingProfile, isLoadingReports])
 
   // Resize functionality
   useEffect(() => {
@@ -643,8 +646,12 @@ export default function LeadsPage() {
         
         setContactProperties(updatedProperties)
         
-        // DO NOT auto-save here - let the debounced auto-save handle it to prevent race conditions
-        console.log('📋 Previous reports loaded, letting auto-save handle database update')
+        // CRITICAL FIX: Immediately save with explicit contact ID to prevent contamination
+        // This ensures we save to the correct contact, not whatever selectedLead.contactId might be in the auto-save
+        if (selectedLead?.contactId) {
+          console.log('💾 IMMEDIATE SAVE: Previous reports for contact:', selectedLead.contactId, 'property:', propertyId)
+          await saveContactProperties(selectedLead.contactId, updatedProperties)
+        }
       }
     } catch (error) {
       console.error('Error fetching previous reports:', error)
