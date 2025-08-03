@@ -335,135 +335,58 @@
   }
 }
 
-/* Minimalistic mobile chat with app colors - Mobile only */
+/* Mobile chat optimizations - Work WITH the library, not against it */
 @media (max-width: 768px) {
-  .mobile-chat-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .mobile-chat.cs-main-container {
-    height: 100% !important;
-    border: none !important;
-    background: white !important;
-  }
-
-  .mobile-chat .cs-chat-container {
-    height: 100% !important;
-    background: white !important;
-  }
-
-  .mobile-chat .cs-message-list {
-    background-color: #f9fafb !important; /* Light gray background */
-    padding: 16px !important;
-    flex: 1 !important;
-    min-height: 0 !important;
-  }
-
-  .mobile-chat .cs-message-list__scroll-wrapper {
-    height: 100% !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scroll-behavior: smooth !important;
-  }
-
-  /* Minimalistic messages with app colors */
+  /* Only override visual styling, NOT layout/structure */
   .mobile-chat .cs-message--outgoing .cs-message__content {
-    background-color: #04325E !important; /* App primary blue */
+    background-color: #04325E !important;
     color: white !important;
     border-radius: 16px !important;
-    padding: 10px 14px !important;
-    max-width: 80% !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-    border: none !important;
   }
 
   .mobile-chat .cs-message--incoming .cs-message__content {
     background-color: white !important;
     color: #111827 !important;
     border-radius: 16px !important;
-    padding: 10px 14px !important;
-    max-width: 80% !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
     border: 1px solid #e5e7eb !important;
-  }
-
-  /* Clean input style with proper visibility */
-  .mobile-chat .cs-message-input {
-    background-color: white !important;
-    border-top: 1px solid #e5e7eb !important;
-    padding: 12px 16px !important;
-    flex-shrink: 0 !important;
-    min-height: 60px !important;
-  }
-
-  .mobile-chat .cs-message-input__content-editor-wrapper {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
   }
 
   .mobile-chat .cs-message-input__content-editor {
     background-color: #f9fafb !important;
     border: 1px solid #d1d5db !important;
     border-radius: 20px !important;
-    padding: 10px 16px !important;
     font-size: 16px !important;
-    min-height: 40px !important;
-    max-height: 100px !important;
     color: #111827 !important;
-    flex: 1 !important;
   }
 
   .mobile-chat .cs-message-input__content-editor:focus-within {
     border-color: #FE8F00 !important;
+    box-shadow: 0 0 0 3px rgba(254, 143, 0, 0.1) !important;
     outline: none !important;
   }
 
   .mobile-chat .cs-button--send {
     background-color: #04325E !important;
     border-radius: 50% !important;
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0 !important;
-    margin-left: 8px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     transition: background-color 0.2s ease !important;
-    flex-shrink: 0 !important;
   }
 
   .mobile-chat .cs-button--send:hover:not(:disabled) {
     background-color: #032847 !important;
   }
 
-  .mobile-chat .cs-button--send svg {
-    width: 18px !important;
-    height: 18px !important;
-    color: white !important;
-  }
-
-  /* Keep timestamps visible but subtle */
   .mobile-chat .cs-message__footer {
     font-size: 11px !important;
     color: #6b7280 !important;
-    margin-top: 4px !important;
   }
 
-  .mobile-chat .cs-message {
-    margin-bottom: 8px !important;
-  }
-
-  /* Date separators - minimal */
   .mobile-chat .cs-message-separator__content {
     background-color: white !important;
     color: #6b7280 !important;
     font-size: 12px !important;
     border: 1px solid #e5e7eb !important;
-    box-shadow: none !important;
-    padding: 4px 12px !important;
     border-radius: 12px !important;
   }
 }

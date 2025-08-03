@@ -1853,9 +1853,9 @@ export default function LeadsPage() {
               </div>
             </div>
           ) : (
-            // Mobile Chat View - Using Chat UI Kit properly
-            <div className="flex-1 min-h-0 mobile-chat-container" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-              <MainContainer className="mobile-chat">
+            // Mobile Chat View - Let the library handle layout
+            <div className="flex-1" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <MainContainer className="mobile-chat" style={{ height: '100%' }}>
                 <ChatContainer>
                   <MessageList 
                     typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
