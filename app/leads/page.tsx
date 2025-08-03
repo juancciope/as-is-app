@@ -609,15 +609,8 @@ export default function LeadsPage() {
         
         setContactProperties(updatedProperties)
         
-        // IMMEDIATELY save to database with the previous reports
-        if (selectedLead?.contactId) {
-          try {
-            await saveContactProperties(selectedLead.contactId, updatedProperties)
-            console.log('✅ Previous reports saved to database immediately')
-          } catch (saveError) {
-            console.error('❌ Failed to save previous reports to database:', saveError)
-          }
-        }
+        // DO NOT auto-save here - let the debounced auto-save handle it to prevent race conditions
+        console.log('📋 Previous reports loaded, letting auto-save handle database update')
       }
     } catch (error) {
       console.error('Error fetching previous reports:', error)
