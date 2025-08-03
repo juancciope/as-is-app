@@ -95,76 +95,61 @@ export function PlacesAutocompleteStyled({
               console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
-              // ACCESS SHADOW DOM: The input is inside shadow DOM, need to access it properly
-              console.log('🚀 Accessing Shadow DOM for input element...');
+              // FORCE CSS UPDATES: Since Shadow DOM is closed, force CSS updates through style injection
+              console.log('🚀 Forcing CSS updates for text visibility...');
               
-              const findAndStyleInput = () => {
-                // Try to access shadow root
-                let inputElement = null;
+              // Method 1: Inject styles into document head to override any Google styles
+              const injectForceStyles = () => {
+                const styleId = 'gmp-force-visible-text';
+                let existingStyle = document.getElementById(styleId);
                 
-                // Method 1: Direct shadow root access
-                if (autocomplete.shadowRoot) {
-                  inputElement = autocomplete.shadowRoot.querySelector('input');
-                  console.log('🔍 Found input via shadowRoot:', inputElement);
+                if (existingStyle) {
+                  existingStyle.remove();
                 }
                 
-                // Method 2: Try querySelector on the element itself (some web components expose inputs)
-                if (!inputElement) {
-                  inputElement = autocomplete.querySelector('input');
-                  console.log('🔍 Found input via querySelector:', inputElement);
-                }
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                  /* CRITICAL: Force text visibility in Google Places Autocomplete after selection */
+                  gmp-place-autocomplete {
+                    --gmp-mat-color-on-surface: #000000 !important;
+                    --gmp-mat-color-surface: #ffffff !important;
+                    color-scheme: light !important;
+                  }
+                  
+                  /* Target all possible input states with maximum specificity */
+                  gmp-place-autocomplete * {
+                    color: #000000 !important;
+                    background-color: #ffffff !important;
+                    -webkit-text-fill-color: #000000 !important;
+                  }
+                `;
                 
-                // Method 3: Look for any input elements in all possible shadow roots
-                if (!inputElement) {
-                  const walkShadowDom = (element: any): HTMLInputElement | null => {
-                    if (element.shadowRoot) {
-                      const input = element.shadowRoot.querySelector('input');
-                      if (input) return input;
-                      
-                      // Recursively check nested shadow roots
-                      const children = element.shadowRoot.querySelectorAll('*');
-                      for (const child of children) {
-                        const found = walkShadowDom(child);
-                        if (found) return found;
-                      }
-                    }
-                    return null;
-                  };
-                  
-                  inputElement = walkShadowDom(autocomplete);
-                  console.log('🔍 Found input via shadow walk:', inputElement);
-                }
-                
-                if (inputElement) {
-                  console.log('✅ INPUT FOUND - Value:', inputElement.value);
-                  console.log('✅ INPUT FOUND - Placeholder:', inputElement.placeholder);
-                  
-                  const computedStyles = window.getComputedStyle(inputElement);
-                  console.log('🔍 INPUT STYLES - Color:', computedStyles.color);
-                  console.log('🔍 INPUT STYLES - Background:', computedStyles.backgroundColor);
-                  console.log('🔍 INPUT STYLES - WebkitTextFillColor:', computedStyles.webkitTextFillColor);
-                  
-                  // FORCE VISIBLE TEXT
-                  inputElement.style.setProperty('color', '#000000', 'important');
-                  inputElement.style.setProperty('background-color', '#ffffff', 'important');
-                  inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
-                  inputElement.style.setProperty('opacity', '1', 'important');
-                  inputElement.style.setProperty('visibility', 'visible', 'important');
-                  
-                  console.log('🔧 SHADOW DOM STYLES APPLIED');
-                  
-                  return true;
-                } else {
-                  console.warn('❌ No input element found in shadow DOM');
-                  return false;
-                }
+                document.head.appendChild(style);
+                console.log('🔧 Injected critical CSS styles');
               };
               
-              // Try immediately and with delays
-              [0, 10, 50, 100, 200, 500, 1000].forEach(delay => {
+              // Method 2: Force the autocomplete element itself to update
+              const forceElementUpdate = () => {
+                // Trigger a reflow to force style recalculation
+                autocomplete.style.display = 'none';
+                autocomplete.offsetHeight; // Force reflow
+                autocomplete.style.display = 'block';
+                
+                // Set CSS custom properties directly on the element
+                autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000', 'important');
+                autocomplete.style.setProperty('--gmp-mat-color-surface', '#ffffff', 'important');
+                autocomplete.style.colorScheme = 'light';
+                
+                console.log('🔧 Forced element style update');
+              };
+              
+              // Execute immediately and with delays
+              [0, 10, 50, 100, 200, 500].forEach(delay => {
                 setTimeout(() => {
-                  console.log(`🔍 Attempting shadow DOM access after ${delay}ms`);
-                  findAndStyleInput();
+                  console.log(`🔍 Applying CSS force update after ${delay}ms`);
+                  injectForceStyles();
+                  forceElementUpdate();
                 }, delay);
               });
 
