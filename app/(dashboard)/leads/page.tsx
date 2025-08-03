@@ -19,6 +19,46 @@ import {
 } from '@chatscope/chat-ui-kit-react'
 
 export default function LeadsPage() {
+  // Helper function to format address and avoid duplication
+  const formatAddress = (contactDetails: any) => {
+    if (!contactDetails) return 'No address available';
+    
+    const { address1, city, state, postalCode } = contactDetails;
+    
+    // If address1 already contains city/state (common with GHL), just return it
+    if (address1) {
+      // Check if address1 already contains city and state by looking for common patterns
+      const hasCity = city && address1.toLowerCase().includes(city.toLowerCase());
+      const hasState = state && address1.toLowerCase().includes(state.toLowerCase());
+      
+      // If address1 already contains both city and state, return as-is
+      if (hasCity && hasState) {
+        return address1;
+      }
+      
+      // If address1 is just the street, append city/state
+      const parts = [];
+      parts.push(address1);
+      
+      const cityState = [];
+      if (city && !hasCity) cityState.push(city);
+      if (state && !hasState) cityState.push(state);
+      if (cityState.length > 0) parts.push(cityState.join(', '));
+      
+      if (postalCode && !address1.includes(postalCode)) parts.push(postalCode);
+      
+      return parts.join(', ');
+    }
+    
+    // Fallback: build from individual components
+    const parts = [];
+    if (city) parts.push(city);
+    if (state) parts.push(state);
+    if (postalCode) parts.push(postalCode);
+    
+    return parts.length > 0 ? parts.join(', ') : 'No address available';
+  }
+
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [leads, setLeads] = useState<any[]>([])
   const [contacts, setContacts] = useState<any[]>([])  
@@ -1526,10 +1566,7 @@ export default function LeadsPage() {
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-gray-400" />
                       <span className="text-sm">
-                        {contactDetails?.address1 
-                          ? `${contactDetails.address1}${contactDetails.city ? `, ${contactDetails.city}` : ''}${contactDetails.state ? `, ${contactDetails.state}` : ''}`
-                          : 'No address available'
-                        }
+                        {formatAddress(contactDetails)}
                       </span>
                     </div>
                   </div>
@@ -2125,16 +2162,8 @@ export default function LeadsPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs text-gray-500 uppercase tracking-wide">Address</p>
-                              <div className="text-sm text-gray-700">
-                                {contactDetails?.address1 && (
-                                  <div className="truncate">{contactDetails.address1}</div>
-                                )}
-                                <div className="truncate">
-                                  {contactDetails?.city && contactDetails.city}
-                                  {contactDetails?.city && contactDetails?.state && ', '}
-                                  {contactDetails?.state && contactDetails.state}
-                                  {contactDetails?.postalCode && ` ${contactDetails.postalCode}`}
-                                </div>
+                              <div className="text-sm text-gray-700 truncate">
+                                {formatAddress(contactDetails)}
                               </div>
                             </div>
                           </div>
