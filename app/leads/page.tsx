@@ -724,29 +724,41 @@ export default function LeadsPage() {
                   <h4 className="text-xs font-semibold text-green-800">Investment Overview</h4>
                 </div>
                 <div className="p-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
                       <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Grade</div>
                       <div className="text-sm font-bold text-blue-900">
-                        {property.analysis.data.investment_analysis.investment_grade || 'N/A'}
+                        {property.analysis.data.analysis_summary?.investment_grade || 'N/A'}
                       </div>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">
                       <div className="text-xs text-green-600 font-medium uppercase tracking-wide">ROI</div>
                       <div className="text-sm font-bold text-green-900">
-                        {property.analysis.data.investment_analysis.roi_percentage || 'N/A'}%
+                        {property.analysis.data.analysis_summary?.roi_percentage || 'N/A'}%
                       </div>
                     </div>
                     <div className="bg-orange-50 rounded-lg p-2 text-center">
                       <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">ARV</div>
                       <div className="text-sm font-bold text-orange-900">
-                        ${property.analysis.data.investment_analysis.estimated_arv?.toLocaleString() || 'N/A'}
+                        ${property.analysis.data.analysis_summary?.estimated_arv?.toLocaleString() || 'N/A'}
                       </div>
                     </div>
                     <div className="bg-purple-50 rounded-lg p-2 text-center">
                       <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">Profit</div>
                       <div className="text-sm font-bold text-purple-900">
-                        ${property.analysis.data.investment_analysis.projected_profit?.toLocaleString() || 'N/A'}
+                        ${property.analysis.data.analysis_summary?.projected_profit?.toLocaleString() || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-2 text-center">
+                      <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Max Offer</div>
+                      <div className="text-sm font-bold text-blue-900">
+                        ${property.analysis.data.analysis_summary?.max_offer?.toLocaleString() || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-2 text-center">
+                      <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Repair Cost</div>
+                      <div className="text-sm font-bold text-red-900">
+                        ${property.analysis.data.analysis_summary?.estimated_repair_cost?.toLocaleString() || 'N/A'}
                       </div>
                     </div>
                   </div>
@@ -1260,36 +1272,46 @@ export default function LeadsPage() {
                             {property.analysis && (
                               <div className="mt-3 space-y-2">
                                 {/* Quick Metrics */}
-                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="grid grid-cols-3 gap-2 text-xs">
                                   <div className="bg-blue-50 p-2 rounded">
                                     <div className="text-blue-600 font-medium">ARV</div>
                                     <div className="text-blue-800">
-                                      ${property.analysis.data?.investment_analysis?.estimated_arv?.toLocaleString() || 
-                                        property.analysis.investment_overview?.arv?.toLocaleString() || 'N/A'}
+                                      ${property.analysis.data?.analysis_summary?.estimated_arv?.toLocaleString() || 'N/A'}
                                     </div>
                                   </div>
                                   <div className="bg-green-50 p-2 rounded">
                                     <div className="text-green-600 font-medium">Investment Grade</div>
                                     <div className="text-green-800">
-                                      {property.analysis.data?.investment_analysis?.investment_grade || 
-                                       property.analysis.investment_overview?.investment_grade || 'N/A'}
+                                      {property.analysis.data?.analysis_summary?.investment_grade || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div className="bg-red-50 p-2 rounded">
+                                    <div className="text-red-600 font-medium">Repair Cost</div>
+                                    <div className="text-red-800">
+                                      ${property.analysis.data?.analysis_summary?.estimated_repair_cost?.toLocaleString() || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div className="bg-purple-50 p-2 rounded">
+                                    <div className="text-purple-600 font-medium">Max Offer</div>
+                                    <div className="text-purple-800">
+                                      ${property.analysis.data?.analysis_summary?.max_offer?.toLocaleString() || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div className="bg-yellow-50 p-2 rounded">
+                                    <div className="text-yellow-600 font-medium">Profit</div>
+                                    <div className="text-yellow-800">
+                                      ${property.analysis.data?.analysis_summary?.projected_profit?.toLocaleString() || 'N/A'}
+                                    </div>
+                                  </div>
+                                  <div className="bg-indigo-50 p-2 rounded">
+                                    <div className="text-indigo-600 font-medium">ROI</div>
+                                    <div className="text-indigo-800">
+                                      {property.analysis.data?.analysis_summary?.roi_percentage || 'N/A'}%
                                     </div>
                                   </div>
                                 </div>
                                 
                                 {/* Analysis Sections - Collapsible */}
-                                <details className="bg-gray-50 rounded p-2">
-                                  <summary className="text-xs font-medium text-gray-700 cursor-pointer">Investment Overview</summary>
-                                  <div className="mt-2 text-xs text-gray-600 space-y-1">
-                                    <div>Estimated Repair Cost: ${(property.analysis.data?.investment_analysis?.estimated_repair_cost || 
-                                      property.analysis.investment_overview?.estimated_repair_cost || 0).toLocaleString()}</div>
-                                    <div>Max Offer: ${(property.analysis.data?.investment_analysis?.max_offer || 
-                                      property.analysis.investment_overview?.max_offer || 0).toLocaleString()}</div>
-                                    <div>Potential Profit: ${(property.analysis.data?.investment_analysis?.estimated_profit || 
-                                      property.analysis.investment_overview?.potential_profit || 0).toLocaleString()}</div>
-                                    <div>ROI: {property.analysis.data?.investment_analysis?.roi_percentage || 'N/A'}%</div>
-                                  </div>
-                                </details>
                                 
                                 {/* Additional Analysis Sections */}
                                 {property.analysis.data?.active_property_analysis && (

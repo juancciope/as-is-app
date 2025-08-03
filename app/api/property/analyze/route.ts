@@ -35,60 +35,116 @@ export async function POST(request: NextRequest) {
           region: "Tennessee"
         }
       }],
-      input: `You are a real estate investment analyst. Search for property information for: ${fullAddress}
+      input: `You are a specialized real estate investment analyst focused on distressed property analysis for fix-and-flip investments in the Middle Tennessee area.
 
-STEP 1: Use web search to find current data from Zillow, Redfin, Realtor.com and other real estate websites for this exact property address.
+STEP 1: Use web search to find comprehensive data from Zillow, Redfin, Realtor.com and other real estate websites for: ${fullAddress}
 
-STEP 2: After completing your web searches, provide a comprehensive real estate investment analysis for a fix-and-flip investor.
+STEP 2: Provide a complete real estate investment analysis following the exact structure below.
 
-CRITICAL: Return ONLY a valid JSON object with no additional text, explanations, or markdown formatting. Your entire response must be a single JSON object that starts with { and ends with }.
+CRITICAL: Return ONLY a valid JSON object with no additional text. Your response must be a single JSON object that starts with { and ends with }.
 
-JSON structure to return:
+Required JSON structure:
 
 {
   "property_address": "${fullAddress}",
+  "analysis_summary": {
+    "investment_grade": "A",
+    "estimated_arv": 320000,
+    "estimated_purchase_price": 180000,
+    "renovation_estimate": 45000,
+    "projected_profit": 75000,
+    "roi_percentage": 33.3,
+    "risk_level": "Medium",
+    "recommendation": "PROCEED",
+    "estimated_repair_cost": 45000,
+    "max_offer": 180000
+  },
   "property_details": {
     "current_estimated_value": 285000,
-    "square_footage": 1450, 
+    "square_footage": 1450,
     "bedrooms": 3,
     "bathrooms": 2,
+    "lot_size": "0.25 acres",
     "year_built": 1985,
-    "property_type": "Single Family"
+    "property_type": "Single Family Home"
   },
   "market_analysis": {
+    "neighborhood_grade": "B+",
+    "recent_sales_comparison": "Similar properties selling for $300k-$340k",
+    "market_trend": "Stable with 3% annual appreciation",
+    "days_on_market_average": 25,
+    "absorption_rate": "Strong buyer demand",
     "comparable_sales": [
       {
-        "address": "123 Example St",
-        "sale_price": 250000,
+        "address": "Similar nearby property",
+        "sale_price": 310000,
         "square_footage": 1500,
-        "price_per_sqft": 167
+        "price_per_sqft": 207
       }
-    ],
-    "market_trend": "Stable",
-    "days_on_market_average": 30
-  },
-  "investment_analysis": {
-    "estimated_arv": 320000,
-    "estimated_purchase_price": 200000,
-    "renovation_estimate": 45000,
-    "projected_profit": 55000,
-    "roi_percentage": 22,
-    "investment_grade": "B",
-    "recommendation": "PROCEED_WITH_CAUTION"
+    ]
   },
   "renovation_breakdown": {
     "kitchen": 15000,
     "bathrooms": 8000,
-    "flooring": 5000,
+    "flooring": 6000,
     "paint_interior": 3000,
-    "landscaping": 2000,
+    "landscaping": 4000,
     "miscellaneous": 5000,
-    "contingency_10_percent": 3800,
-    "total_estimated": 41800
+    "contingency_10_percent": 4100,
+    "total_estimated": 45100
+  },
+  "financial_projections": {
+    "purchase_price": 180000,
+    "renovation_costs": 45000,
+    "holding_costs": 8000,
+    "selling_costs": 22000,
+    "total_investment": 255000,
+    "estimated_sale_price": 320000,
+    "gross_profit": 65000,
+    "roi_percentage": 25.5,
+    "timeline_months": 4
+  },
+  "risk_assessment": {
+    "market_risk": "Low - Stable Nashville market",
+    "renovation_risk": "Medium - Potential for cost overruns",
+    "timeline_risk": "Low - Standard renovation scope",
+    "resale_risk": "Low - Strong buyer demand",
+    "overall_risk": "Medium"
+  },
+  "neighborhood_analysis": {
+    "school_rating": "7/10",
+    "crime_rate": "Below metro average",
+    "walkability": "6/10",
+    "amenities": "Close to shopping and restaurants",
+    "appreciation_trend": "Steady 3-4% annually"
+  },
+  "action_items": [
+    "Schedule professional inspection within 7 days",
+    "Get 3 contractor quotes for renovation estimate",
+    "Research recent comparable sales within 0.5 miles",
+    "Verify property taxes and any liens"
+  ],
+  "investment_recommendation": {
+    "decision": "PROCEED",
+    "confidence_level": "85%",
+    "key_reasons": [
+      "Strong neighborhood fundamentals",
+      "Reasonable renovation scope",
+      "Excellent ARV potential"
+    ],
+    "concerns": [
+      "Market timing considerations",
+      "Potential for cost overruns"
+    ]
   }
 }
 
-IMPORTANT: Replace all example values with actual data from your web search. Use numbers (not strings) for all numeric values. If you cannot find specific data, use reasonable estimates based on comparable properties in the area.`
+IMPORTANT: 
+- Replace ALL example values with actual data from your web searches
+- Use real numbers (not strings) for all numeric values
+- Base analysis on Middle Tennessee market conditions
+- Include estimated_repair_cost and max_offer in analysis_summary
+- Be conservative with renovation estimates (include 10% contingency)`
     })
 
     console.log('✅ Web search response received')
@@ -164,30 +220,37 @@ IMPORTANT: Replace all example values with actual data from your web search. Use
     } catch (parseError: any) {
       console.log('⚠️ JSON parsing failed:', parseError?.message || parseError)
       
-      // Create a structured fallback response
+      // Create a structured fallback response matching the new format
       analysisData = {
         property_address: fullAddress,
-        property_details: {
-          current_estimated_value: null,
-          square_footage: null,
-          bedrooms: null,
-          bathrooms: null,
-          year_built: null,
-          property_type: "Unknown"
-        },
-        market_analysis: {
-          comparable_sales: [],
-          market_trend: "Data unavailable",
-          days_on_market_average: null
-        },
-        investment_analysis: {
+        analysis_summary: {
+          investment_grade: "N/A",
           estimated_arv: null,
           estimated_purchase_price: null,
           renovation_estimate: null,
           projected_profit: null,
           roi_percentage: null,
-          investment_grade: "N/A",
-          recommendation: "MANUAL_REVIEW_REQUIRED"
+          risk_level: "Unknown",
+          recommendation: "MANUAL_REVIEW_REQUIRED",
+          estimated_repair_cost: null,
+          max_offer: null
+        },
+        property_details: {
+          current_estimated_value: null,
+          square_footage: null,
+          bedrooms: null,
+          bathrooms: null,
+          lot_size: null,
+          year_built: null,
+          property_type: "Unknown"
+        },
+        market_analysis: {
+          neighborhood_grade: "N/A",
+          recent_sales_comparison: "Data unavailable",
+          market_trend: "Data unavailable",
+          days_on_market_average: null,
+          absorption_rate: "Unknown",
+          comparable_sales: []
         },
         renovation_breakdown: {
           kitchen: null,
@@ -198,6 +261,38 @@ IMPORTANT: Replace all example values with actual data from your web search. Use
           miscellaneous: null,
           contingency_10_percent: null,
           total_estimated: null
+        },
+        financial_projections: {
+          purchase_price: null,
+          renovation_costs: null,
+          holding_costs: null,
+          selling_costs: null,
+          total_investment: null,
+          estimated_sale_price: null,
+          gross_profit: null,
+          roi_percentage: null,
+          timeline_months: null
+        },
+        risk_assessment: {
+          market_risk: "Unknown",
+          renovation_risk: "Unknown",
+          timeline_risk: "Unknown",
+          resale_risk: "Unknown",
+          overall_risk: "Unknown"
+        },
+        neighborhood_analysis: {
+          school_rating: "N/A",
+          crime_rate: "Unknown",
+          walkability: "N/A",
+          amenities: "Unknown",
+          appreciation_trend: "Unknown"
+        },
+        action_items: ["Manual review required due to parsing error"],
+        investment_recommendation: {
+          decision: "MANUAL_REVIEW_REQUIRED",
+          confidence_level: "0%",
+          key_reasons: [],
+          concerns: ["Unable to parse AI response"]
         },
         parsing_error: true,
         raw_response: outputText.substring(0, 500),
