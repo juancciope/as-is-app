@@ -1,25 +1,41 @@
 import { createClient } from '@supabase/supabase-js'
 import { DatabaseConfig, getTableName } from './config'
 
-// Use the same config as the rest of the app for consistency
-const supabaseUrl = DatabaseConfig.SUPABASE_URL
-const supabaseAnonKey = DatabaseConfig.SUPABASE_ANON_KEY
-const supabaseServiceRoleKey = DatabaseConfig.SUPABASE_SERVICE_ROLE_KEY
+// Create Supabase client with fallback logic
+let supabase: ReturnType<typeof createClient> | null = null;
 
-// Client for frontend/browser usage with auth configuration
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+try {
+  // Try multiple approaches to get the environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://shyqqjsksxoiawikirju.supabase.co';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoeXFxanNrc3hvaWF3aWtpcmp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjE1OTMsImV4cCI6MjA2NzQ5NzU5M30.kDumFJ-NFpy-lY0EMbVFwEDwM6Rg1I1Ti5axi9vK0Ao';
+
+  console.log('🔍 Creating Supabase client with:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    url: supabaseUrl
+  });
+
+  if (supabaseUrl && supabaseAnonKey) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
       }
-    })
-  : null
+    });
+    console.log('✅ Supabase client created successfully');
+  } else {
+    console.error('❌ Missing Supabase credentials');
+  }
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+}
 
-// Admin client for server-side operations with full permissions
-export const supabaseAdmin = supabaseUrl && supabaseServiceRoleKey 
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+export { supabase };
+
+// Admin client for server-side operations with full permissions  
+export const supabaseAdmin = DatabaseConfig.SUPABASE_URL && DatabaseConfig.SUPABASE_SERVICE_ROLE_KEY 
+  ? createClient(DatabaseConfig.SUPABASE_URL, DatabaseConfig.SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
