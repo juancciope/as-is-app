@@ -1827,7 +1827,7 @@ export default function LeadsPage() {
   return (
     <div className="h-full bg-white rounded-lg shadow-sm border flex">
       {/* Column 1: Conversations List - Fixed Width, Independent Scroll */}
-        <div className="w-80 border-r border-gray-200 flex flex-col bg-white rounded-l-lg">
+      <div className="w-80 border-r border-gray-200 flex flex-col bg-white rounded-l-lg">
           {/* Conversations Header - Fixed */}
           <div className="flex-shrink-0 p-4 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">Leads</h1>
