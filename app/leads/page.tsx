@@ -550,7 +550,7 @@ export default function LeadsPage() {
 
     // If it's a full formatted address (new properties), parse it
     if (property.address.includes(',') && !property.city) {
-      const parts = property.address.split(',').map(part => part.trim())
+      const parts = property.address.split(',').map((part: string) => part.trim())
       if (parts.length >= 3) {
         addressData = {
           address: parts[0], // Street address
@@ -1911,7 +1911,7 @@ export default function LeadsPage() {
                                         
                                         // Handle full formatted addresses (e.g., "2324 Lebanon Pike, Nashville, TN 37214, USA")
                                         if (address.includes(',')) {
-                                          const parts = address.split(',').map(part => part.trim());
+                                          const parts = address.split(',').map((part: string) => part.trim());
                                           if (parts.length >= 3) {
                                             const street = parts[0]; // "2324 Lebanon Pike"
                                             const city = parts[1]; // "Nashville"
