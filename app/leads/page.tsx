@@ -617,22 +617,16 @@ export default function LeadsPage() {
         </div>
         
         <div className="space-y-3">
-          <AddressAutocomplete
+          <input
+            type="text"
             value={newPropertyAddress}
-            onChange={(value) => {
-              console.log('📝 Address input changed:', value)
-              setNewPropertyAddress(value)
-            }}
-            onPlaceSelected={(place) => {
-              console.log('🎯 Google Places selected:', place)
-              if (place?.formatted_address) {
-                setNewPropertyAddress(place.formatted_address)
-                setSelectedPlaceData(place)
-              }
+            onChange={(e) => {
+              console.log('📝 Address input changed:', e.target.value)
+              setNewPropertyAddress(e.target.value)
             }}
             placeholder="Enter complete property address..."
             className={isMobile 
-              ? "p-3 border border-gray-300 rounded-lg text-sm w-full"
+              ? "p-3 border border-gray-300 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500"
               : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
             }
           />
