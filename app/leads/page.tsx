@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { AddressInputFinal } from '@/components/ui/address-input-final'
+import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -608,10 +608,6 @@ export default function LeadsPage() {
         return
       }
 
-      if (localAddress.trim().length <= 15) {
-        alert('Please enter a complete address including street, city, state, and ZIP code')
-        return
-      }
 
       if (!selectedLead?.contactId) {
         alert('No contact selected')
@@ -670,12 +666,17 @@ export default function LeadsPage() {
         </div>
         
         <div className="space-y-3">
-          <AddressInputFinal
+          <PlacesAutocompleteStyled
             value={localAddress}
             onChange={(value) => {
               setLocalAddress(value)
             }}
-            placeholder="Enter complete property address..."
+            onPlaceSelected={(place) => {
+              if (place?.formatted_address) {
+                setLocalAddress(place.formatted_address)
+              }
+            }}
+            placeholder="Enter property address..."
             className={isMobile 
               ? "p-3 border border-gray-300 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500"
               : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
