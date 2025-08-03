@@ -1825,7 +1825,8 @@ export default function LeadsPage() {
 
   // Desktop: 3-column layout
   return (
-    <div className="h-full bg-white rounded-lg shadow-sm border flex">
+    <>
+      <div className="h-full bg-white rounded-lg shadow-sm border flex">
       {/* Column 1: Conversations List - Fixed Width, Independent Scroll */}
       <div className="w-80 border-r border-gray-200 flex flex-col bg-white rounded-l-lg">
           {/* Conversations Header - Fixed */}
@@ -2363,7 +2364,7 @@ export default function LeadsPage() {
           )}
         </div>
       </div>
-      
+
       {/* Custom Confirmation Dialog */}
       {confirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2387,6 +2388,6 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
