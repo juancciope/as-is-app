@@ -54,6 +54,7 @@ export default function LeadsPage() {
     onConfirm: () => void
     onCancel: () => void
   } | null>(null)
+  const [showMobileAddressModal, setShowMobileAddressModal] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -754,56 +755,69 @@ export default function LeadsPage() {
         
         <div className="space-y-3">
           {isMobile ? (
-            // Mobile-optimized address input with fixed positioning
-            <div className="relative">
-              <div className={`${isMobile ? 'fixed inset-x-0 top-0 z-50 bg-white border-b border-gray-200 p-4' : ''}`} style={isMobile ? { display: 'none' } : {}}>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleCancel}
-                    className="text-gray-600"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </button>
-                  <h3 className="text-lg font-medium text-gray-900">Add Property Address</h3>
-                </div>
-              </div>
-              
-              <PlacesAutocompleteStyled
+            // Mobile-specific: Simple text input that opens full-screen modal
+            <div className="space-y-3">
+              <input
+                type="text"
                 value={newPropertyAddress}
-                onChange={(value) => {
-                  console.log('🔄 onChange called with value:', value)
-                  setNewPropertyAddress(value)
-                  console.log('✅ newPropertyAddress set to:', value)
-                }}
-                onPlaceSelected={(place) => {
-                  console.log('🎯 onPlaceSelected called with place:', place)
-                  if (place?.formatted_address) {
-                    console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
-                    setNewPropertyAddress(place.formatted_address)  
-                    setSelectedPlaceData(place)
-                    console.log('✅ newPropertyAddress and place data set')
-                    
-                    // On mobile, blur the input to hide keyboard after selection
-                    if (isMobile) {
-                      setTimeout(() => {
-                        const activeElement = document.activeElement as HTMLElement
-                        if (activeElement) {
-                          activeElement.blur()
-                        }
-                      }, 100)
-                    }
-                  } else {
-                    console.warn('❌ No formatted_address in place object')
-                  }
-                }}
-                placeholder="Enter property address..."
-                className="p-4 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                style={{
-                  fontSize: '16px', // Prevents zoom on iOS
-                  WebkitAppearance: 'none',
-                  borderRadius: '8px'
-                }}
+                onClick={() => setShowMobileAddressModal(true)}
+                readOnly
+                placeholder="Tap to enter property address..."
+                className="p-4 border border-gray-300 rounded-lg w-full text-base bg-white cursor-pointer"
+                style={{ fontSize: '16px' }}
               />
+              
+              {/* Full-screen mobile address modal */}
+              {showMobileAddressModal && (
+                <div className="fixed inset-0 z-50 bg-white">
+                  <div className="h-full flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+                      <button
+                        onClick={() => setShowMobileAddressModal(false)}
+                        className="flex items-center text-gray-600"
+                      >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        Back
+                      </button>
+                      <h1 className="text-lg font-medium text-gray-900">Add Property Address</h1>
+                      <div className="w-16"></div>
+                    </div>
+                    
+                    {/* Address input - contained in modal */}
+                    <div className="flex-1 p-4 bg-gray-50">
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <PlacesAutocompleteStyled
+                          value={newPropertyAddress}
+                          onChange={(value) => {
+                            console.log('🔄 Mobile modal onChange:', value)
+                            setNewPropertyAddress(value)
+                          }}
+                          onPlaceSelected={(place) => {
+                            console.log('🎯 Mobile modal onPlaceSelected:', place)
+                            if (place?.formatted_address) {
+                              setNewPropertyAddress(place.formatted_address)
+                              setSelectedPlaceData(place)
+                              // Close modal after selection
+                              setTimeout(() => {
+                                setShowMobileAddressModal(false)
+                              }, 500)
+                            }
+                          }}
+                          placeholder="Search for property address..."
+                          className="p-4 border border-gray-300 rounded-lg w-full text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+                          style={{ fontSize: '16px' }}
+                        />
+                        
+                        {/* Mobile-specific instructions */}
+                        <p className="text-sm text-gray-500 mt-2">
+                          Type to search for addresses in the United States
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             // Desktop version - unchanged
