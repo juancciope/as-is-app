@@ -432,7 +432,9 @@ export default function LeadsPage() {
     }
   }
 
-  const addNewProperty = async () => {
+  const createNewProperty = async () => {
+    console.log('🏠 Creating new property with address:', newPropertyAddress)
+    
     if (!newPropertyAddress.trim()) {
       alert('Please enter a property address')
       return
@@ -444,11 +446,11 @@ export default function LeadsPage() {
     }
 
     try {
-      // Create new property with the complete address
+      // SIMPLE: Use the complete address exactly as entered/selected
       const newProperty = {
         id: `property-${Date.now()}`,
-        address: newPropertyAddress.trim(),
-        city: '',
+        address: newPropertyAddress.trim(), // Use COMPLETE address as-is
+        city: '', // We don't need to parse these for the analysis to work
         state: '',
         zipCode: '',
         isPrimary: false,
@@ -456,14 +458,15 @@ export default function LeadsPage() {
         previousReports: []
       }
 
-      console.log('✅ Adding property:', newProperty.address)
+      console.log('✅ New property created:', newProperty)
 
-      // Add to properties list
+      // Add to state
       const updatedProperties = [...contactProperties, newProperty]
       setContactProperties(updatedProperties)
       
-      // Save to database
+      // Save to database immediately
       await saveContactProperties(selectedLead.contactId, updatedProperties)
+      console.log('💾 Property saved to database')
       
       // Clear form
       setIsAddingProperty(false)
@@ -471,7 +474,7 @@ export default function LeadsPage() {
       setSelectedPlaceData(null)
       
     } catch (error) {
-      console.error('❌ Error adding property:', error)
+      console.error('❌ Error creating property:', error)
       alert('Failed to add property. Please try again.')
     }
   }
@@ -595,63 +598,67 @@ export default function LeadsPage() {
   }
 
   const AddPropertyForm = ({ isMobile = false }: { isMobile?: boolean }) => {
-    const [addressInput, setAddressInput] = useState('')
-
-    const handleAddressChange = (value: string) => {
-      setAddressInput(value)
-      setNewPropertyAddress(value)
-    }
-
-    const handlePlaceSelect = (place: any) => {
-      if (place?.formatted_address) {
-        setAddressInput(place.formatted_address)
-        setNewPropertyAddress(place.formatted_address)
-        setSelectedPlaceData(place)
-      }
-    }
-
-    const handleCancel = () => {
-      setIsAddingProperty(false)
-      setNewPropertyAddress('')
-      setAddressInput('')
-      setSelectedPlaceData(null)
-    }
-
-    const handleAdd = () => {
-      addNewProperty()
-    }
-
     return (
-      <div className="bg-gray-50 rounded-lg p-4 border">
+      <div className={`${isMobile ? 'mb-4 p-4 bg-gray-50 rounded-lg border' : 'bg-gray-50 rounded-lg p-4 border border-green-200'}`}>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
-          <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">
+          <h4 className="text-sm font-medium text-gray-700">
+            {isMobile ? 'Add Property' : 'Add New Property'}
+          </h4>
+          <button
+            onClick={() => {
+              setIsAddingProperty(false)
+              setNewPropertyAddress('')
+              setSelectedPlaceData(null)
+            }}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
         
         <div className="space-y-3">
           <AddressAutocomplete
-            value={addressInput}
-            onChange={handleAddressChange}
-            onPlaceSelected={handlePlaceSelect}
-            placeholder="Enter property address..."
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            value={newPropertyAddress}
+            onChange={(value) => {
+              console.log('📝 Address input changed:', value)
+              setNewPropertyAddress(value)
+            }}
+            onPlaceSelected={(place) => {
+              console.log('🎯 Google Places selected:', place)
+              if (place?.formatted_address) {
+                setNewPropertyAddress(place.formatted_address)
+                setSelectedPlaceData(place)
+              }
+            }}
+            placeholder="Enter complete property address..."
+            className={isMobile 
+              ? "p-3 border border-gray-300 rounded-lg text-sm w-full"
+              : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
+            }
           />
           
-          <div className="flex gap-2 justify-end">
+          <div className="text-xs text-gray-500">
+            Enter the complete address including city, state, and ZIP code
+          </div>
+          
+          <div className={`flex gap-2 ${isMobile ? '' : 'justify-end'}`}>
             <button
-              onClick={handleCancel}
-              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              onClick={() => {
+                setIsAddingProperty(false)
+                setNewPropertyAddress('')
+                setSelectedPlaceData(null)
+              }}
+              className={`px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors ${isMobile ? 'flex items-center' : ''}`}
             >
+              {isMobile && <X className="h-4 w-4 mr-1" />}
               Cancel
             </button>
             <button
-              onClick={handleAdd}
-              disabled={!addressInput.trim()}
-              className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
+              onClick={createNewProperty}
+              disabled={!newPropertyAddress.trim()}
+              className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Check className="h-4 w-4 mr-1" />
               Add Property
             </button>
           </div>
@@ -1188,7 +1195,7 @@ export default function LeadsPage() {
                   </div>
 
                   {/* Add Property Form */}
-                  {isAddingProperty && <AddPropertyForm />}
+                  {isAddingProperty && <AddPropertyForm isMobile={true} />}
 
                   {/* Properties List */}
                   <div className="space-y-3">
@@ -1815,7 +1822,7 @@ export default function LeadsPage() {
                             Add New Property
                           </button>
                         ) : (
-                          <AddPropertyForm />
+                          <AddPropertyForm isMobile={false} />
                         )}
                         
                         
