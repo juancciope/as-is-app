@@ -704,7 +704,7 @@ export default function LeadsPage() {
             <TrendingUp className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-900">Investment Analysis</span>
             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-              {property.analysis.data?.investment_analysis?.investment_grade || 'Analyzed'}
+              {property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed'}
             </span>
           </div>
           {isExpanded ? (
@@ -718,7 +718,7 @@ export default function LeadsPage() {
         {isExpanded && (
           <div className="pb-3 space-y-4">
             {/* Investment Overview */}
-            {property.analysis.data?.investment_analysis && (
+            {property.analysis.data?.analysis_summary && (
               <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
                 <div className="px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
                   <h4 className="text-xs font-semibold text-green-800">Investment Overview</h4>
@@ -1311,16 +1311,137 @@ export default function LeadsPage() {
                                   </div>
                                 </div>
                                 
-                                {/* Analysis Sections - Collapsible */}
-                                
-                                {/* Additional Analysis Sections */}
-                                {property.analysis.data?.active_property_analysis && (
+                                {/* Property Details */}
+                                {property.analysis.data?.property_details && (
                                   <details className="bg-gray-50 rounded p-2">
-                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">Market Analysis</summary>
-                                    <div className="mt-2 text-xs text-gray-600 space-y-1">
-                                      <div>Property Condition: {property.analysis.data.active_property_analysis.property_condition || 'N/A'}</div>
-                                      <div>Market Trend: {property.analysis.data.active_property_analysis.market_trend || 'N/A'}</div>
-                                      <div>Days on Market: {property.analysis.data.active_property_analysis.days_on_market || 'N/A'}</div>
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">Property Details</summary>
+                                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                      {property.analysis.data.property_details.square_footage && (
+                                        <div className="text-center bg-white p-2 rounded">
+                                          <div className="text-gray-500 uppercase tracking-wide">Area</div>
+                                          <div className="font-semibold text-gray-900">
+                                            {property.analysis.data.property_details.square_footage.toLocaleString()} sf
+                                          </div>
+                                        </div>
+                                      )}
+                                      {property.analysis.data.property_details.bedrooms && (
+                                        <div className="text-center bg-white p-2 rounded">
+                                          <div className="text-gray-500 uppercase tracking-wide">Bedrooms</div>
+                                          <div className="font-semibold text-gray-900">
+                                            {property.analysis.data.property_details.bedrooms}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {property.analysis.data.property_details.bathrooms && (
+                                        <div className="text-center bg-white p-2 rounded">
+                                          <div className="text-gray-500 uppercase tracking-wide">Bathrooms</div>
+                                          <div className="font-semibold text-gray-900">
+                                            {property.analysis.data.property_details.bathrooms}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {property.analysis.data.property_details.year_built && (
+                                        <div className="text-center bg-white p-2 rounded">
+                                          <div className="text-gray-500 uppercase tracking-wide">Built</div>
+                                          <div className="font-semibold text-gray-900">
+                                            {property.analysis.data.property_details.year_built}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </details>
+                                )}
+                                
+                                {/* Financial Projections */}
+                                {property.analysis.data?.financial_projections && (
+                                  <details className="bg-gray-50 rounded p-2">
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">💰 Financial Analysis</summary>
+                                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                      <div className="bg-white p-2 rounded">
+                                        <span className="text-gray-500">Purchase Price</span>
+                                        <div className="font-bold text-sm">${property.analysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
+                                      </div>
+                                      <div className="bg-white p-2 rounded">
+                                        <span className="text-gray-500">Renovation</span>
+                                        <div className="font-bold text-sm">${property.analysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
+                                      </div>
+                                      <div className="bg-white p-2 rounded">
+                                        <span className="text-gray-500">Total Investment</span>
+                                        <div className="font-bold text-sm">${property.analysis.data.financial_projections.total_investment?.toLocaleString()}</div>
+                                      </div>
+                                      <div className="bg-green-100 p-2 rounded">
+                                        <span className="text-gray-500">Expected Sale</span>
+                                        <div className="font-bold text-sm text-green-700">${property.analysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
+                                      </div>
+                                    </div>
+                                  </details>
+                                )}
+                                
+                                {/* Market Analysis */}
+                                {property.analysis.data?.market_analysis && (
+                                  <details className="bg-gray-50 rounded p-2">
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">🏘️ Market Analysis</summary>
+                                    <div className="mt-2 text-xs text-gray-600 space-y-1 bg-white p-2 rounded">
+                                      <div><span className="font-medium">Market Trend:</span> {property.analysis.data.market_analysis.market_trend || 'N/A'}</div>
+                                      {property.analysis.data.market_analysis.days_on_market_average && (
+                                        <div><span className="font-medium">Avg Days on Market:</span> {property.analysis.data.market_analysis.days_on_market_average} days</div>
+                                      )}
+                                      <div><span className="font-medium">Neighborhood:</span> {property.analysis.data.market_analysis.neighborhood_grade || 'N/A'}</div>
+                                    </div>
+                                  </details>
+                                )}
+                                
+                                {/* Investment Recommendation */}
+                                {property.analysis.data?.investment_recommendation && (
+                                  <details className="bg-gray-50 rounded p-2">
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">📋 Investment Recommendation</summary>
+                                    <div className="mt-2 bg-white p-2 rounded">
+                                      <div className={`text-sm font-bold mb-1 ${
+                                        property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
+                                        property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
+                                      }`}>
+                                        {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
+                                      </div>
+                                      <div className="text-xs text-gray-600 mb-2">
+                                        Confidence: {property.analysis.data.investment_recommendation.confidence_level}
+                                      </div>
+                                      {property.analysis.data.investment_recommendation.key_reasons && (
+                                        <div className="text-xs">
+                                          <strong>✅ Reasons:</strong>
+                                          <ul className="list-disc list-inside mt-1 ml-2">
+                                            {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
+                                              <li key={i}>{reason}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                      {property.analysis.data.investment_recommendation.concerns && (
+                                        <div className="text-xs mt-2">
+                                          <strong>⚠️ Concerns:</strong>
+                                          <ul className="list-disc list-inside mt-1 ml-2">
+                                            {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
+                                              <li key={i}>{concern}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </details>
+                                )}
+                                
+                                {/* Action Items */}
+                                {property.analysis.data?.action_items && (
+                                  <details className="bg-gray-50 rounded p-2">
+                                    <summary className="text-xs font-medium text-gray-700 cursor-pointer">📝 Action Items</summary>
+                                    <div className="mt-2 bg-white p-2 rounded">
+                                      <ul className="text-xs space-y-1">
+                                        {property.analysis.data.action_items.map((item: string, i: number) => (
+                                          <li key={i} className="flex items-start gap-2">
+                                            <span className="text-blue-600 mt-0.5">•</span>
+                                            <span>{item}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
                                     </div>
                                   </details>
                                 )}
