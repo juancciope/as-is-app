@@ -232,6 +232,27 @@ export default function LeadsPage() {
     }
   }, [messages, isMobile])
 
+  // Auto-scroll on mobile when keyboard appears (input focus)
+  useEffect(() => {
+    if (isMobile && selectedLead) {
+      const handleFocus = () => {
+        setTimeout(() => {
+          const messageList = document.querySelector('.cs-message-list__scroll-wrapper')
+          if (messageList) {
+            messageList.scrollTop = messageList.scrollHeight
+          }
+        }, 300)
+      }
+
+      // Listen for focus events on the input
+      const inputElement = document.querySelector('.cs-message-input__content-editor')
+      if (inputElement) {
+        inputElement.addEventListener('focus', handleFocus)
+        return () => inputElement.removeEventListener('focus', handleFocus)
+      }
+    }
+  }, [isMobile, selectedLead])
+
   const fetchConversations = async () => {
     try {
       setIsLoading(true)
@@ -1854,15 +1875,6 @@ export default function LeadsPage() {
                     disabled={isSending}
                     sendDisabled={isSending}
                     attachButton={false}
-                    onFocus={() => {
-                      // Scroll to bottom when input is focused
-                      setTimeout(() => {
-                        const messageList = document.querySelector('.cs-message-list__scroll-wrapper');
-                        if (messageList) {
-                          messageList.scrollTop = messageList.scrollHeight;
-                        }
-                      }, 300);
-                    }}
                   />
                 </ChatContainer>
               </MainContainer>
