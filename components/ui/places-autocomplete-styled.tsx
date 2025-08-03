@@ -66,10 +66,11 @@ export function PlacesAutocompleteStyled({
         // Listen for place selection
         autocomplete.addEventListener('gmp-select', async (event: any) => {
           try {
+            console.log('🔥 PLACE SELECTION EVENT:', event);
             const { placePrediction } = event;
             
             if (!placePrediction) {
-              console.warn('No place prediction in selection event');
+              console.warn('❌ No place prediction in selection event');
               return;
             }
 
@@ -80,23 +81,29 @@ export function PlacesAutocompleteStyled({
             });
 
             const fullAddress = place.formattedAddress;
-            console.log('Selected address:', fullAddress);
+            console.log('✅ Selected address:', fullAddress);
+            console.log('📍 Place object:', place);
 
             if (fullAddress) {
+              console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
               if (onPlaceSelected) {
-                onPlaceSelected({
+                const placeData = {
                   formatted_address: fullAddress,
                   display_name: place.displayName,
                   location: place.location,
                   address_components: place.addressComponents,
                   place: place
-                });
+                };
+                console.log('📦 Calling onPlaceSelected with:', placeData);
+                onPlaceSelected(placeData);
               }
+            } else {
+              console.warn('❌ No formatted address found');
             }
           } catch (error) {
-            console.error('Error handling place selection:', error);
+            console.error('💥 Error handling place selection:', error);
             setError('Error selecting place');
           }
         });
@@ -160,33 +167,63 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* Simple fix: just make text black instead of white */}
+      {/* Aggressive CSS to force black text visibility in all states */}
       <style jsx global>{`
-        /* Make all text in the component black */
+        /* AGGRESSIVELY force all text to be black in ALL states */
         gmp-place-autocomplete,
         gmp-place-autocomplete *,
         gmp-place-autocomplete input,
+        gmp-place-autocomplete input:focus,
+        gmp-place-autocomplete input:active,
+        gmp-place-autocomplete input:hover,
+        gmp-place-autocomplete input[value],
         gmp-place-autocomplete [role="option"],
         gmp-place-autocomplete span,
-        gmp-place-autocomplete div {
+        gmp-place-autocomplete div,
+        gmp-place-autocomplete p,
+        gmp-place-autocomplete text {
           color: #000000 !important;
+          text-shadow: none !important;
         }
         
-        /* Ensure input has black text on white background */
-        gmp-place-autocomplete input {
+        /* Force input to ALWAYS have black text on white background in ALL states */
+        gmp-place-autocomplete input,
+        gmp-place-autocomplete input:focus,
+        gmp-place-autocomplete input:active,
+        gmp-place-autocomplete input:hover,
+        gmp-place-autocomplete input[aria-expanded="true"],
+        gmp-place-autocomplete input[aria-expanded="false"] {
           color: #000000 !important;
           background-color: white !important;
+          -webkit-text-fill-color: #000000 !important;
+          text-shadow: none !important;
         }
         
-        /* Ensure dropdown items have black text */
-        gmp-place-autocomplete [role="option"] {
+        /* Force dropdown items to have black text in ALL states */
+        gmp-place-autocomplete [role="option"],
+        gmp-place-autocomplete [role="option"]:hover,
+        gmp-place-autocomplete [role="option"]:focus,
+        gmp-place-autocomplete [role="option"]:active,
+        gmp-place-autocomplete [role="option"][aria-selected="true"] {
           color: #000000 !important;
           background-color: white !important;
+          -webkit-text-fill-color: #000000 !important;
+          text-shadow: none !important;
         }
         
         gmp-place-autocomplete [role="option"]:hover {
-          color: #000000 !important;
           background-color: #f0f0f0 !important;
+        }
+        
+        /* Override any webkit autofill styles */
+        gmp-place-autocomplete input:-webkit-autofill,
+        gmp-place-autocomplete input:-webkit-autofill:hover,
+        gmp-place-autocomplete input:-webkit-autofill:focus,
+        gmp-place-autocomplete input:-webkit-autofill:active {
+          -webkit-text-fill-color: #000000 !important;
+          color: #000000 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0px 1000px white inset !important;
         }
       `}</style>
       

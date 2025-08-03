@@ -602,6 +602,11 @@ export default function LeadsPage() {
     // Local state for the form
     const [localAddress, setLocalAddress] = useState('')
     
+    // Debug logging
+    console.log('🏠 AddPropertyForm render - localAddress:', localAddress)
+    console.log('🏠 AddPropertyForm render - localAddress.trim():', localAddress.trim())
+    console.log('🏠 AddPropertyForm render - button disabled:', !localAddress.trim())
+    
     const handleSubmit = async () => {
       if (!localAddress.trim()) {
         alert('Please enter a property address')
@@ -709,12 +714,19 @@ export default function LeadsPage() {
           <PlacesAutocompleteStyled
             value={localAddress}
             onChange={(value) => {
+              console.log('🔄 onChange called with value:', value)
               setLocalAddress(value)
+              console.log('✅ localAddress set to:', value)
             }}
             onPlaceSelected={(place) => {
+              console.log('🎯 onPlaceSelected called with place:', place)
               if (place?.formatted_address) {
+                console.log('🎯 Setting localAddress to:', place.formatted_address)
                 setLocalAddress(place.formatted_address)
                 setSelectedPlaceData(place)
+                console.log('✅ localAddress and place data set')
+              } else {
+                console.warn('❌ No formatted_address in place object')
               }
             }}
             placeholder="Enter property address..."
@@ -734,7 +746,11 @@ export default function LeadsPage() {
               Cancel
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => {
+                console.log('🚀 Add Property button clicked!')
+                console.log('🚀 localAddress at click:', localAddress)
+                handleSubmit()
+              }}
               disabled={!localAddress.trim()}
               className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
             >
