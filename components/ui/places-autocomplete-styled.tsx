@@ -160,102 +160,33 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* Proper styling using ::part() selectors for Google Places Autocomplete Element */}
+      {/* Simple fix: just make text black instead of white */}
       <style jsx global>{`
-        /* Style the main input field using ::part(input) */
-        gmp-place-autocomplete::part(input) {
-          width: 100%;
-          padding: 0.5rem 0.75rem;
-          border: 1px solid #d1d5db;
-          border-radius: 0.5rem;
-          font-size: 0.875rem;
-          line-height: 1.25rem;
-          background-color: white;
-          color: #374151;
-          font-family: inherit;
-          outline: none;
-          box-shadow: none;
-          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        /* Make all text in the component black */
+        gmp-place-autocomplete,
+        gmp-place-autocomplete *,
+        gmp-place-autocomplete input,
+        gmp-place-autocomplete [role="option"],
+        gmp-place-autocomplete span,
+        gmp-place-autocomplete div {
+          color: #000000 !important;
         }
         
-        gmp-place-autocomplete::part(input):focus {
-          border-color: #10b981;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-          outline: none;
+        /* Ensure input has black text on white background */
+        gmp-place-autocomplete input {
+          color: #000000 !important;
+          background-color: white !important;
         }
         
-        /* Style suggestion items using ::part(prediction-item) */
-        gmp-place-autocomplete::part(prediction-item) {
-          padding: 0.75rem;
-          cursor: pointer;
-          background-color: white;
-          color: #374151;
-          border-bottom: 1px solid #f3f4f6;
-          font-size: 0.875rem;
-          line-height: 1.25rem;
+        /* Ensure dropdown items have black text */
+        gmp-place-autocomplete [role="option"] {
+          color: #000000 !important;
+          background-color: white !important;
         }
         
-        gmp-place-autocomplete::part(prediction-item):hover {
-          background-color: #f9fafb;
-        }
-        
-        /* Style the text within prediction items */
-        gmp-place-autocomplete::part(prediction-item-text) {
-          color: #374151;
-          background-color: transparent;
-        }
-        
-        /* Style icons in prediction items */
-        gmp-place-autocomplete::part(prediction-item-icon) {
-          color: #6b7280;
-          margin-right: 0.5rem;
-        }
-        
-        /* Style dividers */
-        gmp-place-autocomplete::part(divider) {
-          margin: 0.5rem 0;
-          border-top: 1px solid #e5e7eb;
-        }
-        
-        /* Container styling */
-        gmp-place-autocomplete {
-          width: 100% !important;
-          display: block !important;
-          font-family: inherit !important;
-        }
-        
-        /* Fallback styles for older browsers or elements not using parts */
-        gmp-place-autocomplete [role="listbox"] {
-          background: white !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 0.5rem !important;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-          z-index: 50 !important;
-          margin-top: 0.25rem !important;
-          max-height: 300px !important;
-          overflow-y: auto !important;
-        }
-        
-        /* Hide unwanted Google UI elements */
-        gmp-place-autocomplete button,
-        gmp-place-autocomplete [role="button"],
-        gmp-place-autocomplete .gm-ui-hover-effect,
-        gmp-place-autocomplete [data-value="powered_by_google"],
-        gmp-place-autocomplete [aria-label*="Google"],
-        gmp-place-autocomplete [title*="Google"],
-        gmp-place-autocomplete [class*="button"],
-        gmp-place-autocomplete svg,
-        gmp-place-autocomplete img[src*="google"] {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-        }
-        
-        /* Remove Google branding */
-        gmp-place-autocomplete [class*="powered"],
-        gmp-place-autocomplete [class*="logo"],
-        gmp-place-autocomplete [class*="brand"] {
-          display: none !important;
+        gmp-place-autocomplete [role="option"]:hover {
+          color: #000000 !important;
+          background-color: #f0f0f0 !important;
         }
       `}</style>
       
