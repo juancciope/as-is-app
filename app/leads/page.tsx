@@ -1423,9 +1423,15 @@ export default function LeadsPage() {
                             <div className="mb-2">
                               <div className="flex items-start gap-2">
                                 <Home className="h-4 w-4 text-[#04325E] flex-shrink-0 mt-0.5" />
-                                <h4 className="font-medium text-sm text-[#04325E] break-words">
+                                <button
+                                  onClick={() => {
+                                    const encodedAddress = encodeURIComponent(property.address)
+                                    window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                  }}
+                                  className="font-medium text-sm text-[#04325E] break-words hover:text-blue-700 hover:underline transition-colors cursor-pointer text-left"
+                                >
                                   {property.address}
-                                </h4>
+                                </button>
                               </div>
                             </div>
                             
@@ -1992,18 +1998,34 @@ export default function LeadsPage() {
                                             const stateZip = parts[2]; // "TN 37214"
                                             
                                             return (
-                                              <div>
-                                                <div className="font-medium">{street}</div>
+                                              <button
+                                                onClick={() => {
+                                                  const encodedAddress = encodeURIComponent(address)
+                                                  window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                                }}
+                                                className="text-left hover:bg-gray-50 p-1 -m-1 rounded transition-colors cursor-pointer w-full"
+                                              >
+                                                <div className="font-medium hover:text-blue-700 hover:underline transition-colors">{street}</div>
                                                 <div className="text-xs text-gray-600 mt-0.5">
                                                   {city}, {stateZip}
                                                 </div>
-                                              </div>
+                                              </button>
                                             );
                                           }
                                         }
                                         
                                         // Handle simple addresses (existing primary properties)
-                                        return <div className="font-medium">{address}</div>;
+                                        return (
+                                          <button
+                                            onClick={() => {
+                                              const encodedAddress = encodeURIComponent(address)
+                                              window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                            }}
+                                            className="font-medium text-left hover:text-blue-700 hover:underline hover:bg-gray-50 p-1 -m-1 rounded transition-colors cursor-pointer"
+                                          >
+                                            {address}
+                                          </button>
+                                        );
                                       })()}
                                     </div>
                                   </div>
