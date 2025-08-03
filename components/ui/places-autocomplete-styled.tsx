@@ -95,49 +95,76 @@ export function PlacesAutocompleteStyled({
               console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
-              // AGGRESSIVE DEBUG: Force input text visibility after selection
-              console.log('🚀 About to debug input element...');
+              // ACCESS SHADOW DOM: The input is inside shadow DOM, need to access it properly
+              console.log('🚀 Accessing Shadow DOM for input element...');
               
-              // Try multiple times to catch the input
-              [10, 50, 100, 200, 500].forEach(delay => {
-                setTimeout(() => {
-                  console.log(`🔍 Trying to find input after ${delay}ms`);
-                  const inputElement = autocomplete.querySelector('input');
-                  console.log('🔍 Found input element:', inputElement);
+              const findAndStyleInput = () => {
+                // Try to access shadow root
+                let inputElement = null;
+                
+                // Method 1: Direct shadow root access
+                if (autocomplete.shadowRoot) {
+                  inputElement = autocomplete.shadowRoot.querySelector('input');
+                  console.log('🔍 Found input via shadowRoot:', inputElement);
+                }
+                
+                // Method 2: Try querySelector on the element itself (some web components expose inputs)
+                if (!inputElement) {
+                  inputElement = autocomplete.querySelector('input');
+                  console.log('🔍 Found input via querySelector:', inputElement);
+                }
+                
+                // Method 3: Look for any input elements in all possible shadow roots
+                if (!inputElement) {
+                  const walkShadowDom = (element) => {
+                    if (element.shadowRoot) {
+                      const input = element.shadowRoot.querySelector('input');
+                      if (input) return input;
+                      
+                      // Recursively check nested shadow roots
+                      const children = element.shadowRoot.querySelectorAll('*');
+                      for (const child of children) {
+                        const found = walkShadowDom(child);
+                        if (found) return found;
+                      }
+                    }
+                    return null;
+                  };
                   
-                  if (inputElement) {
-                    console.log('🔍 INPUT DEBUG - Element:', inputElement);
-                    console.log('🔍 INPUT DEBUG - Value:', inputElement.value);
-                    console.log('🔍 INPUT DEBUG - InnerText:', inputElement.innerText);
-                    console.log('🔍 INPUT DEBUG - TextContent:', inputElement.textContent);
-                    
-                    const computedStyles = window.getComputedStyle(inputElement);
-                    console.log('🔍 INPUT DEBUG - Color:', computedStyles.color);
-                    console.log('🔍 INPUT DEBUG - Background:', computedStyles.backgroundColor);
-                    console.log('🔍 INPUT DEBUG - Opacity:', computedStyles.opacity);
-                    console.log('🔍 INPUT DEBUG - Visibility:', computedStyles.visibility);
-                    console.log('🔍 INPUT DEBUG - WebkitTextFillColor:', computedStyles.webkitTextFillColor);
-                    console.log('🔍 INPUT DEBUG - TextShadow:', computedStyles.textShadow);
-                    console.log('🔍 INPUT DEBUG - ZIndex:', computedStyles.zIndex);
-                    
-                    // NUCLEAR FORCE text to be visible
-                    inputElement.style.setProperty('color', '#000000', 'important');
-                    inputElement.style.setProperty('background-color', '#ffffff', 'important');
-                    inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
-                    inputElement.style.setProperty('opacity', '1', 'important');
-                    inputElement.style.setProperty('visibility', 'visible', 'important');
-                    inputElement.style.setProperty('text-shadow', 'none', 'important');
-                    inputElement.style.setProperty('z-index', '999', 'important');
-                    
-                    console.log('🔧 NUCLEAR FORCE styles applied at', delay, 'ms');
-                    
-                    // Check if it worked
-                    const newStyles = window.getComputedStyle(inputElement);
-                    console.log('🔧 AFTER FORCE - Color:', newStyles.color);
-                    console.log('🔧 AFTER FORCE - WebkitTextFillColor:', newStyles.webkitTextFillColor);
-                  } else {
-                    console.warn(`❌ No input found after ${delay}ms`);
-                  }
+                  inputElement = walkShadowDom(autocomplete);
+                  console.log('🔍 Found input via shadow walk:', inputElement);
+                }
+                
+                if (inputElement) {
+                  console.log('✅ INPUT FOUND - Value:', inputElement.value);
+                  console.log('✅ INPUT FOUND - Placeholder:', inputElement.placeholder);
+                  
+                  const computedStyles = window.getComputedStyle(inputElement);
+                  console.log('🔍 INPUT STYLES - Color:', computedStyles.color);
+                  console.log('🔍 INPUT STYLES - Background:', computedStyles.backgroundColor);
+                  console.log('🔍 INPUT STYLES - WebkitTextFillColor:', computedStyles.webkitTextFillColor);
+                  
+                  // FORCE VISIBLE TEXT
+                  inputElement.style.setProperty('color', '#000000', 'important');
+                  inputElement.style.setProperty('background-color', '#ffffff', 'important');
+                  inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
+                  inputElement.style.setProperty('opacity', '1', 'important');
+                  inputElement.style.setProperty('visibility', 'visible', 'important');
+                  
+                  console.log('🔧 SHADOW DOM STYLES APPLIED');
+                  
+                  return true;
+                } else {
+                  console.warn('❌ No input element found in shadow DOM');
+                  return false;
+                }
+              };
+              
+              // Try immediately and with delays
+              [0, 10, 50, 100, 200, 500, 1000].forEach(delay => {
+                setTimeout(() => {
+                  console.log(`🔍 Attempting shadow DOM access after ${delay}ms`);
+                  findAndStyleInput();
                 }, delay);
               });
 
