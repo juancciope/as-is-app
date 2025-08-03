@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-// Removed deprecated AddressAutocomplete import
+import { SimpleAddressInput } from '@/components/ui/simple-address-input'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -666,15 +666,16 @@ export default function LeadsPage() {
         </div>
         
         <div className="space-y-3">
-          <input
-            type="text"
+          <SimpleAddressInput
             value={localAddress}
-            onChange={(e) => {
-              const newValue = e.target.value
-              console.log('📝 Address input changed:', newValue)
-              setLocalAddress(newValue)
+            onChange={(value) => {
+              console.log('📝 Address input changed:', value)
+              setLocalAddress(value)
             }}
-            placeholder="Enter complete property address..."
+            onPlaceSelected={(place) => {
+              console.log('📍 Address selected:', place)
+            }}
+            placeholder="Enter address (e.g., 123 Main St, Nashville, TN)"
             className={isMobile 
               ? "p-3 border border-gray-300 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500"
               : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
