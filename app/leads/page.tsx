@@ -233,6 +233,7 @@ export default function LeadsPage() {
       
       if (savedProperties && savedProperties.length > 0) {
         console.log('✅ Loaded saved properties:', savedProperties.length)
+        console.log('📦 Saved properties data:', savedProperties)
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
         return
@@ -629,6 +630,7 @@ export default function LeadsPage() {
 
         // Add to properties list
         const updatedProperties = [...contactProperties, newProperty]
+        console.log('💾 Setting contact properties:', updatedProperties)
         setContactProperties(updatedProperties)
         
         // Save to database
@@ -1243,7 +1245,12 @@ export default function LeadsPage() {
 
                   {/* Properties List */}
                   <div className="space-y-3">
-                    {contactProperties.map((property, index) => (
+                    {contactProperties.map((property, index) => {
+                      console.log('🏠 MOBILE - Displaying property:', property)
+                      console.log('📍 MOBILE - Property address:', property.address)
+                      console.log('📏 MOBILE - Address length:', property.address?.length)
+                      
+                      return (
                       <div key={property.id} className="border border-gray-200 rounded-lg p-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -1459,7 +1466,7 @@ export default function LeadsPage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               </div>
@@ -1768,7 +1775,12 @@ export default function LeadsPage() {
                           </div>
                         </div>
                         <div className="p-4 space-y-4">
-                          {contactProperties.map((property, index) => (
+                          {contactProperties.map((property, index) => {
+                            console.log('🏠 DESKTOP - Displaying property:', property)
+                            console.log('📍 DESKTOP - Property address:', property.address)
+                            console.log('📏 DESKTOP - Address length:', property.address?.length)
+                            
+                            return (
                             <div key={property.id} className="space-y-3">
                               {/* Property Card */}
                               <div
@@ -1844,7 +1856,7 @@ export default function LeadsPage() {
                                 <PropertyAnalysisSection property={property} />
                               )}
                             </div>
-                          ))}
+                          )})}
                         </div>
                       </div>
                     )}
