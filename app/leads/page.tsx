@@ -535,10 +535,33 @@ export default function LeadsPage() {
 
   const generatePropertyReport = async (propertyId: string) => {
     const property = contactProperties.find(p => p.id === propertyId)
-    if (!property?.address || !property?.city || !property?.state) {
-      alert('Property address information is required to generate a report')
+    if (!property?.address) {
+      alert('Property address is required to generate a report')
       return
     }
+
+    // Parse address components for API call
+    let addressData = {
+      address: property.address,
+      city: property.city || '',
+      state: property.state || '',
+      zipCode: property.zipCode || ''
+    }
+
+    // If it's a full formatted address (new properties), parse it
+    if (property.address.includes(',') && !property.city) {
+      const parts = property.address.split(',').map(part => part.trim())
+      if (parts.length >= 3) {
+        addressData = {
+          address: parts[0], // Street address
+          city: parts[1], // City
+          state: parts[2].split(' ')[0] || '', // State (first part of "TN 37214")
+          zipCode: parts[2].split(' ')[1] || '' // Zip (second part of "TN 37214")
+        }
+      }
+    }
+
+    console.log('🏠 Generating report with parsed address data:', addressData)
 
     try {
       setGeneratingReportForProperty(propertyId)
@@ -547,12 +570,7 @@ export default function LeadsPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          address: property.address,
-          city: property.city,
-          state: property.state,
-          zipCode: property.zipCode
-        })
+        body: JSON.stringify(addressData)
       })
 
       if (!response.ok) {
@@ -1885,8 +1903,34 @@ export default function LeadsPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="font-medium text-sm text-gray-900 break-words">
-                                      {property.address}
+                                    <div className="font-medium text-sm text-gray-900">
+                                      {(() => {
+                                        // Parse address for better display
+                                        const address = property.address;
+                                        if (!address) return 'No address';
+                                        
+                                        // Handle full formatted addresses (e.g., "2324 Lebanon Pike, Nashville, TN 37214, USA")
+                                        if (address.includes(',')) {
+                                          const parts = address.split(',').map(part => part.trim());
+                                          if (parts.length >= 3) {
+                                            const street = parts[0]; // "2324 Lebanon Pike"
+                                            const city = parts[1]; // "Nashville"
+                                            const stateZip = parts[2]; // "TN 37214"
+                                            
+                                            return (
+                                              <div>
+                                                <div className="font-medium">{street}</div>
+                                                <div className="text-xs text-gray-600 mt-0.5">
+                                                  {city}, {stateZip}
+                                                </div>
+                                              </div>
+                                            );
+                                          }
+                                        }
+                                        
+                                        // Handle simple addresses (existing primary properties)
+                                        return <div className="font-medium">{address}</div>;
+                                      })()}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 ml-2">
