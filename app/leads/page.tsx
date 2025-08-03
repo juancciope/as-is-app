@@ -1247,11 +1247,13 @@ export default function LeadsPage() {
                       <div key={property.id} className="border border-gray-200 rounded-lg p-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Home className="h-4 w-4 text-[#04325E]" />
-                              <h4 className="font-medium text-sm text-[#04325E] truncate">
-                                {property.address}
-                              </h4>
+                            <div className="mb-2">
+                              <div className="flex items-start gap-2">
+                                <Home className="h-4 w-4 text-[#04325E] flex-shrink-0 mt-0.5" />
+                                <h4 className="font-medium text-sm text-[#04325E] break-words">
+                                  {property.address}
+                                </h4>
+                              </div>
                             </div>
                             
                             {/* Property Analysis */}
@@ -1797,7 +1799,7 @@ export default function LeadsPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="font-medium text-sm text-gray-900 truncate">
+                                    <div className="font-medium text-sm text-gray-900 break-words">
                                       {property.address}
                                     </div>
                                   </div>
