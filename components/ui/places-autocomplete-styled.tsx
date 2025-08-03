@@ -166,11 +166,13 @@ export function PlacesAutocompleteStyled({
           width: 100% !important;
           display: block !important;
           font-family: inherit !important;
+          position: relative !important;
         }
         
+        /* Main input field styling */
         gmp-place-autocomplete input {
           width: 100% !important;
-          padding: 0.5rem 2.5rem 0.5rem 0.75rem !important;
+          padding: 0.5rem 0.75rem !important;
           border: 1px solid #d1d5db !important;
           border-radius: 0.5rem !important;
           font-size: 0.875rem !important;
@@ -187,6 +189,8 @@ export function PlacesAutocompleteStyled({
           border-color: #10b981 !important;
           box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
           outline: none !important;
+          background-color: white !important;
+          color: #374151 !important;
         }
         
         gmp-place-autocomplete input::placeholder {
@@ -225,6 +229,7 @@ export function PlacesAutocompleteStyled({
         gmp-place-autocomplete [role="option"]:hover,
         gmp-place-autocomplete [role="option"][aria-selected="true"] {
           background: #f9fafb !important;
+          color: #374151 !important;
         }
         
         gmp-place-autocomplete [role="option"]:last-child {
@@ -238,20 +243,54 @@ export function PlacesAutocompleteStyled({
           border-top-right-radius: 0.5rem !important;
         }
         
-        /* Hide unwanted Google UI elements */
+        /* Aggressively hide ALL buttons and unwanted UI elements */
         gmp-place-autocomplete button,
-        gmp-place-autocomplete [role="button"] {
+        gmp-place-autocomplete [role="button"],
+        gmp-place-autocomplete .gm-ui-hover-effect,
+        gmp-place-autocomplete [data-value="powered_by_google"],
+        gmp-place-autocomplete [aria-label*="Google"],
+        gmp-place-autocomplete [title*="Google"],
+        gmp-place-autocomplete [class*="button"],
+        gmp-place-autocomplete [class*="icon"],
+        gmp-place-autocomplete svg,
+        gmp-place-autocomplete img[src*="google"] {
           display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          width: 0 !important;
+          height: 0 !important;
+          pointer-events: none !important;
         }
         
-        /* Ensure all text is visible */
-        gmp-place-autocomplete * {
+        /* Ensure all text elements are visible with dark color */
+        gmp-place-autocomplete,
+        gmp-place-autocomplete *,
+        gmp-place-autocomplete input,
+        gmp-place-autocomplete [role="option"],
+        gmp-place-autocomplete span,
+        gmp-place-autocomplete div {
+          color: #374151 !important;
+          background-color: transparent !important;
+        }
+        
+        /* Specifically target input states */
+        gmp-place-autocomplete input:focus,
+        gmp-place-autocomplete input:active,
+        gmp-place-autocomplete input[aria-expanded="true"] {
+          background-color: white !important;
           color: #374151 !important;
         }
         
         /* Loading state */
         gmp-place-autocomplete:not([loaded]) {
           opacity: 0.7;
+        }
+        
+        /* Remove any Google branding or logos */
+        gmp-place-autocomplete [class*="powered"],
+        gmp-place-autocomplete [class*="logo"],
+        gmp-place-autocomplete [class*="brand"] {
+          display: none !important;
         }
       `}</style>
       
