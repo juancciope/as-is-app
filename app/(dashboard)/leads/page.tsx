@@ -217,14 +217,20 @@ export default function LeadsPage() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (messages.length > 0 && chatContainerRef.current) {
+    if (messages.length > 0) {
       setTimeout(() => {
-        if (chatContainerRef.current) {
+        // For desktop
+        if (!isMobile && chatContainerRef.current) {
           chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+        }
+        // For mobile - chat UI kit structure
+        const messageList = document.querySelector('.cs-message-list__scroll-wrapper')
+        if (messageList) {
+          messageList.scrollTop = messageList.scrollHeight
         }
       }, 100)
     }
-  }, [messages])
+  }, [messages, isMobile])
 
   const fetchConversations = async () => {
     try {
@@ -1826,33 +1832,33 @@ export default function LeadsPage() {
               </div>
             </div>
           ) : (
-            // Mobile Chat View - Messaging App Layout
-            <>
-              {/* Scrollable Messages Area */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden" ref={chatContainerRef}>
-                <div className="px-4 py-2 pb-2">
-                  {isLoadingMessages ? (
-                    <div className="flex items-center justify-center p-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {renderMessages()}
-                      {isSending && (
-                        <div className="flex justify-start">
-                          <div className="bg-gray-100 rounded-lg px-3 py-2">
-                            <TypingIndicator content="Sending..." />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Fixed Message Input at Bottom */}
-              <div className="bg-white border-t border-gray-200 px-4 py-3">
-                <div className="max-w-full">
+            // Mobile Chat View - Using Chat UI Kit properly
+            <div className="flex-1 flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <MainContainer style={{ 
+                border: 'none',
+                borderRadius: 0,
+                height: '100%'
+              }}>
+                <ChatContainer style={{ 
+                  height: '100%',
+                  backgroundColor: 'white'
+                }}>
+                  <MessageList 
+                    typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
+                    style={{ 
+                      paddingBottom: '1rem',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    {isLoadingMessages ? (
+                      <div className="flex items-center justify-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                      </div>
+                    ) : (
+                      renderMessages()
+                    )}
+                  </MessageList>
+                  
                   <MessageInput 
                     placeholder="Type a message..." 
                     onSend={sendMessage}
@@ -1860,22 +1866,22 @@ export default function LeadsPage() {
                     sendDisabled={isSending}
                     attachButton={false}
                     style={{
-                      margin: 0,
-                      borderRadius: '20px',
-                      maxWidth: '100%'
+                      borderTop: '1px solid #e5e5e5',
+                      backgroundColor: 'white'
                     }}
                     onFocus={() => {
                       // Scroll to bottom when input is focused
                       setTimeout(() => {
-                        if (chatContainerRef.current) {
-                          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                        const messageList = document.querySelector('.cs-message-list__scroll-wrapper');
+                        if (messageList) {
+                          messageList.scrollTop = messageList.scrollHeight;
                         }
                       }, 300);
                     }}
                   />
-                </div>
-              </div>
-            </>
+                </ChatContainer>
+              </MainContainer>
+            </div>
           )}
         </div>
       </div>
