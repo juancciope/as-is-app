@@ -608,20 +608,58 @@ export default function LeadsPage() {
         return
       }
 
-
       if (!selectedLead?.contactId) {
         alert('No contact selected')
         return
       }
 
       try {
-        // Create new property with the complete address
+        // Extract address components from Google Places API data if available
+        let city = ''
+        let state = ''
+        let zipCode = ''
+        
+        if (selectedPlaceData?.address_components) {
+          // Use Google Places API address components
+          const components = selectedPlaceData.address_components
+          for (const component of components) {
+            const types = component.types
+            if (types.includes('locality')) {
+              city = component.long_name
+            } else if (types.includes('administrative_area_level_1')) {
+              state = component.short_name
+            } else if (types.includes('postal_code')) {
+              zipCode = component.long_name
+            }
+          }
+        } else {
+          // Fallback: Parse address components from the full address string
+          const addressParts = localAddress.trim().split(',').map(part => part.trim())
+          
+          if (addressParts.length >= 3) {
+            // Format: "Street, City, State ZIP, Country" or "Street, City, State ZIP"
+            city = addressParts[1] || ''
+            
+            // Parse state and zip from the last relevant part
+            const stateZipPart = addressParts[2] || ''
+            const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5}(-\d{4})?)/)
+            if (stateZipMatch) {
+              state = stateZipMatch[1]
+              zipCode = stateZipMatch[2]
+            } else {
+              // Fallback: just use the part as state
+              state = stateZipPart.split(' ')[0] || ''
+            }
+          }
+        }
+
+        // Create new property with parsed address components
         const newProperty = {
           id: `property-${Date.now()}`,
           address: localAddress.trim(),
-          city: '',
-          state: '',
-          zipCode: '',
+          city: city,
+          state: state,
+          zipCode: zipCode,
           isPrimary: false,
           analysis: null,
           previousReports: []
@@ -636,6 +674,7 @@ export default function LeadsPage() {
         
         // Clear form and close
         setLocalAddress('')
+        setSelectedPlaceData(null)
         setIsAddingProperty(false)
         setNewPropertyAddress('')
         
@@ -647,6 +686,7 @@ export default function LeadsPage() {
     
     const handleCancel = () => {
       setLocalAddress('')
+      setSelectedPlaceData(null)
       setIsAddingProperty(false)
       setNewPropertyAddress('')
     }
@@ -674,6 +714,7 @@ export default function LeadsPage() {
             onPlaceSelected={(place) => {
               if (place?.formatted_address) {
                 setLocalAddress(place.formatted_address)
+                setSelectedPlaceData(place)
               }
             }}
             placeholder="Enter property address..."

@@ -160,50 +160,71 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* Global styles for Google Places Autocomplete Element */}
+      {/* Proper styling using ::part() selectors for Google Places Autocomplete Element */}
       <style jsx global>{`
+        /* Style the main input field using ::part(input) */
+        gmp-place-autocomplete::part(input) {
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+          background-color: white;
+          color: #374151;
+          font-family: inherit;
+          outline: none;
+          box-shadow: none;
+          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        gmp-place-autocomplete::part(input):focus {
+          border-color: #10b981;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+          outline: none;
+        }
+        
+        /* Style suggestion items using ::part(prediction-item) */
+        gmp-place-autocomplete::part(prediction-item) {
+          padding: 0.75rem;
+          cursor: pointer;
+          background-color: white;
+          color: #374151;
+          border-bottom: 1px solid #f3f4f6;
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+        }
+        
+        gmp-place-autocomplete::part(prediction-item):hover {
+          background-color: #f9fafb;
+        }
+        
+        /* Style the text within prediction items */
+        gmp-place-autocomplete::part(prediction-item-text) {
+          color: #374151;
+          background-color: transparent;
+        }
+        
+        /* Style icons in prediction items */
+        gmp-place-autocomplete::part(prediction-item-icon) {
+          color: #6b7280;
+          margin-right: 0.5rem;
+        }
+        
+        /* Style dividers */
+        gmp-place-autocomplete::part(divider) {
+          margin: 0.5rem 0;
+          border-top: 1px solid #e5e7eb;
+        }
+        
+        /* Container styling */
         gmp-place-autocomplete {
           width: 100% !important;
           display: block !important;
           font-family: inherit !important;
-          position: relative !important;
         }
         
-        /* Main input field styling */
-        gmp-place-autocomplete input {
-          width: 100% !important;
-          padding: 0.5rem 0.75rem !important;
-          border: 1px solid #d1d5db !important;
-          border-radius: 0.5rem !important;
-          font-size: 0.875rem !important;
-          line-height: 1.25rem !important;
-          background-color: white !important;
-          color: #374151 !important;
-          font-family: inherit !important;
-          outline: none !important;
-          box-shadow: none !important;
-          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
-        }
-        
-        gmp-place-autocomplete input:focus {
-          border-color: #10b981 !important;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
-          outline: none !important;
-          background-color: white !important;
-          color: #374151 !important;
-        }
-        
-        gmp-place-autocomplete input::placeholder {
-          color: #9ca3af !important;
-        }
-        
-        gmp-place-autocomplete input:disabled {
-          background-color: #f9fafb !important;
-          color: #6b7280 !important;
-          cursor: not-allowed !important;
-        }
-        
-        /* Style the dropdown suggestions */
+        /* Fallback styles for older browsers or elements not using parts */
         gmp-place-autocomplete [role="listbox"] {
           background: white !important;
           border: 1px solid #d1d5db !important;
@@ -215,36 +236,7 @@ export function PlacesAutocompleteStyled({
           overflow-y: auto !important;
         }
         
-        /* Individual suggestion items */
-        gmp-place-autocomplete [role="option"] {
-          color: #374151 !important;
-          background: white !important;
-          padding: 0.75rem !important;
-          border-bottom: 1px solid #f3f4f6 !important;
-          font-size: 0.875rem !important;
-          line-height: 1.25rem !important;
-          cursor: pointer !important;
-        }
-        
-        gmp-place-autocomplete [role="option"]:hover,
-        gmp-place-autocomplete [role="option"][aria-selected="true"],
-        gmp-place-autocomplete [role="option"].selected {
-          background: #f9fafb !important;
-          color: #374151 !important;
-        }
-        
-        gmp-place-autocomplete [role="option"]:last-child {
-          border-bottom: none !important;
-          border-bottom-left-radius: 0.5rem !important;
-          border-bottom-right-radius: 0.5rem !important;
-        }
-        
-        gmp-place-autocomplete [role="option"]:first-child {
-          border-top-left-radius: 0.5rem !important;
-          border-top-right-radius: 0.5rem !important;
-        }
-        
-        /* Aggressively hide ALL buttons and unwanted UI elements */
+        /* Hide unwanted Google UI elements */
         gmp-place-autocomplete button,
         gmp-place-autocomplete [role="button"],
         gmp-place-autocomplete .gm-ui-hover-effect,
@@ -252,58 +244,14 @@ export function PlacesAutocompleteStyled({
         gmp-place-autocomplete [aria-label*="Google"],
         gmp-place-autocomplete [title*="Google"],
         gmp-place-autocomplete [class*="button"],
-        gmp-place-autocomplete [class*="icon"],
         gmp-place-autocomplete svg,
         gmp-place-autocomplete img[src*="google"] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
-          width: 0 !important;
-          height: 0 !important;
-          pointer-events: none !important;
         }
         
-        /* Ensure all text elements are visible with dark color */
-        gmp-place-autocomplete,
-        gmp-place-autocomplete *,
-        gmp-place-autocomplete span,
-        gmp-place-autocomplete div {
-          color: #374151 !important;
-        }
-        
-        /* Force input to always have white background and dark text */
-        gmp-place-autocomplete input,
-        gmp-place-autocomplete input:focus,
-        gmp-place-autocomplete input:active,
-        gmp-place-autocomplete input[aria-expanded="true"],
-        gmp-place-autocomplete input[aria-expanded="false"] {
-          background-color: white !important;
-          color: #374151 !important;
-        }
-        
-        /* Force dropdown items to have solid backgrounds */
-        gmp-place-autocomplete [role="option"],
-        gmp-place-autocomplete [role="option"] *,
-        gmp-place-autocomplete [role="listbox"],
-        gmp-place-autocomplete [role="listbox"] * {
-          background-color: white !important;
-          color: #374151 !important;
-        }
-        
-        /* Override any selection highlighting */
-        gmp-place-autocomplete [role="option"]:hover *,
-        gmp-place-autocomplete [role="option"][aria-selected="true"] *,
-        gmp-place-autocomplete [role="option"].selected * {
-          background-color: #f9fafb !important;
-          color: #374151 !important;
-        }
-        
-        /* Loading state */
-        gmp-place-autocomplete:not([loaded]) {
-          opacity: 0.7;
-        }
-        
-        /* Remove any Google branding or logos */
+        /* Remove Google branding */
         gmp-place-autocomplete [class*="powered"],
         gmp-place-autocomplete [class*="logo"],
         gmp-place-autocomplete [class*="brand"] {
