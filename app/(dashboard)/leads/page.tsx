@@ -1336,7 +1336,7 @@ export default function LeadsPage() {
   // Mobile: Show only leads list when no lead selected
   if (isMobile && !selectedLead) {
     return (
-      <div className="h-full bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
+      <div className="h-[calc(100dvh-1rem)] bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
         {/* Mobile Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white w-full rounded-t-lg">
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
@@ -1468,7 +1468,7 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="h-full bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
+      <div className="h-[calc(100dvh-1rem)] bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
         {/* Mobile Chat Header - Enhanced Design */}
         <div className="flex-shrink-0 bg-white w-full">
           <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white rounded-t-lg">
@@ -1828,12 +1828,23 @@ export default function LeadsPage() {
             </div>
           ) : (
             // Mobile Chat View
-            <div className="h-full" ref={chatContainerRef}>
-              <MainContainer style={{ height: '100%' }}>
-                <ChatContainer style={{ height: '100%' }}>
+            <div className="h-full pb-4 flex flex-col" ref={chatContainerRef}>
+              <MainContainer style={{ 
+                height: '100%',
+                paddingBottom: '20px'
+              }}>
+                <ChatContainer style={{ 
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
                   <MessageList 
                     typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                    style={{ height: '100%' }}
+                    style={{ 
+                      height: '100%',
+                      flex: '1',
+                      marginBottom: '10px'
+                    }}
                   >
                     {isLoadingMessages ? (
                       <div className="flex items-center justify-center p-8">
@@ -1850,6 +1861,10 @@ export default function LeadsPage() {
                     disabled={isSending}
                     sendDisabled={isSending}
                     attachButton={false}
+                    style={{
+                      flexShrink: 0,
+                      marginBottom: '10px'
+                    }}
                   />
                 </ChatContainer>
               </MainContainer>
