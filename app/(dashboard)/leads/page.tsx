@@ -991,13 +991,13 @@ export default function LeadsPage() {
 
   // Property Analysis Section Component
   const PropertyAnalysisSection = ({ property }: { property: any }) => {
-    const [isExpanded, setIsExpanded] = useState(false)
+    const [localIsExpanded, setLocalIsExpanded] = useState(isInvestmentAnalysisExpanded)
     
     return (
       <div className="ml-4 pl-4 border-l-2 border-blue-200 bg-gradient-to-r from-blue-50 to-transparent">
         {/* Foldable Header */}
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => setLocalIsExpanded(!localIsExpanded)}
           className="w-full flex items-center justify-between py-2 text-left hover:bg-blue-100 rounded px-2 transition-colors"
         >
           <div className="flex items-center gap-2">
@@ -1007,7 +1007,7 @@ export default function LeadsPage() {
               {property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed'}
             </span>
           </div>
-          {isExpanded ? (
+          {localIsExpanded ? (
             <ChevronUp className="h-4 w-4 text-blue-600" />
           ) : (
             <ChevronDown className="h-4 w-4 text-blue-600" />
@@ -1015,7 +1015,7 @@ export default function LeadsPage() {
         </button>
 
         {/* Expandable Content */}
-        {isExpanded && (
+        {localIsExpanded && (
           <div className="pb-3 space-y-4">
             {/* Investment Overview */}
             {property.analysis.data?.analysis_summary && (
