@@ -1426,7 +1426,7 @@ export default function LeadsPage() {
                                 <button
                                   onClick={() => {
                                     const encodedAddress = encodeURIComponent(property.address)
-                                    window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                    window.open(`https://www.google.com/search?q=${encodedAddress}`, '_blank')
                                   }}
                                   className="font-medium text-sm text-[#04325E] break-words hover:text-blue-700 hover:underline transition-colors cursor-pointer text-left"
                                 >
@@ -2001,7 +2001,7 @@ export default function LeadsPage() {
                                               <button
                                                 onClick={() => {
                                                   const encodedAddress = encodeURIComponent(address)
-                                                  window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                                  window.open(`https://www.google.com/search?q=${encodedAddress}`, '_blank')
                                                 }}
                                                 className="text-left hover:bg-gray-50 p-1 -m-1 rounded transition-colors cursor-pointer w-full"
                                               >
@@ -2019,7 +2019,7 @@ export default function LeadsPage() {
                                           <button
                                             onClick={() => {
                                               const encodedAddress = encodeURIComponent(address)
-                                              window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank')
+                                              window.open(`https://www.google.com/search?q=${encodedAddress}`, '_blank')
                                             }}
                                             className="font-medium text-left hover:text-blue-700 hover:underline hover:bg-gray-50 p-1 -m-1 rounded transition-colors cursor-pointer"
                                           >

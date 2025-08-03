@@ -215,10 +215,22 @@
   input[type="email"], 
   input[type="tel"], 
   textarea,
-  .cs-message-input__content-editor {
+  .cs-message-input__content-editor,
+  gmp-place-autocomplete input,
+  gmp-place-autocomplete * {
     font-size: 16px !important; /* Prevents zoom on iOS */
-    -webkit-appearance: none;
-    border-radius: 0;
+    -webkit-appearance: none !important;
+    border-radius: 0 !important;
+    -webkit-text-size-adjust: 100% !important;
+    -moz-text-size-adjust: 100% !important;
+    -ms-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+  }
+  
+  /* Aggressive prevention of mobile zoom */
+  * {
+    -webkit-text-size-adjust: none !important;
+    -webkit-transform: translateZ(0) !important;
   }
   
   /* Ensure mobile views are fully contained */
