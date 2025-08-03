@@ -201,12 +201,8 @@
 
 /* Mobile specific fixes */
 @media (max-width: 768px) {
-  /* Prevent viewport jumping on iOS when keyboard appears */
+  /* Force mobile containers to stay within viewport */
   body {
-    position: fixed;
-    overflow: hidden;
-    width: 100%;
-    height: 100vh;
     overflow-x: hidden !important;
   }
   
@@ -215,22 +211,10 @@
   input[type="email"], 
   input[type="tel"], 
   textarea,
-  .cs-message-input__content-editor,
-  gmp-place-autocomplete input,
-  gmp-place-autocomplete * {
+  .cs-message-input__content-editor {
     font-size: 16px !important; /* Prevents zoom on iOS */
-    -webkit-appearance: none !important;
-    border-radius: 0 !important;
-    -webkit-text-size-adjust: 100% !important;
-    -moz-text-size-adjust: 100% !important;
-    -ms-text-size-adjust: 100% !important;
-    text-size-adjust: 100% !important;
-  }
-  
-  /* Aggressive prevention of mobile zoom */
-  * {
-    -webkit-text-size-adjust: none !important;
-    -webkit-transform: translateZ(0) !important;
+    -webkit-appearance: none;
+    border-radius: 0;
   }
   
   /* Ensure mobile views are fully contained */
