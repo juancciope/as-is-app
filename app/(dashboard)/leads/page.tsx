@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
@@ -56,7 +57,9 @@ export default function LeadsPage() {
   } | null>(null)
   const [showMobileAddressModal, setShowMobileAddressModal] = useState(false)
   const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('all')
-  const [conversationStatuses, setConversationStatuses] = useState<Record<string, 'pending' | 'replied'>>({})
+  
+  // Use auth context for conversation status management
+  const { conversationStatuses, updateConversationStatus, loadConversationStatuses } = useAuth()
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -74,22 +77,13 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [isMobile])
 
-  // Force reload conversation statuses when leads are loaded (especially important for mobile)
+  // Load conversation statuses from database when leads are loaded
   useEffect(() => {
     if (leads.length > 0) {
-      console.log('🔄 Leads loaded, reloading conversation statuses for sync...')
-      const saved = localStorage.getItem('conversationStatuses')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          console.log('🔄 Force-reloading statuses after leads loaded:', parsed)
-          setConversationStatuses(parsed)
-        } catch (error) {
-          console.error('❌ Error force-reloading statuses:', error)
-        }
-      }
+      console.log('🔄 Leads loaded, ensuring conversation statuses are synced...')
+      loadConversationStatuses()
     }
-  }, [leads.length])
+  }, [leads.length, loadConversationStatuses])
 
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
@@ -124,86 +118,20 @@ export default function LeadsPage() {
   }
 
   // Toggle conversation status between pending and replied
-  const toggleConversationStatus = (contactId: string) => {
+  const toggleConversationStatus = async (contactId: string) => {
     const currentStatus = conversationStatuses[contactId] || 'pending'
     const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
-    const updated = { ...conversationStatuses, [contactId]: newStatus }
     
     console.log(`🔄 Toggling status for ${contactId}: ${currentStatus} → ${newStatus}`)
     
-    // Update state first
-    setConversationStatuses(updated)
-    
-    // Save to localStorage - this will trigger storage events in other tabs/devices
     try {
-      localStorage.setItem('conversationStatuses', JSON.stringify(updated))
-      console.log('💾 Saved to localStorage:', updated)
-      
-      // Dispatch custom event for same-tab synchronization between mobile/desktop views
-      window.dispatchEvent(new CustomEvent('conversationStatusChanged', {
-        detail: { contactId, newStatus, allStatuses: updated }
-      }))
-      console.log('📡 Dispatched custom event for same-tab sync')
-      
+      await updateConversationStatus(contactId, newStatus)
+      console.log('✅ Status updated successfully in database')
     } catch (error) {
-      console.error('❌ Error saving conversation status:', error)
+      console.error('❌ Error updating conversation status:', error)
     }
   }
 
-  // Load conversation statuses from localStorage on mount and listen for changes
-  useEffect(() => {
-    const loadConversationStatuses = () => {
-      console.log('🔍 Attempting to load conversation statuses from localStorage...')
-      const saved = localStorage.getItem('conversationStatuses')
-      console.log('📦 Raw localStorage data:', saved)
-      
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          console.log('📱 Parsed conversation statuses:', parsed)
-          console.log('📱 Setting statuses with keys:', Object.keys(parsed))
-          setConversationStatuses(parsed)
-          console.log('✅ Successfully loaded conversation statuses:', parsed)
-        } catch (error) {
-          console.error('❌ Error loading conversation statuses:', error)
-        }
-      } else {
-        console.log('📭 No conversation statuses found in localStorage')
-      }
-    }
-
-    // Load initial statuses
-    loadConversationStatuses()
-
-    // Listen for storage changes (from other tabs/windows/devices)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'conversationStatuses' && e.newValue) {
-        try {
-          const newStatuses = JSON.parse(e.newValue)
-          setConversationStatuses(newStatuses)
-          console.log('🔄 Cross-tab storage change detected, updated statuses:', newStatuses)
-        } catch (error) {
-          console.error('Error parsing storage change:', error)
-        }
-      }
-    }
-
-    // Listen for custom events (for same-tab mobile/desktop view synchronization)
-    const handleCustomStatusChange = (e: CustomEvent) => {
-      const { allStatuses } = e.detail
-      setConversationStatuses(allStatuses)
-      console.log('🔄 Same-tab status change detected, updated statuses:', allStatuses)
-    }
-
-    // Add event listeners
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('conversationStatusChanged', handleCustomStatusChange as EventListener)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('conversationStatusChanged', handleCustomStatusChange as EventListener)
-    }
-  }, [])
 
   // Filter conversations based on current filter
   const filteredLeads = leads.filter(lead => {

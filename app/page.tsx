@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -14,6 +16,37 @@ import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText
 
 export default function Home() {
   console.log('🏠 Home component rendering...');
+  
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect based on authentication status
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log('🔒 No authenticated user, redirecting to login');
+        router.push('/login');
+        return;
+      }
+    }
+  }, [user, loading, router]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#04325E] mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!user) {
+    return null;
+  }
   
   // Add error state for better debugging
   const [error, setError] = useState<string | null>(null);

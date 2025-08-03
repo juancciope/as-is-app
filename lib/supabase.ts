@@ -5,9 +5,15 @@ const supabaseUrl = DatabaseConfig.SUPABASE_URL
 const supabaseAnonKey = DatabaseConfig.SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = DatabaseConfig.SUPABASE_SERVICE_ROLE_KEY
 
-// Client for frontend/browser usage
+// Client for frontend/browser usage with auth configuration
 export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    })
   : null
 
 // Admin client for server-side operations with full permissions
@@ -241,4 +247,93 @@ export interface PropertyWithEvents extends Property {
   score?: number
   stage?: string
   enriched: boolean
+}
+
+// User conversation status management
+export interface UserConversationStatuses {
+  id: string
+  user_id: string
+  statuses: Record<string, 'pending' | 'replied'>
+  created_at: string
+  updated_at: string
+}
+
+// Auth helper functions
+export const auth = {
+  // Sign in with email and password
+  signIn: async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    return { data, error }
+  },
+
+  // Sign up with email and password
+  signUp: async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+    return { data, error }
+  },
+
+  // Sign out
+  signOut: async () => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { error } = await supabase.auth.signOut()
+    return { error }
+  },
+
+  // Get current user
+  getCurrentUser: async () => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data: { user } } = await supabase.auth.getUser()
+    return user
+  },
+
+  // Get current session
+  getCurrentSession: async () => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data: { session } } = await supabase.auth.getSession()
+    return session
+  },
+
+  // Listen to auth state changes
+  onAuthStateChange: (callback: (event: any, session: any) => void) => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    return supabase.auth.onAuthStateChange(callback)
+  }
+}
+
+// Database helper functions for user-specific data
+export const database = {
+  // Save user conversation statuses
+  saveConversationStatuses: async (userId: string, statuses: Record<string, 'pending' | 'replied'>) => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data, error } = await supabase
+      .from('user_conversation_statuses')
+      .upsert({
+        user_id: userId,
+        statuses: statuses,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+    return { data, error }
+  },
+
+  // Load user conversation statuses
+  loadConversationStatuses: async (userId: string) => {
+    if (!supabase) throw new Error('Supabase client not initialized')
+    const { data, error } = await supabase
+      .from('user_conversation_statuses')
+      .select('statuses')
+      .eq('user_id', userId)
+      .single()
+    
+    return { data: data?.statuses || {}, error }
+  },
 }

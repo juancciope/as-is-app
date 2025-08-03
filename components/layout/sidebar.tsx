@@ -4,11 +4,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   LayoutDashboard, 
   Users,
   Menu,
-  X
+  X,
+  LogOut,
+  User
 } from 'lucide-react'
 
 const menuItems = [
@@ -27,6 +30,15 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { user, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
 
   return (
     <>
@@ -82,14 +94,27 @@ export default function Sidebar() {
           </nav>
 
           <div className="flex-shrink-0 p-4 border-t border-gray-800">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-gray-600 rounded-full"></div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-[#FE8F00] rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-white">
+                    {user?.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-400">{user?.email}</p>
+                </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-white">Admin User</p>
-                <p className="text-xs text-gray-400">admin@example.com</p>
-              </div>
+              <button
+                onClick={handleSignOut}
+                className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-800 rounded"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
