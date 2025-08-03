@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('✅ Loaded conversation statuses from database:', data)
-      setConversationStatuses(data || {})
+      setConversationStatuses(data || {} as Record<string, 'pending' | 'replied'>)
     } catch (error) {
       console.error('❌ Error loading conversation statuses:', error)
     }
