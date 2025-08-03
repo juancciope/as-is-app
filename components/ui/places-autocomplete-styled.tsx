@@ -95,28 +95,51 @@ export function PlacesAutocompleteStyled({
               console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
-              // DEBUG: Force input text visibility after selection
-              setTimeout(() => {
-                const inputElement = autocomplete.querySelector('input');
-                if (inputElement) {
-                  console.log('🔍 INPUT DEBUG - Element:', inputElement);
-                  console.log('🔍 INPUT DEBUG - Value:', inputElement.value);
-                  console.log('🔍 INPUT DEBUG - Computed styles:', window.getComputedStyle(inputElement));
-                  console.log('🔍 INPUT DEBUG - Color:', window.getComputedStyle(inputElement).color);
-                  console.log('🔍 INPUT DEBUG - Background:', window.getComputedStyle(inputElement).backgroundColor);
-                  console.log('🔍 INPUT DEBUG - Opacity:', window.getComputedStyle(inputElement).opacity);
-                  console.log('🔍 INPUT DEBUG - Visibility:', window.getComputedStyle(inputElement).visibility);
+              // AGGRESSIVE DEBUG: Force input text visibility after selection
+              console.log('🚀 About to debug input element...');
+              
+              // Try multiple times to catch the input
+              [10, 50, 100, 200, 500].forEach(delay => {
+                setTimeout(() => {
+                  console.log(`🔍 Trying to find input after ${delay}ms`);
+                  const inputElement = autocomplete.querySelector('input');
+                  console.log('🔍 Found input element:', inputElement);
                   
-                  // FORCE text to be visible
-                  inputElement.style.setProperty('color', '#000000', 'important');
-                  inputElement.style.setProperty('background-color', '#ffffff', 'important');
-                  inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
-                  inputElement.style.setProperty('opacity', '1', 'important');
-                  inputElement.style.setProperty('visibility', 'visible', 'important');
-                  
-                  console.log('🔧 FORCED input styles applied');
-                }
-              }, 100);
+                  if (inputElement) {
+                    console.log('🔍 INPUT DEBUG - Element:', inputElement);
+                    console.log('🔍 INPUT DEBUG - Value:', inputElement.value);
+                    console.log('🔍 INPUT DEBUG - InnerText:', inputElement.innerText);
+                    console.log('🔍 INPUT DEBUG - TextContent:', inputElement.textContent);
+                    
+                    const computedStyles = window.getComputedStyle(inputElement);
+                    console.log('🔍 INPUT DEBUG - Color:', computedStyles.color);
+                    console.log('🔍 INPUT DEBUG - Background:', computedStyles.backgroundColor);
+                    console.log('🔍 INPUT DEBUG - Opacity:', computedStyles.opacity);
+                    console.log('🔍 INPUT DEBUG - Visibility:', computedStyles.visibility);
+                    console.log('🔍 INPUT DEBUG - WebkitTextFillColor:', computedStyles.webkitTextFillColor);
+                    console.log('🔍 INPUT DEBUG - TextShadow:', computedStyles.textShadow);
+                    console.log('🔍 INPUT DEBUG - ZIndex:', computedStyles.zIndex);
+                    
+                    // NUCLEAR FORCE text to be visible
+                    inputElement.style.setProperty('color', '#000000', 'important');
+                    inputElement.style.setProperty('background-color', '#ffffff', 'important');
+                    inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
+                    inputElement.style.setProperty('opacity', '1', 'important');
+                    inputElement.style.setProperty('visibility', 'visible', 'important');
+                    inputElement.style.setProperty('text-shadow', 'none', 'important');
+                    inputElement.style.setProperty('z-index', '999', 'important');
+                    
+                    console.log('🔧 NUCLEAR FORCE styles applied at', delay, 'ms');
+                    
+                    // Check if it worked
+                    const newStyles = window.getComputedStyle(inputElement);
+                    console.log('🔧 AFTER FORCE - Color:', newStyles.color);
+                    console.log('🔧 AFTER FORCE - WebkitTextFillColor:', newStyles.webkitTextFillColor);
+                  } else {
+                    console.warn(`❌ No input found after ${delay}ms`);
+                  }
+                }, delay);
+              });
 
               if (onPlaceSelected) {
                 const placeData = {

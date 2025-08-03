@@ -502,8 +502,20 @@ export default function LeadsPage() {
       isOpen: true,
       title: 'Remove Property',
       message: 'Are you sure you want to remove this property?',
-      onConfirm: () => {
-        setContactProperties(prev => prev.filter((_, i) => i !== index))
+      onConfirm: async () => {
+        const updatedProperties = contactProperties.filter((_, i) => i !== index)
+        setContactProperties(updatedProperties)
+        
+        // SAVE TO DATABASE - This was missing!
+        if (selectedLead?.contactId) {
+          try {
+            await saveContactProperties(selectedLead.contactId, updatedProperties)
+            console.log('✅ Property removed and saved to database')
+          } catch (error) {
+            console.error('❌ Error saving after removal:', error)
+            alert('Failed to save changes. Property may reappear on refresh.')
+          }
+        }
         
         // Adjust selected index if needed
         if (selectedPropertyIndex >= index) {
