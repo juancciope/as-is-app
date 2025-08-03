@@ -432,7 +432,52 @@ export default function LeadsPage() {
     }
   }
 
-  // SIMPLE: Create new property with complete address - no complex parsing
+  // Parse address into components for consistent formatting
+  const parseAddressComponents = (fullAddress: string, placeData?: any) => {
+    console.log('🔍 Parsing address:', fullAddress, 'Place data:', placeData)
+    
+    // If we have Google Places data, use it
+    if (placeData?.address_components) {
+      let streetNumber = ''
+      let route = ''
+      let city = ''
+      let state = ''
+      let zipCode = ''
+      
+      placeData.address_components.forEach((component: any) => {
+        const types = component.types
+        if (types.includes('street_number')) {
+          streetNumber = component.long_name
+        } else if (types.includes('route')) {
+          route = component.long_name
+        } else if (types.includes('locality')) {
+          city = component.long_name
+        } else if (types.includes('administrative_area_level_1')) {
+          state = component.short_name
+        } else if (types.includes('postal_code')) {
+          zipCode = component.long_name
+        }
+      })
+      
+      const address = streetNumber && route ? `${streetNumber} ${route}` : fullAddress
+      return { address, city, state, zipCode }
+    }
+    
+    // Fallback: Simple parsing for manual entry
+    const parts = fullAddress.split(',').map(part => part.trim())
+    if (parts.length >= 3) {
+      const address = parts[0]
+      const city = parts[1]
+      const stateZip = parts[2].split(' ')
+      const state = stateZip[0] || ''
+      const zipCode = stateZip[1] || ''
+      return { address, city, state, zipCode }
+    }
+    
+    // If parsing fails, keep the complete address
+    return { address: fullAddress, city: '', state: '', zipCode: '' }
+  }
+
   const createNewProperty = async () => {
     console.log('🏠 Creating new property with address:', newPropertyAddress)
     
@@ -447,13 +492,15 @@ export default function LeadsPage() {
     }
 
     try {
-      // SIMPLE: Use the complete address exactly as entered/selected
+      // Parse the address into components for consistent formatting
+      const { address, city, state, zipCode } = parseAddressComponents(newPropertyAddress, selectedPlaceData)
+      
       const newProperty = {
         id: `property-${Date.now()}`,
-        address: newPropertyAddress.trim(), // Use COMPLETE address as-is
-        city: '', // We don't need to parse these for the analysis to work
-        state: '',
-        zipCode: '',
+        address,
+        city,
+        state,
+        zipCode,
         isPrimary: false,
         analysis: null,
         previousReports: []
@@ -1209,9 +1256,18 @@ export default function LeadsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <Home className="h-4 w-4 text-[#04325E]" />
-                              <h4 className="font-medium text-sm text-[#04325E]">
-                                {property.address}
-                              </h4>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-sm text-[#04325E] truncate">
+                                  {property.address}
+                                </h4>
+                                {(property.city || property.state || property.zipCode) && (
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {property.city}{property.city && (property.state || property.zipCode) ? ', ' : ''}
+                                    {property.state}{property.state && property.zipCode ? ' ' : ''}
+                                    {property.zipCode}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             {/* Property Analysis */}
@@ -1760,9 +1816,13 @@ export default function LeadsPage() {
                                     <div className="font-medium text-sm text-gray-900 truncate">
                                       {property.address}
                                     </div>
-                                    <div className="text-xs text-gray-500 truncate">
-                                      {property.city}, {property.state} {property.zipCode}
-                                    </div>
+                                    {(property.city || property.state || property.zipCode) && (
+                                      <div className="text-xs text-gray-500 truncate">
+                                        {property.city}{property.city && (property.state || property.zipCode) ? ', ' : ''}
+                                        {property.state}{property.state && property.zipCode ? ' ' : ''}
+                                        {property.zipCode}
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-2 ml-2">
                                     {/* Generate Report Button */}
