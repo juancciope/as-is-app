@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { PlacesAutocompleteElement } from '@/components/ui/places-autocomplete-element'
+import { PlacesAutocompleteFixed } from '@/components/ui/places-autocomplete-fixed'
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -669,7 +669,7 @@ export default function LeadsPage() {
         </div>
         
         <div className="space-y-3">
-          <PlacesAutocompleteElement
+          <PlacesAutocompleteFixed
             value={localAddress}
             onChange={(value) => {
               console.log('📝 Address input changed:', value)
@@ -677,10 +677,7 @@ export default function LeadsPage() {
             }}
             onPlaceSelected={(place) => {
               console.log('📍 Place selected from form:', place)
-              if (place?.formattedAddress) {
-                console.log('🎯 Setting full address from place selection:', place.formattedAddress)
-                setLocalAddress(place.formattedAddress)
-              }
+              // The fixed component already handles setting the address
             }}
             placeholder="Enter property address..."
             className={isMobile 
