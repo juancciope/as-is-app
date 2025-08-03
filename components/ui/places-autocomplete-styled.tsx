@@ -116,7 +116,7 @@ export function PlacesAutocompleteStyled({
                 
                 // Method 3: Look for any input elements in all possible shadow roots
                 if (!inputElement) {
-                  const walkShadowDom = (element) => {
+                  const walkShadowDom = (element: any): HTMLInputElement | null => {
                     if (element.shadowRoot) {
                       const input = element.shadowRoot.querySelector('input');
                       if (input) return input;
