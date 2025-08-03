@@ -63,37 +63,16 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchConversations()
     
-    // Check if mobile
+    // Check if mobile - simplified without redundant status reloading
     const checkMobile = () => {
-      const wasMobile = isMobile
       const nowMobile = window.innerWidth < 768
       setIsMobile(nowMobile)
-      
-      // If switching between mobile/desktop, reload conversation statuses
-      if (wasMobile !== nowMobile) {
-        const saved = localStorage.getItem('conversationStatuses')
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved)
-            setConversationStatuses(parsed)
-            console.log('📱 Reloaded statuses after mobile/desktop switch:', parsed)
-          } catch (error) {
-            console.error('Error reloading statuses:', error)
-          }
-        }
-      }
     }
     
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [isMobile])
-
-  // Force re-render when conversation statuses change (for debugging)
-  useEffect(() => {
-    console.log('📊 Conversation statuses updated:', conversationStatuses)
-    console.log('📊 Filtered leads count:', filteredLeads.length)
-  }, [conversationStatuses, conversationFilter])
 
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
@@ -129,22 +108,29 @@ export default function LeadsPage() {
 
   // Toggle conversation status between pending and replied
   const toggleConversationStatus = (contactId: string) => {
-    setConversationStatuses(prev => {
-      const currentStatus = prev[contactId] || 'pending'
-      const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
-      const updated = { ...prev, [contactId]: newStatus }
-      
-      // Save to localStorage
+    const currentStatus = conversationStatuses[contactId] || 'pending'
+    const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
+    const updated = { ...conversationStatuses, [contactId]: newStatus }
+    
+    console.log(`🔄 Toggling status for ${contactId}: ${currentStatus} → ${newStatus}`)
+    
+    // Update state first
+    setConversationStatuses(updated)
+    
+    // Save to localStorage - this will trigger storage events in other tabs/devices
+    try {
       localStorage.setItem('conversationStatuses', JSON.stringify(updated))
-      console.log(`🔄 Toggled status for ${contactId}: ${newStatus}`, updated)
+      console.log('💾 Saved to localStorage:', updated)
       
-      // Dispatch custom event to notify other views on the same page
-      window.dispatchEvent(new CustomEvent('conversationStatusUpdate', {
-        detail: { contactId, status: newStatus, allStatuses: updated }
+      // Dispatch custom event for same-tab synchronization between mobile/desktop views
+      window.dispatchEvent(new CustomEvent('conversationStatusChanged', {
+        detail: { contactId, newStatus, allStatuses: updated }
       }))
+      console.log('📡 Dispatched custom event for same-tab sync')
       
-      return updated
-    })
+    } catch (error) {
+      console.error('❌ Error saving conversation status:', error)
+    }
   }
 
   // Load conversation statuses from localStorage on mount and listen for changes
@@ -165,30 +151,33 @@ export default function LeadsPage() {
     // Load initial statuses
     loadConversationStatuses()
 
-    // Listen for storage changes (from other tabs/views)
+    // Listen for storage changes (from other tabs/windows/devices)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'conversationStatuses' && e.newValue) {
         try {
           const newStatuses = JSON.parse(e.newValue)
           setConversationStatuses(newStatuses)
-          console.log('📱 Storage changed, updated conversation statuses:', newStatuses)
+          console.log('🔄 Cross-tab storage change detected, updated statuses:', newStatuses)
         } catch (error) {
           console.error('Error parsing storage change:', error)
         }
       }
     }
 
-    // Listen for custom storage events (for same-page updates)
-    const handleCustomStorageChange = () => {
-      loadConversationStatuses()
+    // Listen for custom events (for same-tab mobile/desktop view synchronization)
+    const handleCustomStatusChange = (e: CustomEvent) => {
+      const { allStatuses } = e.detail
+      setConversationStatuses(allStatuses)
+      console.log('🔄 Same-tab status change detected, updated statuses:', allStatuses)
     }
 
+    // Add event listeners
     window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('conversationStatusUpdate', handleCustomStorageChange)
+    window.addEventListener('conversationStatusChanged', handleCustomStatusChange as EventListener)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('conversationStatusUpdate', handleCustomStorageChange)
+      window.removeEventListener('conversationStatusChanged', handleCustomStatusChange as EventListener)
     }
   }, [])
 
