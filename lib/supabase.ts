@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { DatabaseConfig, getTableName } from './config'
 
+// Use the same config as the rest of the app for consistency
 const supabaseUrl = DatabaseConfig.SUPABASE_URL
 const supabaseAnonKey = DatabaseConfig.SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = DatabaseConfig.SUPABASE_SERVICE_ROLE_KEY
