@@ -4,19 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
-import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
-import './chat-theme.css'
-import {
-  MainContainer,
-  ChatContainer,
-  MessageList,
-  Message,
-  MessageInput,
-  ConversationHeader,
-  Avatar,
-  TypingIndicator,
-  MessageSeparator
-} from '@chatscope/chat-ui-kit-react'
 
 export default function LeadsPage() {
   // Helper function to format address and avoid duplication
@@ -69,6 +56,8 @@ export default function LeadsPage() {
   const [isSending, setIsSending] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [newMessage, setNewMessage] = useState('')
+  const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const [contactDetails, setContactDetails] = useState<any>(null)
   const [propertyDetails, setPropertyDetails] = useState<any>(null)
   const [propertyAnalysis, setPropertyAnalysis] = useState<any>(null)
@@ -217,41 +206,38 @@ export default function LeadsPage() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && chatContainerRef.current) {
       setTimeout(() => {
-        // For desktop
-        if (!isMobile && chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
-        }
-        // For mobile - chat UI kit structure
-        const messageList = document.querySelector('.cs-message-list__scroll-wrapper')
-        if (messageList) {
-          messageList.scrollTop = messageList.scrollHeight
-        }
+        chatContainerRef.current!.scrollTop = chatContainerRef.current!.scrollHeight
       }, 100)
     }
-  }, [messages, isMobile])
+  }, [messages])
 
-  // Auto-scroll on mobile when keyboard appears (input focus)
-  useEffect(() => {
-    if (isMobile && selectedLead) {
-      const handleFocus = () => {
-        setTimeout(() => {
-          const messageList = document.querySelector('.cs-message-list__scroll-wrapper')
-          if (messageList) {
-            messageList.scrollTop = messageList.scrollHeight
-          }
-        }, 300)
-      }
+  // Handle sending messages
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || isSending || !selectedLead) return
 
-      // Listen for focus events on the input
-      const inputElement = document.querySelector('.cs-message-input__content-editor')
-      if (inputElement) {
-        inputElement.addEventListener('focus', handleFocus)
-        return () => inputElement.removeEventListener('focus', handleFocus)
-      }
+    const messageText = newMessage.trim()
+    setNewMessage('')
+    setIsSending(true)
+
+    try {
+      await sendMessage(messageText, messageText)
+    } catch (error) {
+      console.error('Failed to send message:', error)
+      setNewMessage(messageText) // Restore message on error
+    } finally {
+      setIsSending(false)
     }
-  }, [isMobile, selectedLead])
+  }
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = 'auto'
+      messageInputRef.current.style.height = Math.min(messageInputRef.current.scrollHeight, 120) + 'px'
+    }
+  }, [newMessage])
 
   const fetchConversations = async () => {
     try {
@@ -1297,67 +1283,6 @@ export default function LeadsPage() {
     return <div className="text-sm">{String(comparableSales)}</div>
   }
 
-  const renderMessages = () => {
-    const smsMessages = Array.isArray(messages) ? 
-      messages.filter((message: any) => message.messageType === 'TYPE_SMS').slice().reverse() : []
-    
-    const groupedMessages: { [key: string]: any[] } = {}
-    smsMessages.forEach((message: any) => {
-      const messageDate = new Date(message.dateAdded)
-      const dateKey = messageDate.toDateString()
-      if (!groupedMessages[dateKey]) {
-        groupedMessages[dateKey] = []
-      }
-      groupedMessages[dateKey].push(message)
-    })
-
-    const elements: JSX.Element[] = []
-    
-    Object.entries(groupedMessages).forEach(([dateKey, dayMessages]) => {
-      const date = new Date(dateKey)
-      const today = new Date()
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      
-      let dateLabel = ''
-      if (date.toDateString() === today.toDateString()) {
-        dateLabel = 'Today'
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        dateLabel = 'Yesterday'
-      } else {
-        dateLabel = date.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })
-      }
-      
-      elements.push(
-        <MessageSeparator key={`sep-${dateKey}`} content={dateLabel} />
-      )
-      
-      dayMessages.forEach((message: any) => {
-        elements.push(
-          <Message
-            key={message.id}
-            model={{
-              message: message.body,
-              sentTime: new Date(message.dateAdded).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              }),
-              sender: message.direction === 'outbound' ? "You" : selectedLead.contactName || "Unknown",
-              direction: message.direction === 'outbound' ? "outgoing" : "incoming",
-              position: "single"
-            }}
-          />
-        )
-      })
-    })
-    
-    return elements
-  }
 
   // Mobile: Show only leads list when no lead selected
   if (isMobile && !selectedLead) {
@@ -1853,31 +1778,128 @@ export default function LeadsPage() {
               </div>
             </div>
           ) : (
-            // Mobile Chat View - Let the library handle layout
-            <div className="flex-1" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-              <MainContainer className="mobile-chat" style={{ height: '100%' }}>
-                <ChatContainer>
-                  <MessageList 
-                    typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                  >
-                    {isLoadingMessages ? (
-                      <div className="flex items-center justify-center p-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                      </div>
-                    ) : (
-                      renderMessages()
-                    )}
-                  </MessageList>
+            // Custom Mobile Chat - Built from scratch
+            <div className="flex flex-col h-full bg-white">
+              {/* Messages Container - Scrollable */}
+              <div 
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-3"
+                style={{
+                  height: 0, // Forces flex child to use available space
+                  WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'smooth'
+                }}
+              >
+                {isLoadingMessages ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  </div>
+                ) : (() => {
+                  const smsMessages = messages.filter((message: any) => 
+                    message.messageType === 'TYPE_SMS'
+                  ).slice().reverse()
                   
-                  <MessageInput 
-                    placeholder="Type a message..." 
-                    onSend={sendMessage}
-                    disabled={isSending}
-                    sendDisabled={isSending}
-                    attachButton={false}
-                  />
-                </ChatContainer>
-              </MainContainer>
+                  if (smsMessages.length === 0) {
+                    return (
+                      <div className="flex items-center justify-center py-8 text-gray-500">
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    )
+                  }
+                  
+                  return smsMessages.map((message, index) => {
+                    const isOutgoing = message.direction === 'outbound'
+                    const prevMessage = index > 0 ? smsMessages[index - 1] : null
+                    const showDateSeparator = prevMessage && 
+                      new Date(message.dateAdded).toDateString() !== new Date(prevMessage.dateAdded).toDateString()
+
+                    return (
+                      <div key={message.id}>
+                        {showDateSeparator && (
+                          <div className="flex justify-center my-4">
+                            <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 border">
+                              {new Date(message.dateAdded).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'} mb-2`}>
+                          <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                            isOutgoing 
+                              ? 'bg-[#04325E] text-white' 
+                              : 'bg-white text-gray-900 border border-gray-200'
+                          }`}>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                              {message.body}
+                            </p>
+                            <p className={`text-xs mt-1 ${
+                              isOutgoing ? 'text-blue-100' : 'text-gray-500'
+                            }`}>
+                              {new Date(message.dateAdded).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+                
+                {/* Typing indicator */}
+                {isSending && (
+                  <div className="flex justify-start mb-2">
+                    <div className="bg-white rounded-2xl px-4 py-2 border border-gray-200">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Message Input - Fixed at bottom */}
+              <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1">
+                    <textarea
+                      ref={messageInputRef}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSendMessage()
+                        }
+                      }}
+                      placeholder="Type a message..."
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FE8F00] focus:border-transparent"
+                      style={{
+                        minHeight: '44px',
+                        maxHeight: '120px',
+                        fontSize: '16px' // Prevents zoom on iOS
+                      }}
+                      rows={1}
+                      disabled={isSending}
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || isSending}
+                    className="flex-shrink-0 w-11 h-11 bg-[#04325E] text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#032847] transition-colors"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -2020,32 +2042,126 @@ export default function LeadsPage() {
         <div className="flex-1 flex flex-col min-w-0">
           {selectedLead ? (
             <>
-              {/* Chat Container - Card Style Design */}
-              <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden" ref={chatContainerRef}>
-                <MainContainer style={{ height: '100%' }}>
-                  <ChatContainer style={{ height: '100%' }}>
-                    <MessageList 
-                      typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                      style={{ height: '100%' }}
-                    >
-                      {isLoadingMessages ? (
-                        <div className="flex items-center justify-center p-8">
-                          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        </div>
-                      ) : (
-                        renderMessages()
-                      )}
-                    </MessageList>
+              {/* Chat Container - Custom Desktop Chat */}
+              <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <div className="flex flex-col h-full">
+                  {/* Messages Container - Scrollable */}
+                  <div 
+                    ref={chatContainerRef}
+                    className="flex-1 overflow-y-auto bg-gray-50 p-6 space-y-4"
+                    style={{
+                      height: 0, // Forces flex child to use available space
+                      scrollBehavior: 'smooth'
+                    }}
+                  >
+                    {isLoadingMessages ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                      </div>
+                    ) : (() => {
+                      const smsMessages = messages.filter((message: any) => 
+                        message.messageType === 'TYPE_SMS'
+                      ).slice().reverse()
+                      
+                      if (smsMessages.length === 0) {
+                        return (
+                          <div className="flex items-center justify-center py-8 text-gray-500">
+                            <p>No messages yet. Start the conversation!</p>
+                          </div>
+                        )
+                      }
+                      
+                      return smsMessages.map((message, index) => {
+                        const isOutgoing = message.direction === 'outbound'
+                        const prevMessage = index > 0 ? smsMessages[index - 1] : null
+                        const showDateSeparator = prevMessage && 
+                          new Date(message.dateAdded).toDateString() !== new Date(prevMessage.dateAdded).toDateString()
+
+                        return (
+                          <div key={message.id}>
+                            {showDateSeparator && (
+                              <div className="flex justify-center my-4">
+                                <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 border">
+                                  {new Date(message.dateAdded).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                            <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'} mb-3`}>
+                              <div className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                                isOutgoing 
+                                  ? 'bg-[#04325E] text-white' 
+                                  : 'bg-white text-gray-900 border border-gray-200'
+                              }`}>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                  {message.body}
+                                </p>
+                                <p className={`text-xs mt-2 ${
+                                  isOutgoing ? 'text-blue-100' : 'text-gray-500'
+                                }`}>
+                                  {new Date(message.dateAdded).toLocaleTimeString([], { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
                     
-                    <MessageInput 
-                      placeholder="Type a message..." 
-                      onSend={sendMessage}
-                      disabled={isSending}
-                      sendDisabled={isSending}
-                      attachButton={false}
-                    />
-                  </ChatContainer>
-                </MainContainer>
+                    {/* Typing indicator */}
+                    {isSending && (
+                      <div className="flex justify-start mb-3">
+                        <div className="bg-white rounded-2xl px-4 py-3 border border-gray-200">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Message Input - Fixed at bottom */}
+                  <div className="flex-shrink-0 bg-white border-t border-gray-200 p-4">
+                    <div className="flex items-end space-x-3">
+                      <div className="flex-1">
+                        <textarea
+                          ref={messageInputRef}
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              handleSendMessage()
+                            }
+                          }}
+                          placeholder="Type a message..."
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#FE8F00] focus:border-transparent"
+                          style={{
+                            minHeight: '44px',
+                            maxHeight: '120px'
+                          }}
+                          rows={1}
+                          disabled={isSending}
+                        />
+                      </div>
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || isSending}
+                        className="flex-shrink-0 px-6 py-3 bg-[#04325E] text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#032847] transition-colors font-medium"
+                      >
+                        {isSending ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          'Send'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           ) : (
