@@ -48,18 +48,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return
 
     try {
-      console.log('🔍 Loading conversation statuses for user:', user.id)
       const { data, error } = await database.loadConversationStatuses(user.id)
       
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('❌ Error loading conversation statuses:', error)
         return
       }
 
-      console.log('✅ Loaded conversation statuses from database:', data)
       setConversationStatuses((data || {}) as Record<string, 'pending' | 'replied'>)
     } catch (error) {
-      console.error('❌ Error loading conversation statuses:', error)
+      // Failed to load conversation statuses - will use default empty state
     }
   }
 
@@ -70,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updated = { ...conversationStatuses, [contactId]: status }
     
     try {
-      console.log(`🔄 Updating conversation status for ${contactId}: ${status}`)
-      
       // Update local state immediately for responsive UI
       setConversationStatuses(updated)
       
@@ -79,15 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await database.saveConversationStatuses(user.id, updated)
       
       if (error) {
-        console.error('❌ Error saving conversation status:', error)
         // Revert local state on error
         setConversationStatuses(conversationStatuses)
         throw error
       }
-      
-      console.log('✅ Conversation status saved to database')
     } catch (error) {
-      console.error('❌ Error updating conversation status:', error)
       throw error
     }
   }
@@ -105,7 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setConversationStatuses({})
       router.push('/login')
     } catch (error) {
-      console.error('Error signing out:', error)
+      // Sign out failed - continue anyway for UX
+      router.push('/login')
     }
   }
 
@@ -118,12 +110,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          console.log('👤 User logged in:', session.user.email)
           // Load conversation statuses after user is set
           await loadConversationStatuses()
         }
       } catch (error) {
-        console.error('Error getting initial session:', error)
+        // Failed to get initial session - will show login
       } finally {
         setLoading(false)
       }
@@ -133,17 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state changed:', event, session?.user?.email)
-      
       setSession(session)
       setUser(session?.user ?? null)
       
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('✅ User signed in:', session.user.email)
         // Load conversation statuses for the new user
         setTimeout(loadConversationStatuses, 100) // Small delay to ensure user state is set
       } else if (event === 'SIGNED_OUT') {
-        console.log('👋 User signed out')
         setConversationStatuses({})
       }
       

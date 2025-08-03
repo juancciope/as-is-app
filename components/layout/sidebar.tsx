@@ -36,7 +36,7 @@ export default function Sidebar() {
     try {
       await signOut()
     } catch (error) {
-      console.error('Error signing out:', error)
+      // Sign out failed - continue anyway for UX
     }
   }
 

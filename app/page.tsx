@@ -15,7 +15,6 @@ import { AdvancedFilters, FilterState } from '../components/dashboard/advanced-f
 import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search, UserCheck, Table } from 'lucide-react';
 
 export default function Home() {
-  console.log('🏠 Home component rendering...');
   
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -24,7 +23,6 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        console.log('🔒 No authenticated user, redirecting to login');
         router.push('/login');
         return;
       }
@@ -84,7 +82,6 @@ export default function Home() {
   });
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered, fetching data...');
     fetchData();
     if (activeTab === 'contacts') {
       fetchContacts();
@@ -98,7 +95,6 @@ export default function Home() {
   }, [activeTab]);
 
   const fetchData = async () => {
-    console.log('📡 Starting fetchData...');
     setIsLoadingData(true);
     setError(null); // Clear any previous errors
     try {
@@ -129,32 +125,25 @@ export default function Home() {
       if (filters.minScore !== undefined) params.append('minScore', filters.minScore.toString());
       if (filters.maxScore !== undefined) params.append('maxScore', filters.maxScore.toString());
       
-      console.log('📡 Fetching data from /api/data with params:', params.toString());
       const response = await fetch(`/api/data?${params}`);
-      console.log('📡 Response status:', response.status, response.statusText);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
-      console.log('📡 API Response:', result);
       
       if (result.data && Array.isArray(result.data)) {
-        console.log('✅ Valid data received, count:', result.data.length);
         setData(result.data);
         updateStats(result.data);
         setError(null);
       } else {
-        console.error('❌ Invalid data format received:', result);
         setError(`Invalid data format: ${JSON.stringify(result)}`);
         setData([]);
         updateStats([]);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError(`Failed to fetch data: ${errorMessage}`);
       // Set empty data on error to prevent crashes
@@ -166,7 +155,6 @@ export default function Home() {
   };
 
   const fetchContacts = async () => {
-    console.log('📞 Starting fetchContacts...');
     setIsLoadingContacts(true);
     try {
       const params = new URLSearchParams();
@@ -189,28 +177,21 @@ export default function Home() {
       if (filters.createdDateFrom) params.append('createdDateFrom', filters.createdDateFrom);
       if (filters.createdDateTo) params.append('createdDateTo', filters.createdDateTo);
       
-      console.log('📞 Fetching contacts from /api/contacts with params:', params.toString());
       const response = await fetch(`/api/contacts?${params}`);
-      console.log('📞 Response status:', response.status, response.statusText);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Contacts API Error Response:', errorText);
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
       const result = await response.json();
-      console.log('📞 Contacts API Response:', result);
       
       if (result.contacts && Array.isArray(result.contacts)) {
-        console.log('✅ Valid contacts received, count:', result.contacts.length);
         setContacts(result.contacts);
       } else {
-        console.error('❌ Invalid contacts format received:', result);
         setContacts([]);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch contacts:', error);
       setContacts([]);
     } finally {
       setIsLoadingContacts(false);
@@ -250,13 +231,10 @@ export default function Home() {
         const result = await response.json();
         
         if (response.ok) {
-          console.log(`Successfully scraped ${result.recordsInserted} records from ${scraper}`);
           setCompletedScrapers(prev => [...prev, scraper]);
-        } else {
-          console.error(`Failed to scrape ${scraper}:`, result.error);
         }
       } catch (error) {
-        console.error(`Scraping ${scraper} failed:`, error);
+        // Silently handle scraper errors
       }
     }
     
@@ -279,14 +257,11 @@ export default function Home() {
       const result = await response.json();
       
       if (response.ok) {
-        console.log(`Successfully scraped ${result.recordsInserted} records from ${source}`);
         setCompletedScrapers(prev => [...prev, source]);
         await fetchData();
-      } else {
-        console.error(`Failed to scrape ${source}:`, result.error);
       }
     } catch (error) {
-      console.error(`Scraping ${source} failed:`, error);
+      // Silently handle scraper errors
     } finally {
       setIsScrapingSource(null);
     }

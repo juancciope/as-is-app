@@ -23,7 +23,7 @@ export default function LoginPage() {
           router.push('/leads')
         }
       } catch (error) {
-        console.error('Error checking session:', error)
+        // Session check failed - continue to login
       }
     }
     checkSession()
@@ -43,11 +43,9 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        console.log('✅ Login successful:', data.user.email)
         router.push('/leads')
       }
     } catch (error: any) {
-      console.error('Login error:', error)
       setError(error.message || 'An unexpected error occurred')
     } finally {
       setIsLoading(false)

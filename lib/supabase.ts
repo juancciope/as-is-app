@@ -9,12 +9,6 @@ try {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://shyqqjsksxoiawikirju.supabase.co';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoeXFxanNrc3hvaWF3aWtpcmp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5MjE1OTMsImV4cCI6MjA2NzQ5NzU5M30.kDumFJ-NFpy-lY0EMbVFwEDwM6Rg1I1Ti5axi9vK0Ao';
 
-  console.log('🔍 Creating Supabase client with:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    url: supabaseUrl
-  });
-
   if (supabaseUrl && supabaseAnonKey) {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -23,12 +17,9 @@ try {
         detectSessionInUrl: true
       }
     });
-    console.log('✅ Supabase client created successfully');
-  } else {
-    console.error('❌ Missing Supabase credentials');
   }
 } catch (error) {
-  console.error('❌ Error creating Supabase client:', error);
+  // Supabase client creation failed - will fallback to null checks
 }
 
 export { supabase };

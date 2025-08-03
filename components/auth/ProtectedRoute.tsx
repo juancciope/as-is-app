@@ -15,7 +15,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!loading && !user) {
-      console.log('🔒 No authenticated user, redirecting to login')
       router.push('/login')
     }
   }, [user, loading, router])

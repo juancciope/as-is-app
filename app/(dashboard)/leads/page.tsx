@@ -80,7 +80,6 @@ export default function LeadsPage() {
   // Load conversation statuses from database when leads are loaded
   useEffect(() => {
     if (leads.length > 0) {
-      console.log('🔄 Leads loaded, ensuring conversation statuses are synced...')
       loadConversationStatuses()
     }
   }, [leads.length, loadConversationStatuses])
@@ -122,13 +121,10 @@ export default function LeadsPage() {
     const currentStatus = conversationStatuses[contactId] || 'pending'
     const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
     
-    console.log(`🔄 Toggling status for ${contactId}: ${currentStatus} → ${newStatus}`)
-    
     try {
       await updateConversationStatus(contactId, newStatus)
-      console.log('✅ Status updated successfully in database')
     } catch (error) {
-      console.error('❌ Error updating conversation status:', error)
+      // Status update failed - user will see old state
     }
   }
 
@@ -140,20 +136,6 @@ export default function LeadsPage() {
     return status === conversationFilter
   })
 
-  // Debug logging for filtered leads (only when leads or statuses change)
-  useEffect(() => {
-    if (leads.length > 0) {
-      console.log('📊 Current conversation statuses:', conversationStatuses)
-      console.log('📊 Current filter:', conversationFilter)
-      console.log('📊 Total leads:', leads.length)
-      console.log('📊 Filtered leads:', filteredLeads.length)
-      console.log('📊 Lead status mapping:', leads.map(lead => ({
-        contactId: lead.contactId,
-        name: lead.name,
-        status: conversationStatuses[lead.contactId] || 'pending'
-      })))
-    }
-  }, [leads.length, conversationStatuses, conversationFilter, filteredLeads.length])
 
   // REMOVED AUTO-SAVE - All saves are now explicit and immediate
 
