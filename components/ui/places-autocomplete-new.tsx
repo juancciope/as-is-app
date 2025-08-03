@@ -41,9 +41,7 @@ export function PlacesAutocompleteNew({
   // Initialize the new Google Places Autocomplete Element
   useEffect(() => {
     const initNewAutocomplete = async () => {
-      try {
-        console.log('🔄 Initializing new Google Places Autocomplete Element...');
-        
+      try {        
         // Check if Google Maps is available
         if (!window.google?.maps) {
           throw new Error('Google Maps not loaded');
@@ -51,7 +49,6 @@ export function PlacesAutocompleteNew({
 
         // Import the Places library with the new API
         const { PlaceAutocompleteElement } = await window.google.maps.importLibrary("places");
-        console.log('📦 Places library imported successfully');
 
         if (!containerRef.current || autocompleteElementRef.current) {
           return;
@@ -64,37 +61,86 @@ export function PlacesAutocompleteNew({
           // You can add other options like locationBias if needed
         });
 
-        console.log('✅ PlaceAutocompleteElement created');
 
         // Style the element to match our design
         autocompleteElement.style.width = '100%';
         autocompleteElement.style.border = 'none';
         autocompleteElement.style.outline = 'none';
+        autocompleteElement.style.backgroundColor = 'white';
+        autocompleteElement.style.color = '#374151'; // text-gray-700
+        autocompleteElement.style.fontSize = '14px';
+        autocompleteElement.style.fontFamily = 'inherit';
+        
+        // Override internal styling
+        const style = document.createElement('style');
+        style.textContent = `
+          gmp-place-autocomplete {
+            --gmp-color-surface: white !important;
+            --gmp-color-on-surface: #374151 !important;
+            --gmp-color-on-surface-variant: #6b7280 !important;
+            --gmp-color-outline: #d1d5db !important;
+            --gmp-font-family: inherit !important;
+            --gmp-font-size: 14px !important;
+          }
+          
+          gmp-place-autocomplete input {
+            background-color: white !important;
+            color: #374151 !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 14px !important;
+            font-family: inherit !important;
+            outline: none !important;
+          }
+          
+          gmp-place-autocomplete input:focus {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+          }
+          
+          gmp-place-autocomplete .suggestion-list {
+            background-color: white !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+          }
+          
+          gmp-place-autocomplete .suggestion-item {
+            color: #374151 !important;
+            background-color: white !important;
+            padding: 0.75rem !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+          }
+          
+          gmp-place-autocomplete .suggestion-item:hover {
+            background-color: #f9fafb !important;
+          }
+          
+          gmp-place-autocomplete .suggestion-item:last-child {
+            border-bottom: none !important;
+          }
+        `;
+        document.head.appendChild(style);
 
         // Listen for the gmp-select event (new API event)
         autocompleteElement.addEventListener('gmp-select', async (event: any) => {
           try {
-            console.log('🎯 Place selected via gmp-select event:', event);
-            
             const { placePrediction } = event;
             if (!placePrediction) {
-              console.warn('⚠️ No placePrediction in event');
               return;
             }
 
             // Convert prediction to Place object
             const place = placePrediction.toPlace();
-            console.log('📍 Place object created:', place);
 
             // Fetch the fields we need
             await place.fetchFields({ 
               fields: ['formattedAddress', 'displayName', 'location', 'addressComponents'] 
             });
-            console.log('📋 Place fields fetched');
 
             // Get the formatted address (complete address string)
             const fullAddress = place.formattedAddress;
-            console.log('✅ Full address captured:', fullAddress);
 
             if (fullAddress) {
               setLocalValue(fullAddress);
@@ -111,7 +157,7 @@ export function PlacesAutocompleteNew({
               }
             }
           } catch (error) {
-            console.error('❌ Error handling place selection:', error);
+            console.error('Error handling place selection:', error);
             setApiError('Error processing selected place');
           }
         });
@@ -121,11 +167,9 @@ export function PlacesAutocompleteNew({
         autocompleteElementRef.current = autocompleteElement;
         setIsLoaded(true);
         setApiError(null);
-        
-        console.log('🎉 New Google Places Autocomplete Element initialized successfully');
 
       } catch (error) {
-        console.error('❌ Error initializing new Places Autocomplete:', error);
+        console.error('Error initializing Places Autocomplete:', error);
         setApiError(`Failed to initialize: ${error instanceof Error ? error.message : 'Unknown error'}`);
         setIsLoaded(false);
       }
@@ -144,12 +188,10 @@ export function PlacesAutocompleteNew({
       script.defer = true;
       
       script.onload = () => {
-        console.log('📡 Google Maps API loaded with Places library');
         initNewAutocomplete();
       };
       
       script.onerror = () => {
-        console.error('❌ Failed to load Google Maps API');
         setApiError('Failed to load Google Maps API');
       };
       

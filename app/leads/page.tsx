@@ -603,18 +603,12 @@ export default function LeadsPage() {
     const [localAddress, setLocalAddress] = useState('')
     
     const handleSubmit = async () => {
-      console.log('🚀 Form submission started')
-      console.log('📝 Current localAddress:', localAddress)
-      console.log('📏 Address length:', localAddress.length)
-      
       if (!localAddress.trim()) {
-        console.log('❌ Empty address validation failed')
         alert('Please enter a property address')
         return
       }
 
       if (!selectedLead?.contactId) {
-        console.log('❌ No contact selected')
         alert('No contact selected')
         return
       }
@@ -632,30 +626,20 @@ export default function LeadsPage() {
           previousReports: []
         }
 
-        console.log('✅ Adding property with address:', newProperty.address)
-        console.log('📏 Address length being saved:', newProperty.address.length)
-        console.log('🏠 New property object:', newProperty)
-
         // Add to properties list
         const updatedProperties = [...contactProperties, newProperty]
-        console.log('💾 Setting contact properties:', updatedProperties)
         setContactProperties(updatedProperties)
         
         // Save to database
-        console.log('💾 Saving to database for contact:', selectedLead.contactId)
         await saveContactProperties(selectedLead.contactId, updatedProperties)
-        console.log('✅ Successfully saved to database')
         
         // Clear form and close
-        console.log('🧹 Clearing form and closing')
         setLocalAddress('')
         setIsAddingProperty(false)
         setNewPropertyAddress('')
         
-        console.log('🎉 Property added successfully!')
-        
       } catch (error) {
-        console.error('❌ Error adding property:', error)
+        console.error('Error adding property:', error)
         alert('Failed to add property. Please try again.')
       }
     }
@@ -688,14 +672,8 @@ export default function LeadsPage() {
               setLocalAddress(value)
             }}
             onPlaceSelected={(place) => {
-              console.log('📍 Place selected via new API:', place)
               if (place?.formatted_address) {
-                console.log('🎯 Setting full address from new API:', place.formatted_address)
-                // Small delay to ensure state update
-                setTimeout(() => {
-                  setLocalAddress(place.formatted_address)
-                  console.log('✅ Address state updated:', place.formatted_address)
-                }, 100)
+                setLocalAddress(place.formatted_address)
               }
             }}
             placeholder="Enter property address..."
