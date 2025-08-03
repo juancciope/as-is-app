@@ -46,6 +46,7 @@ export default function LeadsPage() {
   const [showMobileProperties, setShowMobileProperties] = useState(false)
   const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
   const [isLoadingContactData, setIsLoadingContactData] = useState(false)
+  const [forceRefreshKey, setForceRefreshKey] = useState(0)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -357,7 +358,14 @@ export default function LeadsPage() {
     
     try {
       console.log('🔍 Loading properties for contact:', contactId)
-      const response = await fetch(`/api/contact-properties/${contactId}`)
+      // Add cache-busting timestamp to force fresh data
+      const timestamp = new Date().getTime()
+      const response = await fetch(`/api/contact-properties/${contactId}?t=${timestamp}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
       
       if (!response.ok) {
         throw new Error('Failed to load contact properties')
@@ -383,13 +391,20 @@ export default function LeadsPage() {
       await saveContactProperties(selectedLead.contactId, contactProperties)
     }
     
-    // IMMEDIATELY clear all state to prevent contamination
+    // IMMEDIATELY clear all state to prevent contamination - AGGRESSIVE RESET
     setPropertyAnalysis(null)
     setPreviousReports([])
     setContactProperties([]) // Clear properties BEFORE setting new lead
     setSelectedPropertyIndex(0)
     setIsAddingProperty(false)
     setContactDetails(null) // Clear contact details too
+    setNewPropertyAddress('')
+    setSelectedPlaceData(null)
+    setGeneratingReportForProperty(null)
+    
+    // Force React to re-render with clean state
+    console.log('🧹 AGGRESSIVE STATE RESET for new contact:', lead.contactId)
+    setForceRefreshKey(prev => prev + 1) // Force component refresh
     
     setSelectedLead(lead)
     if (lead) {
