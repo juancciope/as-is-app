@@ -1473,9 +1473,9 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col">
+      <div className="h-screen w-screen bg-white flex flex-col overflow-hidden">
         {/* Fixed Mobile Chat Header */}
-        <div className="bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
+        <div className="flex-shrink-0 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
@@ -1833,22 +1833,11 @@ export default function LeadsPage() {
             </div>
           ) : (
             // Mobile Chat View - Using Chat UI Kit properly
-            <div className="flex-1 flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-              <MainContainer style={{ 
-                border: 'none',
-                borderRadius: 0,
-                height: '100%'
-              }}>
-                <ChatContainer style={{ 
-                  height: '100%',
-                  backgroundColor: 'white'
-                }}>
+            <div className="flex-1 min-h-0 mobile-chat-container" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <MainContainer className="mobile-chat">
+                <ChatContainer>
                   <MessageList 
                     typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                    style={{ 
-                      paddingBottom: '1rem',
-                      backgroundColor: 'white'
-                    }}
                   >
                     {isLoadingMessages ? (
                       <div className="flex items-center justify-center p-8">
@@ -1865,10 +1854,6 @@ export default function LeadsPage() {
                     disabled={isSending}
                     sendDisabled={isSending}
                     attachButton={false}
-                    style={{
-                      borderTop: '1px solid #e5e5e5',
-                      backgroundColor: 'white'
-                    }}
                     onFocus={() => {
                       // Scroll to bottom when input is focused
                       setTimeout(() => {

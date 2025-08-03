@@ -19,7 +19,7 @@
 
 .cs-message-list {
   flex: 1 !important;
-  height: 0 !important; /* Force flex child to respect parent height */
+  min-height: 0 !important; /* Allow flex shrinking */
   overflow-y: auto !important;
   position: relative !important;
 }
@@ -206,6 +206,33 @@
     overflow-x: hidden !important;
   }
   
+  /* Fix height calculation for mobile */
+  .cs-main-container {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .cs-chat-container {
+    flex: 1 !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  .cs-message-list {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .cs-message-list__scroll-wrapper {
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
   /* Mobile input fixes to prevent zooming and viewport issues */
   input[type="text"], 
   input[type="email"], 
@@ -219,11 +246,9 @@
   
   /* Ensure mobile views are fully contained */
   .cs-main-container,
-  .cs-chat-container,
-  .cs-message-list {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    overflow-x: hidden !important;
+  .cs-chat-container {
+    width: 100% !important;
+    max-width: 100% !important;
   }
   
   .cs-message-input {
@@ -247,4 +272,114 @@
     width: 100% !important;
     max-width: 100% !important;
   }
+}
+
+/* Minimalistic Apple-style mobile chat */
+.mobile-chat-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-chat.cs-main-container {
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.mobile-chat .cs-chat-container {
+  height: 100% !important;
+  background: transparent !important;
+}
+
+.mobile-chat .cs-message-list {
+  background-color: #f2f2f7 !important; /* iOS system background */
+  padding: 12px !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+.mobile-chat .cs-message-list__scroll-wrapper {
+  height: 100% !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scroll-behavior: smooth !important;
+}
+
+/* Apple-style messages */
+.mobile-chat .cs-message--outgoing .cs-message__content {
+  background-color: #007AFF !important; /* iOS blue */
+  color: white !important;
+  border-radius: 18px !important;
+  padding: 8px 12px !important;
+  max-width: 75% !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.mobile-chat .cs-message--incoming .cs-message__content {
+  background-color: #E5E5EA !important; /* iOS gray bubble */
+  color: black !important;
+  border-radius: 18px !important;
+  padding: 8px 12px !important;
+  max-width: 75% !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Clean input style */
+.mobile-chat .cs-message-input {
+  background-color: white !important;
+  border-top: 1px solid #E5E5EA !important;
+  padding: 8px 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.mobile-chat .cs-message-input__content-editor {
+  background-color: #f2f2f7 !important;
+  border: 1px solid #E5E5EA !important;
+  border-radius: 20px !important;
+  padding: 8px 16px !important;
+  font-size: 16px !important;
+  min-height: 36px !important;
+  max-height: 100px !important;
+}
+
+.mobile-chat .cs-button--send {
+  background-color: #007AFF !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  margin-left: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0 !important;
+}
+
+.mobile-chat .cs-button--send::after {
+  content: "↑";
+  font-size: 18px !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+/* Remove unnecessary styling */
+.mobile-chat .cs-message__footer {
+  display: none !important;
+}
+
+.mobile-chat .cs-message {
+  margin-bottom: 4px !important;
+}
+
+/* Date separators - minimal */
+.mobile-chat .cs-message-separator__content {
+  background-color: transparent !important;
+  color: #8E8E93 !important;
+  font-size: 12px !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 0 !important;
 }
