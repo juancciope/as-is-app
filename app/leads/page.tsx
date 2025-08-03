@@ -73,6 +73,38 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Format time like WhatsApp (Today, Yesterday, or date)
+  const formatMessageTime = (dateString: string | null) => {
+    if (!dateString) return ''
+    
+    const messageDate = new Date(dateString)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+    const messageDay = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate())
+    
+    if (messageDay.getTime() === today.getTime()) {
+      // Today - show time only
+      return messageDate.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    } else if (messageDay.getTime() === yesterday.getTime()) {
+      // Yesterday
+      return 'Yesterday'
+    } else if (messageDay.getTime() > new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).getTime()) {
+      // This week - show day name
+      return messageDate.toLocaleDateString('en-US', { weekday: 'short' })
+    } else {
+      // Older - show date
+      return messageDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    }
+  }
+
   // Toggle conversation status between pending and replied
   const toggleConversationStatus = (contactId: string) => {
     setConversationStatuses(prev => {
@@ -1327,45 +1359,64 @@ export default function LeadsPage() {
                 onClick={() => handleSelectLead(lead)}
                 className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100 w-full"
               >
-                <div className="flex items-start justify-between w-full">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center">
-                      <h3 className="font-semibold text-gray-900 truncate">{lead.contactName || 'Unknown'}</h3>
-                      {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current flex-shrink-0" />}
-                      {lead.unreadCount > 0 && (
-                        <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full flex-shrink-0">
-                          {lead.unreadCount}
-                        </span>
-                      )}
-                      {/* Status Indicator */}
-                      <span className={`ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${
-                        conversationStatuses[lead.contactId] === 'replied'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                        {conversationStatuses[lead.contactId] === 'replied' ? 'Replied' : 'Pending'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1 truncate w-full">{lead.lastMessageBody || 'No messages'}</p>
-                    <p className="text-xs text-gray-500 mt-1 truncate w-full">
-                      {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
-                    </p>
+                <div className="flex items-start w-full">
+                  {/* Avatar placeholder */}
+                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                    <User className="h-6 w-6 text-gray-600" />
                   </div>
                   
-                  {/* Mark as Replied Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation() // Prevent selecting the conversation
-                      toggleConversationStatus(lead.contactId)
-                    }}
-                    className={`ml-2 p-2 rounded-lg transition-colors flex-shrink-0 ${
-                      conversationStatuses[lead.contactId] === 'replied'
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    {/* Top row: Name and Time */}
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center min-w-0 flex-1">
+                        <h3 className="font-semibold text-gray-900 truncate">{lead.contactName || 'Unknown'}</h3>
+                        {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current flex-shrink-0" />}
+                      </div>
+                      <div className="flex items-center ml-2">
+                        <span className="text-xs text-gray-500">
+                          {formatMessageTime(lead.lastMessageDate)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Bottom row: Message and Status */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600 truncate flex-1 mr-2">
+                        {lead.lastMessageBody || 'No messages'}
+                      </p>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Status indicator - small dot */}
+                        <div className={`w-2 h-2 rounded-full ${
+                          conversationStatuses[lead.contactId] === 'replied'
+                            ? 'bg-green-500'
+                            : 'bg-orange-500'
+                        }`}></div>
+                        
+                        {/* Unread count bubble - only show if > 0 */}
+                        {lead.unreadCount > 0 && (
+                          <span className="px-2 py-1 text-xs bg-[#25D366] text-white rounded-full min-w-[20px] text-center">
+                            {lead.unreadCount > 99 ? '99+' : lead.unreadCount}
+                          </span>
+                        )}
+                        
+                        {/* Mark as replied toggle */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleConversationStatus(lead.contactId)
+                          }}
+                          className={`p-1 rounded-full transition-colors ${
+                            conversationStatuses[lead.contactId] === 'replied'
+                              ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Check className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))
@@ -1838,25 +1889,67 @@ export default function LeadsPage() {
                 <div
                   key={lead.id}
                   onClick={() => handleSelectLead(lead)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                  className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
                     selectedLead?.id === lead.id ? 'bg-orange-50 border-l-4 border-l-[#FE8F00]' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start w-full">
+                    {/* Avatar placeholder */}
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                      <User className="h-5 w-5 text-gray-600" />
+                    </div>
+                    
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center">
-                        <h3 className="font-semibold text-gray-900 truncate">{lead.contactName || 'Unknown'}</h3>
-                        {lead.starred && <Star className="ml-2 h-4 w-4 text-[#FE8F00] fill-current flex-shrink-0" />}
-                        {lead.unreadCount > 0 && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-[#04325E] text-white rounded-full flex-shrink-0">
-                            {lead.unreadCount}
+                      {/* Top row: Name and Time */}
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 truncate text-sm">{lead.contactName || 'Unknown'}</h3>
+                          {lead.starred && <Star className="ml-2 h-3 w-3 text-[#FE8F00] fill-current flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center ml-2">
+                          <span className="text-xs text-gray-500">
+                            {formatMessageTime(lead.lastMessageDate)}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1 truncate">{lead.lastMessageBody || 'No messages'}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {lead.lastMessageDate ? new Date(lead.lastMessageDate).toLocaleString() : 'No date'}
-                      </p>
+                      
+                      {/* Bottom row: Message and Status */}
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-600 truncate flex-1 mr-2">
+                          {lead.lastMessageBody || 'No messages'}
+                        </p>
+                        
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Status indicator - small dot */}
+                          <div className={`w-2 h-2 rounded-full ${
+                            conversationStatuses[lead.contactId] === 'replied'
+                              ? 'bg-green-500'
+                              : 'bg-orange-500'
+                          }`}></div>
+                          
+                          {/* Unread count bubble - only show if > 0 */}
+                          {lead.unreadCount > 0 && (
+                            <span className="px-1.5 py-0.5 text-xs bg-[#25D366] text-white rounded-full min-w-[18px] text-center">
+                              {lead.unreadCount > 99 ? '99+' : lead.unreadCount}
+                            </span>
+                          )}
+                          
+                          {/* Mark as replied toggle */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleConversationStatus(lead.contactId)
+                            }}
+                            className={`p-1 rounded-full transition-colors ${
+                              conversationStatuses[lead.contactId] === 'replied'
+                                ? 'bg-green-100 text-green-600 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                            }`}
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
