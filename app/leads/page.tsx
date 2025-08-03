@@ -753,30 +753,82 @@ export default function LeadsPage() {
         </div>
         
         <div className="space-y-3">
-          <PlacesAutocompleteStyled
-            value={newPropertyAddress}
-            onChange={(value) => {
-              console.log('🔄 onChange called with value:', value)
-              setNewPropertyAddress(value)
-              console.log('✅ newPropertyAddress set to:', value)
-            }}
-            onPlaceSelected={(place) => {
-              console.log('🎯 onPlaceSelected called with place:', place)
-              if (place?.formatted_address) {
-                console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
-                setNewPropertyAddress(place.formatted_address)
-                setSelectedPlaceData(place)
-                console.log('✅ newPropertyAddress and place data set')
-              } else {
-                console.warn('❌ No formatted_address in place object')
-              }
-            }}
-            placeholder="Enter property address..."
-            className={isMobile 
-              ? "p-3 border border-gray-300 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-              : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
-            }
-          />
+          {isMobile ? (
+            // Mobile-optimized address input with fixed positioning
+            <div className="relative">
+              <div className={`${isMobile ? 'fixed inset-x-0 top-0 z-50 bg-white border-b border-gray-200 p-4' : ''}`} style={isMobile ? { display: 'none' } : {}}>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleCancel}
+                    className="text-gray-600"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                  <h3 className="text-lg font-medium text-gray-900">Add Property Address</h3>
+                </div>
+              </div>
+              
+              <PlacesAutocompleteStyled
+                value={newPropertyAddress}
+                onChange={(value) => {
+                  console.log('🔄 onChange called with value:', value)
+                  setNewPropertyAddress(value)
+                  console.log('✅ newPropertyAddress set to:', value)
+                }}
+                onPlaceSelected={(place) => {
+                  console.log('🎯 onPlaceSelected called with place:', place)
+                  if (place?.formatted_address) {
+                    console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
+                    setNewPropertyAddress(place.formatted_address)  
+                    setSelectedPlaceData(place)
+                    console.log('✅ newPropertyAddress and place data set')
+                    
+                    // On mobile, blur the input to hide keyboard after selection
+                    if (isMobile) {
+                      setTimeout(() => {
+                        const activeElement = document.activeElement as HTMLElement
+                        if (activeElement) {
+                          activeElement.blur()
+                        }
+                      }, 100)
+                    }
+                  } else {
+                    console.warn('❌ No formatted_address in place object')
+                  }
+                }}
+                placeholder="Enter property address..."
+                className="p-4 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                style={{
+                  fontSize: '16px', // Prevents zoom on iOS
+                  WebkitAppearance: 'none',
+                  borderRadius: '8px'
+                }}
+              />
+            </div>
+          ) : (
+            // Desktop version - unchanged
+            <PlacesAutocompleteStyled
+              value={newPropertyAddress}
+              onChange={(value) => {
+                console.log('🔄 onChange called with value:', value)
+                setNewPropertyAddress(value)
+                console.log('✅ newPropertyAddress set to:', value)
+              }}
+              onPlaceSelected={(place) => {
+                console.log('🎯 onPlaceSelected called with place:', place)
+                if (place?.formatted_address) {
+                  console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
+                  setNewPropertyAddress(place.formatted_address)
+                  setSelectedPlaceData(place)
+                  console.log('✅ newPropertyAddress and place data set')
+                } else {
+                  console.warn('❌ No formatted_address in place object')
+                }
+              }}
+              placeholder="Enter property address..."
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
+            />
+          )}
           
           
           <div className={`flex gap-2 ${isMobile ? '' : 'justify-end'}`}>
@@ -1284,7 +1336,11 @@ export default function LeadsPage() {
         <div className="flex-1 min-h-0 w-full overflow-hidden">
           {showMobileProperties ? (
             // Mobile Properties/Reports View
-            <div className="h-full overflow-y-auto p-4 bg-gray-50">
+            <div className="h-full overflow-y-auto p-4 bg-gray-50" style={{ 
+              // Prevent viewport jumping on iOS when keyboard appears
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain'
+            }}>
               <div className="space-y-4">
                 {/* Contact Details */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -1332,8 +1388,12 @@ export default function LeadsPage() {
                     </button>
                   </div>
 
-                  {/* Add Property Form */}
-                  {isAddingProperty && <AddPropertyForm isMobile={true} />}
+                  {/* Add Property Form - Mobile optimized */}
+                  {isAddingProperty && (
+                    <div className="sticky top-0 z-10 bg-gray-50 -mx-4 px-4 py-4 border-b border-gray-200 mb-4">
+                      <AddPropertyForm isMobile={true} />
+                    </div>
+                  )}
 
                   {/* Properties List */}
                   <div className="space-y-3">
