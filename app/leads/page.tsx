@@ -599,16 +599,16 @@ export default function LeadsPage() {
   }
 
   const AddPropertyForm = ({ isMobile = false }: { isMobile?: boolean }) => {
-    // Local state for the form
-    const [localAddress, setLocalAddress] = useState('')
+    // Use the existing newPropertyAddress state instead of local state to prevent resets
+    // const [localAddress, setLocalAddress] = useState('')
     
     // Debug logging
-    console.log('🏠 AddPropertyForm render - localAddress:', localAddress)
-    console.log('🏠 AddPropertyForm render - localAddress.trim():', localAddress.trim())
-    console.log('🏠 AddPropertyForm render - button disabled:', !localAddress.trim())
+    console.log('🏠 AddPropertyForm render - newPropertyAddress:', newPropertyAddress)
+    console.log('🏠 AddPropertyForm render - newPropertyAddress.trim():', newPropertyAddress.trim())
+    console.log('🏠 AddPropertyForm render - button disabled:', !newPropertyAddress.trim())
     
     const handleSubmit = async () => {
-      if (!localAddress.trim()) {
+      if (!newPropertyAddress.trim()) {
         alert('Please enter a property address')
         return
       }
@@ -639,7 +639,7 @@ export default function LeadsPage() {
           }
         } else {
           // Fallback: Parse address components from the full address string
-          const addressParts = localAddress.trim().split(',').map(part => part.trim())
+          const addressParts = newPropertyAddress.trim().split(',').map(part => part.trim())
           
           if (addressParts.length >= 3) {
             // Format: "Street, City, State ZIP, Country" or "Street, City, State ZIP"
@@ -661,7 +661,7 @@ export default function LeadsPage() {
         // Create new property with parsed address components
         const newProperty = {
           id: `property-${Date.now()}`,
-          address: localAddress.trim(),
+          address: newPropertyAddress.trim(),
           city: city,
           state: state,
           zipCode: zipCode,
@@ -678,10 +678,9 @@ export default function LeadsPage() {
         await saveContactProperties(selectedLead.contactId, updatedProperties)
         
         // Clear form and close
-        setLocalAddress('')
+        setNewPropertyAddress('')
         setSelectedPlaceData(null)
         setIsAddingProperty(false)
-        setNewPropertyAddress('')
         
       } catch (error) {
         console.error('Error adding property:', error)
@@ -690,10 +689,9 @@ export default function LeadsPage() {
     }
     
     const handleCancel = () => {
-      setLocalAddress('')
+      setNewPropertyAddress('')
       setSelectedPlaceData(null)
       setIsAddingProperty(false)
-      setNewPropertyAddress('')
     }
     
     return (
@@ -712,19 +710,19 @@ export default function LeadsPage() {
         
         <div className="space-y-3">
           <PlacesAutocompleteStyled
-            value={localAddress}
+            value={newPropertyAddress}
             onChange={(value) => {
               console.log('🔄 onChange called with value:', value)
-              setLocalAddress(value)
-              console.log('✅ localAddress set to:', value)
+              setNewPropertyAddress(value)
+              console.log('✅ newPropertyAddress set to:', value)
             }}
             onPlaceSelected={(place) => {
               console.log('🎯 onPlaceSelected called with place:', place)
               if (place?.formatted_address) {
-                console.log('🎯 Setting localAddress to:', place.formatted_address)
-                setLocalAddress(place.formatted_address)
+                console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
+                setNewPropertyAddress(place.formatted_address)
                 setSelectedPlaceData(place)
-                console.log('✅ localAddress and place data set')
+                console.log('✅ newPropertyAddress and place data set')
               } else {
                 console.warn('❌ No formatted_address in place object')
               }
@@ -748,10 +746,10 @@ export default function LeadsPage() {
             <button
               onClick={() => {
                 console.log('🚀 Add Property button clicked!')
-                console.log('🚀 localAddress at click:', localAddress)
+                console.log('🚀 newPropertyAddress at click:', newPropertyAddress)
                 handleSubmit()
               }}
-              disabled={!localAddress.trim()}
+              disabled={!newPropertyAddress.trim()}
               className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
             >
               <Check className="h-4 w-4 mr-1" />
