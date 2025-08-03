@@ -95,6 +95,29 @@ export function PlacesAutocompleteStyled({
               console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
+              // DEBUG: Force input text visibility after selection
+              setTimeout(() => {
+                const inputElement = autocomplete.querySelector('input');
+                if (inputElement) {
+                  console.log('🔍 INPUT DEBUG - Element:', inputElement);
+                  console.log('🔍 INPUT DEBUG - Value:', inputElement.value);
+                  console.log('🔍 INPUT DEBUG - Computed styles:', window.getComputedStyle(inputElement));
+                  console.log('🔍 INPUT DEBUG - Color:', window.getComputedStyle(inputElement).color);
+                  console.log('🔍 INPUT DEBUG - Background:', window.getComputedStyle(inputElement).backgroundColor);
+                  console.log('🔍 INPUT DEBUG - Opacity:', window.getComputedStyle(inputElement).opacity);
+                  console.log('🔍 INPUT DEBUG - Visibility:', window.getComputedStyle(inputElement).visibility);
+                  
+                  // FORCE text to be visible
+                  inputElement.style.setProperty('color', '#000000', 'important');
+                  inputElement.style.setProperty('background-color', '#ffffff', 'important');
+                  inputElement.style.setProperty('-webkit-text-fill-color', '#000000', 'important');
+                  inputElement.style.setProperty('opacity', '1', 'important');
+                  inputElement.style.setProperty('visibility', 'visible', 'important');
+                  
+                  console.log('🔧 FORCED input styles applied');
+                }
+              }, 100);
+
               if (onPlaceSelected) {
                 const placeData = {
                   formatted_address: fullAddress,
@@ -174,7 +197,7 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* Proper Google Places styling using CSS variables and color-scheme */}
+      {/* HYPER-FOCUSED: Make input text visible after address selection */}
       <style jsx global>{`
         /* Force light theme and use CSS variables for consistent styling */
         gmp-place-autocomplete {
@@ -190,11 +213,68 @@ export function PlacesAutocompleteStyled({
           display: block !important;
         }
         
-        /* Additional styling for better appearance */
-        gmp-place-autocomplete input {
+        /* NUCLEAR OPTION: Force input text to be visible in ALL possible states */
+        gmp-place-autocomplete input,
+        gmp-place-autocomplete input:focus,
+        gmp-place-autocomplete input:active,
+        gmp-place-autocomplete input:hover,
+        gmp-place-autocomplete input[value]:not([value=""]),
+        gmp-place-autocomplete input:not(:placeholder-shown),
+        gmp-place-autocomplete input[aria-expanded="false"]:not(:placeholder-shown),
+        gmp-place-autocomplete input.has-value {
+          color: #000000 !important;
+          background-color: #ffffff !important;
+          -webkit-text-fill-color: #000000 !important;
+          opacity: 1 !important;
+          visibility: visible !important;
           font-family: inherit !important;
           font-size: 0.875rem !important;
           line-height: 1.25rem !important;
+          text-shadow: none !important;
+          text-indent: 0 !important;
+          letter-spacing: normal !important;
+          word-spacing: normal !important;
+          text-transform: none !important;
+          font-weight: normal !important;
+          font-style: normal !important;
+        }
+        
+        /* Target any possible pseudo-elements that might be hiding text */
+        gmp-place-autocomplete input::before,
+        gmp-place-autocomplete input::after,
+        gmp-place-autocomplete input::placeholder {
+          display: none !important;
+        }
+        
+        /* Force any overlays or masks to be transparent */
+        gmp-place-autocomplete::before,
+        gmp-place-autocomplete::after,
+        gmp-place-autocomplete *::before,
+        gmp-place-autocomplete *::after {
+          background: transparent !important;
+          color: transparent !important;
+        }
+        
+        /* Ensure no elements are covering the input */
+        gmp-place-autocomplete > * {
+          position: relative !important;
+          z-index: 1 !important;
+        }
+        
+        /* Force text selection to be visible */
+        gmp-place-autocomplete input::selection {
+          background: #3b82f6 !important;
+          color: #ffffff !important;
+        }
+        
+        /* Override any webkit-specific hiding */
+        gmp-place-autocomplete input:-webkit-autofill,
+        gmp-place-autocomplete input:-webkit-autofill:hover,
+        gmp-place-autocomplete input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #000000 !important;
+          -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+          background-color: #ffffff !important;
+          color: #000000 !important;
         }
         
         /* Style the dropdown to match */
