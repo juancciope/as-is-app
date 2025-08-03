@@ -434,29 +434,88 @@ export default function LeadsPage() {
 
   // Helper function to parse full address into components
   const parseAddress = (fullAddress: string) => {
-    // Simple address parsing - can be enhanced with a proper address parsing library
+    // Enhanced address parsing for better component extraction
     const parts = fullAddress.split(',').map(part => part.trim())
     
     if (parts.length >= 3) {
       // Format: "123 Main St, Nashville, TN 37203"
-      const address = parts[0]
+      const streetAddress = parts[0]
       const city = parts[1]
-      const stateZip = parts[2].split(' ')
-      const state = stateZip[0]
+      const stateZip = parts[2].split(' ').filter(Boolean)
+      const state = stateZip[0] || ''
       const zipCode = stateZip.slice(1).join(' ')
       
-      return { address, city, state, zipCode }
+      return { 
+        address: streetAddress, 
+        city, 
+        state, 
+        zipCode 
+      }
     } else if (parts.length === 2) {
-      // Format: "123 Main St, Nashville TN"
-      const address = parts[0]
-      const cityStateZip = parts[1].split(' ')
-      const city = cityStateZip.slice(0, -1).join(' ')
-      const state = cityStateZip[cityStateZip.length - 1]
+      // Format: "123 Main St, Nashville TN 37203" or "123 Main St, Nashville TN"
+      const streetAddress = parts[0]
+      const cityStateZip = parts[1].split(' ').filter(Boolean)
       
-      return { address, city, state, zipCode: '' }
+      // Try to identify state (usually 2 letters) and zip (numbers)
+      let city = ''
+      let state = ''
+      let zipCode = ''
+      
+      if (cityStateZip.length >= 2) {
+        // Last element might be zip if it's numeric
+        const lastElement = cityStateZip[cityStateZip.length - 1]
+        const secondLastElement = cityStateZip[cityStateZip.length - 2]
+        
+        if (/^\d{5}(-\d{4})?$/.test(lastElement)) {
+          // Last element is zip code
+          zipCode = lastElement
+          if (secondLastElement && secondLastElement.length === 2) {
+            // Second last is state
+            state = secondLastElement
+            city = cityStateZip.slice(0, -2).join(' ')
+          } else {
+            city = cityStateZip.slice(0, -1).join(' ')
+          }
+        } else if (secondLastElement && secondLastElement.length === 2) {
+          // Second last element is state
+          state = secondLastElement
+          city = cityStateZip.slice(0, -1).join(' ')
+        } else {
+          // No clear state/zip pattern
+          city = cityStateZip.join(' ')
+        }
+      } else {
+        city = cityStateZip.join(' ')
+      }
+      
+      return { 
+        address: streetAddress, 
+        city, 
+        state, 
+        zipCode 
+      }
     } else {
-      // Single part or complex format - treat as full address
-      return { address: fullAddress, city: '', state: '', zipCode: '' }
+      // Single part - treat as full address, try to extract what we can
+      const words = fullAddress.split(' ').filter(Boolean)
+      
+      // If the last word looks like a zip code, extract it
+      let zipCode = ''
+      let remainingAddress = fullAddress
+      
+      if (words.length > 0) {
+        const lastWord = words[words.length - 1]
+        if (/^\d{5}(-\d{4})?$/.test(lastWord)) {
+          zipCode = lastWord
+          remainingAddress = words.slice(0, -1).join(' ')
+        }
+      }
+      
+      return { 
+        address: remainingAddress, 
+        city: '', 
+        state: '', 
+        zipCode 
+      }
     }
   }
 
@@ -571,13 +630,17 @@ export default function LeadsPage() {
     }
 
     try {
+      // Get address components - prioritize Google Places data for better accuracy
       const addressComponents = selectedPlaceData 
         ? extractAddressComponents(selectedPlaceData)
         : parseAddress(newPropertyAddress)
       
+      // Use the full address from Google Places or the entered text
+      const fullPropertyAddress = selectedPlaceData?.formatted_address || newPropertyAddress
+      
       const newProperty = {
         id: `property-${Date.now()}`,
-        address: addressComponents.address || newPropertyAddress,
+        address: fullPropertyAddress, // Always use the complete address
         city: addressComponents.city || '',
         state: addressComponents.state || '',
         zipCode: addressComponents.zipCode || '',
@@ -585,6 +648,12 @@ export default function LeadsPage() {
         analysis: null,
         previousReports: []
       }
+
+      console.log('➕ Adding property with full address:', {
+        fullAddress: fullPropertyAddress,
+        components: addressComponents,
+        selectedPlaceData: !!selectedPlaceData
+      })
 
       console.log('➕ Adding property:', newProperty.address)
 
@@ -681,8 +750,13 @@ export default function LeadsPage() {
       zipCode
     })
 
+    // For property analysis, we need the FULL address including city, state, zip
+    // Use the formatted_address from Google Places as the complete address
+    const completeAddress = place.formatted_address || 
+      `${fullAddress}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}${zipCode ? ` ${zipCode}` : ''}`.trim()
+
     return {
-      address: fullAddress || place.formatted_address || '',
+      address: completeAddress,
       city: city || '',
       state: state || '',
       zipCode: zipCode || ''
