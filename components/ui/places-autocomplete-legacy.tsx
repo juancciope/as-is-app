@@ -60,6 +60,7 @@ export function PlacesAutocompleteLegacy({
         // Add listener for place selection
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace();
+          console.log('🔍 Place changed event fired. Place:', place);
           
           if (place && place.formatted_address) {
             const formattedAddress = place.formatted_address;
@@ -76,6 +77,8 @@ export function PlacesAutocompleteLegacy({
             if (onPlaceSelected) {
               onPlaceSelected(place);
             }
+          } else {
+            console.log('⚠️ Place changed but no formatted_address found');
           }
         });
 

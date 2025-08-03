@@ -626,7 +626,8 @@ export default function LeadsPage() {
           previousReports: []
         }
 
-        console.log('✅ Adding property:', newProperty.address)
+        console.log('✅ Adding property with address:', newProperty.address)
+        console.log('📏 Address length being saved:', newProperty.address.length)
 
         // Add to properties list
         const updatedProperties = [...contactProperties, newProperty]
@@ -675,8 +676,9 @@ export default function LeadsPage() {
               setLocalAddress(value)
             }}
             onPlaceSelected={(place) => {
-              console.log('📍 Place selected:', place)
+              console.log('📍 Place selected from form:', place)
               if (place?.formatted_address) {
+                console.log('🎯 Setting full address from place selection:', place.formatted_address)
                 setLocalAddress(place.formatted_address)
               }
             }}
