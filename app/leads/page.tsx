@@ -77,7 +77,7 @@ export default function LeadsPage() {
   const toggleConversationStatus = (contactId: string) => {
     setConversationStatuses(prev => {
       const currentStatus = prev[contactId] || 'pending'
-      const newStatus = currentStatus === 'pending' ? 'replied' : 'pending'
+      const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
       const updated = { ...prev, [contactId]: newStatus }
       
       // TODO: Save to database/localStorage
