@@ -17,6 +17,7 @@ interface PlacesAutocompleteStyledProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  style?: React.CSSProperties;
 }
 
 export function PlacesAutocompleteStyled({
@@ -25,7 +26,8 @@ export function PlacesAutocompleteStyled({
   onPlaceSelected,
   placeholder = "Enter property address...",
   className = "",
-  disabled = false
+  disabled = false,
+  style
 }: PlacesAutocompleteStyledProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const autocompleteElementRef = useRef<any>(null);
@@ -324,7 +326,7 @@ export function PlacesAutocompleteStyled({
         }
       `}</style>
       
-      <div className="relative">
+      <div className="relative" style={style}>
         {/* Container for Google Places Autocomplete Element */}
         <div 
           ref={containerRef}
