@@ -74,6 +74,23 @@ export default function LeadsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [isMobile])
 
+  // Force reload conversation statuses when leads are loaded (especially important for mobile)
+  useEffect(() => {
+    if (leads.length > 0) {
+      console.log('🔄 Leads loaded, reloading conversation statuses for sync...')
+      const saved = localStorage.getItem('conversationStatuses')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          console.log('🔄 Force-reloading statuses after leads loaded:', parsed)
+          setConversationStatuses(parsed)
+        } catch (error) {
+          console.error('❌ Error force-reloading statuses:', error)
+        }
+      }
+    }
+  }, [leads.length])
+
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
     if (!dateString) return ''
@@ -136,15 +153,22 @@ export default function LeadsPage() {
   // Load conversation statuses from localStorage on mount and listen for changes
   useEffect(() => {
     const loadConversationStatuses = () => {
+      console.log('🔍 Attempting to load conversation statuses from localStorage...')
       const saved = localStorage.getItem('conversationStatuses')
+      console.log('📦 Raw localStorage data:', saved)
+      
       if (saved) {
         try {
           const parsed = JSON.parse(saved)
+          console.log('📱 Parsed conversation statuses:', parsed)
+          console.log('📱 Setting statuses with keys:', Object.keys(parsed))
           setConversationStatuses(parsed)
-          console.log('📱 Loaded conversation statuses:', parsed)
+          console.log('✅ Successfully loaded conversation statuses:', parsed)
         } catch (error) {
-          console.error('Error loading conversation statuses:', error)
+          console.error('❌ Error loading conversation statuses:', error)
         }
+      } else {
+        console.log('📭 No conversation statuses found in localStorage')
       }
     }
 
@@ -187,6 +211,21 @@ export default function LeadsPage() {
     if (conversationFilter === 'all') return true
     return status === conversationFilter
   })
+
+  // Debug logging for filtered leads (only when leads or statuses change)
+  useEffect(() => {
+    if (leads.length > 0) {
+      console.log('📊 Current conversation statuses:', conversationStatuses)
+      console.log('📊 Current filter:', conversationFilter)
+      console.log('📊 Total leads:', leads.length)
+      console.log('📊 Filtered leads:', filteredLeads.length)
+      console.log('📊 Lead status mapping:', leads.map(lead => ({
+        contactId: lead.contactId,
+        name: lead.name,
+        status: conversationStatuses[lead.contactId] || 'pending'
+      })))
+    }
+  }, [leads.length, conversationStatuses, conversationFilter, filteredLeads.length])
 
   // REMOVED AUTO-SAVE - All saves are now explicit and immediate
 
