@@ -20,7 +20,7 @@ export default function LoginPage() {
       try {
         const session = await auth.getCurrentSession()
         if (session) {
-          router.push('/leads')
+          router.push('/dashboard')
         }
       } catch (error) {
         // Session check failed - continue to login
@@ -43,7 +43,7 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        router.push('/leads')
+        router.push('/dashboard')
       }
     } catch (error: any) {
       setError(error.message || 'An unexpected error occurred')

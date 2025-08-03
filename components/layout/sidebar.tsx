@@ -19,7 +19,7 @@ import {
 const menuItems = [
   {
     name: 'Dashboard',
-    href: '/',
+    href: '/dashboard',
     icon: LayoutDashboard
   },
   {
