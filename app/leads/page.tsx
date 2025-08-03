@@ -432,94 +432,53 @@ export default function LeadsPage() {
     }
   }
 
-  // Helper function to parse full address into components
-  const parseAddress = (fullAddress: string) => {
-    // Enhanced address parsing for better component extraction
-    const parts = fullAddress.split(',').map(part => part.trim())
+  // SIMPLE: Create new property with complete address - no complex parsing
+  const createNewProperty = async () => {
+    console.log('🏠 Creating new property with address:', newPropertyAddress)
     
-    if (parts.length >= 3) {
-      // Format: "123 Main St, Nashville, TN 37203"
-      const streetAddress = parts[0]
-      const city = parts[1]
-      const stateZip = parts[2].split(' ').filter(Boolean)
-      const state = stateZip[0] || ''
-      const zipCode = stateZip.slice(1).join(' ')
-      
-      return { 
-        address: streetAddress, 
-        city, 
-        state, 
-        zipCode 
+    if (!newPropertyAddress.trim()) {
+      alert('Please enter a property address')
+      return
+    }
+
+    if (!selectedLead?.contactId) {
+      alert('No contact selected')
+      return
+    }
+
+    try {
+      // SIMPLE: Use the complete address exactly as entered/selected
+      const newProperty = {
+        id: `property-${Date.now()}`,
+        address: newPropertyAddress.trim(), // Use COMPLETE address as-is
+        city: '', // We don't need to parse these for the analysis to work
+        state: '',
+        zipCode: '',
+        isPrimary: false,
+        analysis: null,
+        previousReports: []
       }
-    } else if (parts.length === 2) {
-      // Format: "123 Main St, Nashville TN 37203" or "123 Main St, Nashville TN"
-      const streetAddress = parts[0]
-      const cityStateZip = parts[1].split(' ').filter(Boolean)
+
+      console.log('✅ New property created:', newProperty)
+
+      // Add to state
+      const updatedProperties = [...contactProperties, newProperty]
+      setContactProperties(updatedProperties)
       
-      // Try to identify state (usually 2 letters) and zip (numbers)
-      let city = ''
-      let state = ''
-      let zipCode = ''
+      // Save to database immediately
+      await saveContactProperties(selectedLead.contactId, updatedProperties)
+      console.log('💾 Property saved to database')
       
-      if (cityStateZip.length >= 2) {
-        // Last element might be zip if it's numeric
-        const lastElement = cityStateZip[cityStateZip.length - 1]
-        const secondLastElement = cityStateZip[cityStateZip.length - 2]
-        
-        if (/^\d{5}(-\d{4})?$/.test(lastElement)) {
-          // Last element is zip code
-          zipCode = lastElement
-          if (secondLastElement && secondLastElement.length === 2) {
-            // Second last is state
-            state = secondLastElement
-            city = cityStateZip.slice(0, -2).join(' ')
-          } else {
-            city = cityStateZip.slice(0, -1).join(' ')
-          }
-        } else if (secondLastElement && secondLastElement.length === 2) {
-          // Second last element is state
-          state = secondLastElement
-          city = cityStateZip.slice(0, -1).join(' ')
-        } else {
-          // No clear state/zip pattern
-          city = cityStateZip.join(' ')
-        }
-      } else {
-        city = cityStateZip.join(' ')
-      }
+      // Clear form
+      setIsAddingProperty(false)
+      setNewPropertyAddress('')
+      setSelectedPlaceData(null)
       
-      return { 
-        address: streetAddress, 
-        city, 
-        state, 
-        zipCode 
-      }
-    } else {
-      // Single part - treat as full address, try to extract what we can
-      const words = fullAddress.split(' ').filter(Boolean)
-      
-      // If the last word looks like a zip code, extract it
-      let zipCode = ''
-      let remainingAddress = fullAddress
-      
-      if (words.length > 0) {
-        const lastWord = words[words.length - 1]
-        if (/^\d{5}(-\d{4})?$/.test(lastWord)) {
-          zipCode = lastWord
-          remainingAddress = words.slice(0, -1).join(' ')
-        }
-      }
-      
-      return { 
-        address: remainingAddress, 
-        city: '', 
-        state: '', 
-        zipCode 
-      }
+    } catch (error) {
+      console.error('❌ Error creating property:', error)
+      alert('Failed to add property. Please try again.')
     }
   }
-
-  // REMOVED addNewProperty - replaced with handleAddProperty for consistency
 
   const switchToProperty = (index: number) => {
     setSelectedPropertyIndex(index)
@@ -603,56 +562,7 @@ export default function LeadsPage() {
 
   // REMOVED fetchPreviousReportsForProperty - source of contamination
 
-  const handleAddProperty = async () => {
-    if (!newPropertyAddress.trim() || !selectedLead?.contactId) {
-      alert('Please enter a property address')
-      return
-    }
-
-    try {
-      // Get address components - prioritize Google Places data for better accuracy
-      const addressComponents = selectedPlaceData 
-        ? extractAddressComponents(selectedPlaceData)
-        : parseAddress(newPropertyAddress)
-      
-      // Use the full address from Google Places or the entered text
-      const fullPropertyAddress = selectedPlaceData?.formatted_address || newPropertyAddress
-      
-      const newProperty = {
-        id: `property-${Date.now()}`,
-        address: fullPropertyAddress, // Always use the complete address
-        city: addressComponents.city || '',
-        state: addressComponents.state || '',
-        zipCode: addressComponents.zipCode || '',
-        isPrimary: false,
-        analysis: null,
-        previousReports: []
-      }
-
-      console.log('➕ Adding property with full address:', {
-        fullAddress: fullPropertyAddress,
-        components: addressComponents,
-        selectedPlaceData: !!selectedPlaceData
-      })
-
-      console.log('➕ Adding property:', newProperty.address)
-
-      const updatedProperties = [...contactProperties, newProperty]
-      setContactProperties(updatedProperties)
-      
-      // Save immediately
-      await saveContactProperties(selectedLead.contactId, updatedProperties)
-      
-      // Clear form
-      setIsAddingProperty(false)
-      setNewPropertyAddress('')
-      setSelectedPlaceData(null)
-      
-    } catch (error) {
-      console.error('❌ Error adding property:', error)
-      alert('Failed to add property')
-    }
-  }
+  // REMOVED old handleAddProperty - replaced with simple createNewProperty
 
   const handleDeleteProperty = async (propertyId: string) => {
     const property = contactProperties.find(p => p.id === propertyId)
@@ -688,59 +598,75 @@ export default function LeadsPage() {
     }
   }
 
-  const extractAddressComponents = (place: any) => {
-    if (!place.address_components) {
-      // Fallback to simple parsing if no address_components
-      return parseAddress(place.formatted_address || '')
-    }
-
-    let streetNumber = ''
-    let route = ''
-    let city = ''
-    let state = ''
-    let zipCode = ''
-
-    // First pass: collect all components
-    place.address_components.forEach((component: any) => {
-      const types = component.types
-      
-      if (types.includes('street_number')) {
-        streetNumber = component.long_name
-      } else if (types.includes('route')) {
-        route = component.long_name
-      } else if (types.includes('locality') || types.includes('sublocality')) {
-        city = component.long_name
-      } else if (types.includes('administrative_area_level_1')) {
-        state = component.short_name // Use short name for state (e.g., "TN" instead of "Tennessee")
-      } else if (types.includes('postal_code')) {
-        zipCode = component.long_name
-      }
-    })
-
-    // Second pass: properly format the street address
-    const fullAddress = [streetNumber, route].filter(Boolean).join(' ').trim()
-
-    console.log('🏠 Address parsing:', {
-      input: place.formatted_address,
-      streetNumber,
-      route,
-      fullAddress,
-      city,
-      state,
-      zipCode
-    })
-
-    // For property analysis, we need the FULL address including city, state, zip
-    // Use the formatted_address from Google Places as the complete address
-    const completeAddress = place.formatted_address || 
-      `${fullAddress}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}${zipCode ? ` ${zipCode}` : ''}`.trim()
-
-    return {
-      address: completeAddress,
-      city: city || '',
-      state: state || '',
-      zipCode: zipCode || ''
-    }
+  // SIMPLE: Unified Add Property Form Component
+  const AddPropertyForm = ({ isMobile = false }: { isMobile?: boolean }) => {
+    return (
+      <div className={`${isMobile ? 'mb-4 p-4 bg-gray-50 rounded-lg border' : 'bg-gray-50 rounded-lg p-4 border border-green-200'}`}>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-gray-700">
+            {isMobile ? 'Add Property' : 'Add New Property'}
+          </h4>
+          <button
+            onClick={() => {
+              setIsAddingProperty(false)
+              setNewPropertyAddress('')
+              setSelectedPlaceData(null)
+            }}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          <AddressAutocomplete
+            value={newPropertyAddress}
+            onChange={(value) => {
+              console.log('📝 Address input changed:', value)
+              setNewPropertyAddress(value)
+            }}
+            onPlaceSelected={(place) => {
+              console.log('🎯 Google Places selected:', place)
+              if (place?.formatted_address) {
+                setNewPropertyAddress(place.formatted_address)
+                setSelectedPlaceData(place)
+              }
+            }}
+            placeholder="Enter complete property address..."
+            className={isMobile 
+              ? "p-3 border border-gray-300 rounded-lg text-sm w-full"
+              : "px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
+            }
+          />
+          
+          <div className="text-xs text-gray-500">
+            Enter the complete address including city, state, and ZIP code
+          </div>
+          
+          <div className={`flex gap-2 ${isMobile ? '' : 'justify-end'}`}>
+            <button
+              onClick={() => {
+                setIsAddingProperty(false)
+                setNewPropertyAddress('')
+                setSelectedPlaceData(null)
+              }}
+              className={`px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors ${isMobile ? 'flex items-center' : ''}`}
+            >
+              {isMobile && <X className="h-4 w-4 mr-1" />}
+              Cancel
+            </button>
+            <button
+              onClick={createNewProperty}
+              disabled={!newPropertyAddress.trim()}
+              className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Add Property
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Property Analysis Section Component
@@ -1272,41 +1198,7 @@ export default function LeadsPage() {
 
                   {/* Add Property Form */}
                   {isAddingProperty && (
-                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                      <AddressAutocomplete
-                        value={newPropertyAddress}
-                        onChange={setNewPropertyAddress}
-                        placeholder="Enter property address..."
-                        className="p-3 border border-gray-300 rounded-lg text-sm w-full"
-                        onPlaceSelected={(place) => {
-                          if (place.formatted_address) {
-                            setNewPropertyAddress(place.formatted_address)
-                            setSelectedPlaceData(place) // Store the full place data
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={handleAddProperty}
-                          disabled={!newPropertyAddress.trim()}
-                          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Add
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsAddingProperty(false)
-                            setNewPropertyAddress('')
-                            setSelectedPlaceData(null)
-                          }}
-                          className="flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors"
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                    <AddPropertyForm isMobile={true} />
                   )}
 
                   {/* Properties List */}
@@ -1937,56 +1829,7 @@ export default function LeadsPage() {
                             Add New Property
                           </button>
                         ) : (
-                          <div className="bg-gray-50 rounded-lg p-4 border border-green-200">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="text-sm font-medium text-gray-700">Add New Property</h4>
-                              <button
-                                onClick={() => {
-                                  setIsAddingProperty(false)
-                                  setNewPropertyAddress('')
-                                }}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                            <div className="space-y-3">
-                              <AddressAutocomplete
-                                value={newPropertyAddress}
-                                onChange={setNewPropertyAddress}
-                                placeholder="Start typing an address..."
-                                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                onPlaceSelected={(place) => {
-                                  if (place.formatted_address) {
-                                    setNewPropertyAddress(place.formatted_address)
-                                    setSelectedPlaceData(place) // Store the full place data for Google Places
-                                  }
-                                }}
-                              />
-                              <div className="text-xs text-gray-500">
-                                Enter the complete address including city, state, and ZIP code
-                              </div>
-                              <div className="flex justify-end space-x-2">
-                                <button
-                                  onClick={() => {
-                                    setIsAddingProperty(false)
-                                    setNewPropertyAddress('')
-                                  }}
-                                  className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={handleAddProperty}
-                                  disabled={!newPropertyAddress.trim()}
-                                  className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
-                                >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  Add Property
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+                          <AddPropertyForm isMobile={false} />
                         )}
                         
                         
