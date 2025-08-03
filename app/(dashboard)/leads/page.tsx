@@ -56,7 +56,7 @@ export default function LeadsPage() {
     onCancel: () => void
   } | null>(null)
   const [showMobileAddressModal, setShowMobileAddressModal] = useState(false)
-  const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('all')
+  const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('pending')
   
   // Use auth context for conversation status management
   const { conversationStatuses, updateConversationStatus, loadConversationStatuses } = useAuth()
@@ -1296,9 +1296,9 @@ export default function LeadsPage() {
   // Mobile: Show only leads list when no lead selected
   if (isMobile && !selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden">
+      <div className="fixed inset-4 bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
         {/* Mobile Header */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white w-full">
+        <div className="flex-shrink-0 p-4 pt-12 border-b border-gray-200 bg-white w-full rounded-t-lg">
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
         </div>
@@ -1307,8 +1307,8 @@ export default function LeadsPage() {
         <div className="flex-shrink-0 bg-white border-b border-gray-200">
           <div className="flex">
             {[
-              { key: 'all', label: 'All', count: leads.length },
               { key: 'pending', label: 'Pending', count: leads.filter(lead => (conversationStatuses[lead.contactId] || 'pending') === 'pending').length },
+              { key: 'all', label: 'All', count: leads.length },
               { key: 'replied', label: 'Replied', count: leads.filter(lead => conversationStatuses[lead.contactId] === 'replied').length }
             ].map(tab => (
               <button
@@ -1428,10 +1428,10 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col z-50 overflow-hidden">
+      <div className="fixed inset-4 bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
         {/* Mobile Chat Header - Enhanced Design */}
         <div className="flex-shrink-0 bg-white w-full">
-          <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
+          <div className="px-4 py-3 pt-12 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white rounded-t-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                 <button 
@@ -1825,13 +1825,11 @@ export default function LeadsPage() {
 
   // Desktop: 3-column layout
   return (
-    <div className="fixed inset-0 bg-white">
+    <div className="fixed inset-4 lg:inset-8 bg-white rounded-lg shadow-sm border">
       <div className="h-full flex">
-        {/* Account for main sidebar - 256px (w-64) */}
-        <div className="w-64 flex-shrink-0"></div>
         
         {/* Column 2: Conversations List - Fixed Width, Independent Scroll */}
-        <div className="w-80 border-r border-gray-200 flex flex-col bg-white">
+        <div className="w-80 border-r border-gray-200 flex flex-col bg-white rounded-l-lg">
           {/* Conversations Header - Fixed */}
           <div className="flex-shrink-0 p-4 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">Leads</h1>
@@ -1842,8 +1840,8 @@ export default function LeadsPage() {
           <div className="flex-shrink-0 bg-white border-b border-gray-200">
             <div className="flex text-sm">
               {[
-                { key: 'all', label: 'All', count: leads.length },
                 { key: 'pending', label: 'Pending', count: leads.filter(lead => (conversationStatuses[lead.contactId] || 'pending') === 'pending').length },
+                { key: 'all', label: 'All', count: leads.length },
                 { key: 'replied', label: 'Replied', count: leads.filter(lead => conversationStatuses[lead.contactId] === 'replied').length }
               ].map(tab => (
                 <button
