@@ -65,7 +65,8 @@ export default function LeadsPage() {
   // Auto-save contact properties to database when they change
   useEffect(() => {
     // Only auto-save if we have a contact, properties, we're not loading, and contact details are loaded
-    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData) {
+    // Also skip auto-save if we're loading profile data to prevent race conditions during initial property creation
+    if (selectedLead?.contactId && contactProperties.length > 0 && contactDetails && !isLoadingContactData && !isLoadingProfile) {
       // Use a debounced save to avoid too many database calls
       const timeoutId = setTimeout(() => {
         console.log('⏰ Auto-save triggered for contact:', selectedLead.contactId, 'Properties:', contactProperties.length)
@@ -74,7 +75,7 @@ export default function LeadsPage() {
       
       return () => clearTimeout(timeoutId)
     }
-  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData])
+  }, [contactProperties, selectedLead?.contactId, contactDetails, isLoadingContactData, isLoadingProfile])
 
   // Resize functionality
   useEffect(() => {
@@ -225,23 +226,32 @@ export default function LeadsPage() {
       setContactDetails(data.contact)
       
       console.log('🔄 Fetching contact details for:', contactId, 'Contact name:', data.contact?.firstName, data.contact?.lastName)
+      console.log('🔍 GHL API Response:', JSON.stringify(data, null, 2))
+      console.log('🏠 Contact address data:', {
+        address1: data.contact?.address1,
+        city: data.contact?.city,
+        state: data.contact?.state,
+        postalCode: data.contact?.postalCode
+      })
       
       // Load saved properties for this contact from database
       const savedProperties = await loadContactProperties(contactId)
       
       if (savedProperties && savedProperties.length > 0) {
         // Restore saved properties from database
+        console.log('📂 PATH A: Loading saved properties from database')
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
         console.log('✅ Loaded', savedProperties.length, 'properties from database for contact:', contactId)
-      } else {
-        // Initialize properties array with primary address
+      } else if (data.contact && data.contact.address1) {
+        // Only create initial property if we have valid contact data with an address
+        console.log('🏗️ PATH B: Creating initial property from GHL contact data')
         const primaryProperty = {
           id: 'primary',
-          address: data.contact?.address1 || '',
-          city: data.contact?.city || '',
-          state: data.contact?.state || '',
-          zipCode: data.contact?.postalCode || '',
+          address: data.contact.address1,
+          city: data.contact.city || '',
+          state: data.contact.state || '',
+          zipCode: data.contact.postalCode || '',
           isPrimary: true,
           analysis: null,
           previousReports: []
@@ -249,19 +259,26 @@ export default function LeadsPage() {
         setContactProperties([primaryProperty])
         setSelectedPropertyIndex(0)
         
-        // Save initial property to database
+        // Save initial property to database immediately to prevent race conditions
+        console.log('🏠 Creating initial property for contact:', contactId, 'Address:', primaryProperty.address)
         await saveContactProperties(contactId, [primaryProperty])
         
         // Fetch previous property analysis reports for this address
-        if (data.contact?.address1) {
-          const fullAddress = `${primaryProperty.address}, ${primaryProperty.city}, ${primaryProperty.state}${primaryProperty.zipCode ? ` ${primaryProperty.zipCode}` : ''}`
-          fetchPreviousReportsForProperty(primaryProperty.id, fullAddress)
-        }
+        const fullAddress = `${primaryProperty.address}, ${primaryProperty.city}, ${primaryProperty.state}${primaryProperty.zipCode ? ` ${primaryProperty.zipCode}` : ''}`
+        fetchPreviousReportsForProperty(primaryProperty.id, fullAddress)
+      } else {
+        // No valid contact data - don't create any properties
+        console.log('❌ PATH C: No valid contact data for:', contactId, 'Not creating properties')
+        console.log('❌ Validation failed - contact exists:', !!data.contact, 'address1 exists:', !!data.contact?.address1)
+        setContactProperties([])
       }
       
     } catch (error) {
       console.error('Error fetching contact details:', error)
       setContactDetails(null)
+      // CRITICAL: If GHL API fails, don't create any properties - this prevents contamination
+      setContactProperties([])
+      console.log('❌ GHL API failed for contact:', contactId, 'Not creating properties to prevent contamination')
     } finally {
       setIsLoadingProfile(false)
       setIsLoadingContactData(false) // Allow auto-save after loading is complete
