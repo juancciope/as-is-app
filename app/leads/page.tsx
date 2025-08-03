@@ -247,6 +247,20 @@ export default function LeadsPage() {
       } else if (data.contact && data.contact.address1) {
         // Only create initial property if we have valid contact data with an address
         console.log('🏗️ PATH B: Creating initial property from GHL contact data')
+        console.log('🔍 VERIFY: Using contact data for ID:', contactId, 'Contact ID in data:', data.contact.id)
+        console.log('🔍 VERIFY: Address being used:', data.contact.address1)
+        
+        // CRITICAL: Verify we're using the correct contact's data
+        if (data.contact.id !== contactId) {
+          console.error('❌ CRITICAL ERROR: Contact ID mismatch!', {
+            expectedContactId: contactId,
+            actualContactId: data.contact.id,
+            addressBeingUsed: data.contact.address1
+          })
+          setContactProperties([])
+          return
+        }
+        
         const primaryProperty = {
           id: 'primary',
           address: data.contact.address1,
@@ -262,6 +276,7 @@ export default function LeadsPage() {
         
         // Save initial property to database immediately to prevent race conditions
         console.log('🏠 Creating initial property for contact:', contactId, 'Address:', primaryProperty.address)
+        console.log('🔍 DOUBLE-CHECK: Saving property with address', primaryProperty.address, 'for contact', contactId)
         await saveContactProperties(contactId, [primaryProperty])
         
         // Fetch previous property analysis reports for this address
@@ -334,6 +349,10 @@ export default function LeadsPage() {
     
     try {
       console.log('💾 Saving properties for contact:', contactId, 'Properties:', properties.length)
+      if (properties.length > 0) {
+        console.log('💾 First property address being saved:', properties[0].address)
+      }
+      
       const response = await fetch(`/api/contact-properties/${contactId}`, {
         method: 'POST',
         headers: {
