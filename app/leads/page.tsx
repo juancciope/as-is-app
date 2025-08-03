@@ -47,6 +47,13 @@ export default function LeadsPage() {
   const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
   const [isLoadingContactData, setIsLoadingContactData] = useState(false)
   const [forceRefreshKey, setForceRefreshKey] = useState(0)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    onCancel: () => void
+  } | null>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -491,20 +498,27 @@ export default function LeadsPage() {
       return
     }
     
-    if (!confirm('Are you sure you want to remove this property?')) {
-      return
-    }
-    
-    setContactProperties(prev => prev.filter((_, i) => i !== index))
-    
-    // Adjust selected index if needed
-    if (selectedPropertyIndex >= index) {
-      const newIndex = Math.max(0, selectedPropertyIndex - 1)
-      setSelectedPropertyIndex(newIndex)
-      if (contactProperties.length > 1) {
-        switchToProperty(newIndex)
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Property',
+      message: 'Are you sure you want to remove this property?',
+      onConfirm: () => {
+        setContactProperties(prev => prev.filter((_, i) => i !== index))
+        
+        // Adjust selected index if needed
+        if (selectedPropertyIndex >= index) {
+          const newIndex = Math.max(0, selectedPropertyIndex - 1)
+          setSelectedPropertyIndex(newIndex)
+          if (contactProperties.length > 1) {
+            switchToProperty(newIndex)
+          }
+        }
+        setConfirmDialog(null)
+      },
+      onCancel: () => {
+        setConfirmDialog(null)
       }
-    }
+    })
   }
 
   const generatePropertyReport = async (propertyId: string) => {
@@ -1990,6 +2004,30 @@ export default function LeadsPage() {
           )}
         </div>
       </div>
+      
+      {/* Custom Confirmation Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold mb-2">{confirmDialog.title}</h3>
+            <p className="text-gray-600 mb-6">{confirmDialog.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={confirmDialog.onCancel}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

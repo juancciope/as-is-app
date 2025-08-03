@@ -62,6 +62,13 @@ export function PlacesAutocompleteStyled({
         const autocomplete = new PlaceAutocompleteElement({
           includedRegionCodes: ['us']
         });
+        
+        // FORCE LIGHT THEME - This fixes the invisible text issue!
+        autocomplete.style.colorScheme = 'light';
+        
+        // Also set CSS variables for explicit white background and black text
+        autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
+        autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
 
         // Listen for place selection
         autocomplete.addEventListener('gmp-select', async (event: any) => {
@@ -167,63 +174,38 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* Aggressive CSS to force black text visibility in all states */}
+      {/* Proper Google Places styling using CSS variables and color-scheme */}
       <style jsx global>{`
-        /* AGGRESSIVELY force all text to be black in ALL states */
-        gmp-place-autocomplete,
-        gmp-place-autocomplete *,
-        gmp-place-autocomplete input,
-        gmp-place-autocomplete input:focus,
-        gmp-place-autocomplete input:active,
-        gmp-place-autocomplete input:hover,
-        gmp-place-autocomplete input[value],
-        gmp-place-autocomplete [role="option"],
-        gmp-place-autocomplete span,
-        gmp-place-autocomplete div,
-        gmp-place-autocomplete p,
-        gmp-place-autocomplete text {
-          color: #000000 !important;
-          text-shadow: none !important;
+        /* Force light theme and use CSS variables for consistent styling */
+        gmp-place-autocomplete {
+          /* Force light theme regardless of system settings */
+          color-scheme: light !important;
+          
+          /* CSS Variables provided by Google for customization */
+          --gmp-mat-color-surface: #FFFFFF !important;
+          --gmp-mat-color-on-surface: #000000 !important;
+          
+          /* Ensure full width */
+          width: 100% !important;
+          display: block !important;
         }
         
-        /* Force input to ALWAYS have black text on white background in ALL states */
-        gmp-place-autocomplete input,
-        gmp-place-autocomplete input:focus,
-        gmp-place-autocomplete input:active,
-        gmp-place-autocomplete input:hover,
-        gmp-place-autocomplete input[aria-expanded="true"],
-        gmp-place-autocomplete input[aria-expanded="false"] {
-          color: #000000 !important;
-          background-color: white !important;
-          -webkit-text-fill-color: #000000 !important;
-          text-shadow: none !important;
+        /* Additional styling for better appearance */
+        gmp-place-autocomplete input {
+          font-family: inherit !important;
+          font-size: 0.875rem !important;
+          line-height: 1.25rem !important;
         }
         
-        /* Force dropdown items to have black text in ALL states */
-        gmp-place-autocomplete [role="option"],
-        gmp-place-autocomplete [role="option"]:hover,
-        gmp-place-autocomplete [role="option"]:focus,
-        gmp-place-autocomplete [role="option"]:active,
-        gmp-place-autocomplete [role="option"][aria-selected="true"] {
-          color: #000000 !important;
-          background-color: white !important;
-          -webkit-text-fill-color: #000000 !important;
-          text-shadow: none !important;
+        /* Style the dropdown to match */
+        gmp-place-autocomplete [role="listbox"] {
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          border-radius: 0.5rem !important;
         }
         
+        /* Hover state for dropdown items */
         gmp-place-autocomplete [role="option"]:hover {
-          background-color: #f0f0f0 !important;
-        }
-        
-        /* Override any webkit autofill styles */
-        gmp-place-autocomplete input:-webkit-autofill,
-        gmp-place-autocomplete input:-webkit-autofill:hover,
-        gmp-place-autocomplete input:-webkit-autofill:focus,
-        gmp-place-autocomplete input:-webkit-autofill:active {
-          -webkit-text-fill-color: #000000 !important;
-          color: #000000 !important;
-          background-color: white !important;
-          box-shadow: 0 0 0px 1000px white inset !important;
+          background-color: #f9fafb !important;
         }
       `}</style>
       
