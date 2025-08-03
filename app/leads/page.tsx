@@ -65,13 +65,35 @@ export default function LeadsPage() {
     
     // Check if mobile
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      const wasMobile = isMobile
+      const nowMobile = window.innerWidth < 768
+      setIsMobile(nowMobile)
+      
+      // If switching between mobile/desktop, reload conversation statuses
+      if (wasMobile !== nowMobile) {
+        const saved = localStorage.getItem('conversationStatuses')
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            setConversationStatuses(parsed)
+            console.log('📱 Reloaded statuses after mobile/desktop switch:', parsed)
+          } catch (error) {
+            console.error('Error reloading statuses:', error)
+          }
+        }
+      }
     }
     
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  }, [isMobile])
+
+  // Force re-render when conversation statuses change (for debugging)
+  useEffect(() => {
+    console.log('📊 Conversation statuses updated:', conversationStatuses)
+    console.log('📊 Filtered leads count:', filteredLeads.length)
+  }, [conversationStatuses, conversationFilter])
 
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
@@ -112,22 +134,61 @@ export default function LeadsPage() {
       const newStatus: 'pending' | 'replied' = currentStatus === 'pending' ? 'replied' : 'pending'
       const updated = { ...prev, [contactId]: newStatus }
       
-      // TODO: Save to database/localStorage
+      // Save to localStorage
       localStorage.setItem('conversationStatuses', JSON.stringify(updated))
+      console.log(`🔄 Toggled status for ${contactId}: ${newStatus}`, updated)
+      
+      // Dispatch custom event to notify other views on the same page
+      window.dispatchEvent(new CustomEvent('conversationStatusUpdate', {
+        detail: { contactId, status: newStatus, allStatuses: updated }
+      }))
       
       return updated
     })
   }
 
-  // Load conversation statuses from localStorage on mount
+  // Load conversation statuses from localStorage on mount and listen for changes
   useEffect(() => {
-    const saved = localStorage.getItem('conversationStatuses')
-    if (saved) {
-      try {
-        setConversationStatuses(JSON.parse(saved))
-      } catch (error) {
-        console.error('Error loading conversation statuses:', error)
+    const loadConversationStatuses = () => {
+      const saved = localStorage.getItem('conversationStatuses')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setConversationStatuses(parsed)
+          console.log('📱 Loaded conversation statuses:', parsed)
+        } catch (error) {
+          console.error('Error loading conversation statuses:', error)
+        }
       }
+    }
+
+    // Load initial statuses
+    loadConversationStatuses()
+
+    // Listen for storage changes (from other tabs/views)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'conversationStatuses' && e.newValue) {
+        try {
+          const newStatuses = JSON.parse(e.newValue)
+          setConversationStatuses(newStatuses)
+          console.log('📱 Storage changed, updated conversation statuses:', newStatuses)
+        } catch (error) {
+          console.error('Error parsing storage change:', error)
+        }
+      }
+    }
+
+    // Listen for custom storage events (for same-page updates)
+    const handleCustomStorageChange = () => {
+      loadConversationStatuses()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('conversationStatusUpdate', handleCustomStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('conversationStatusUpdate', handleCustomStorageChange)
     }
   }, [])
 
