@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Switch } from '../components/ui/switch';
-import { Label } from '../components/ui/label';
-import { DataTable } from '../components/dashboard/data-table';
-import { ContactsTable } from '../components/dashboard/contacts-table';
-import { StatsCards } from '../components/dashboard/stats-cards';
-import { AdvancedFilters, FilterState } from '../components/dashboard/advanced-filters';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { DataTable } from '@/components/dashboard/data-table';
+import { ContactsTable } from '@/components/dashboard/contacts-table';
+import { StatsCards } from '@/components/dashboard/stats-cards';
+import { AdvancedFilters, FilterState } from '@/components/dashboard/advanced-filters';
 import { Loader2, Play, Download, RefreshCw, PlayCircle, Zap, Building, FileText, Database, Users, Search, UserCheck, Table } from 'lucide-react';
 
 export default function Home() {
