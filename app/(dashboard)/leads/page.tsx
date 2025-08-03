@@ -1468,9 +1468,9 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="h-[calc(100dvh-1rem)] bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
-        {/* Mobile Chat Header - Enhanced Design */}
-        <div className="flex-shrink-0 bg-white w-full">
+      <div className="fixed inset-0 bg-white flex flex-col">
+        {/* Fixed Mobile Chat Header */}
+        <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
           <div className="px-4 py-3 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white rounded-t-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
@@ -1827,48 +1827,49 @@ export default function LeadsPage() {
               </div>
             </div>
           ) : (
-            // Mobile Chat View
-            <div className="h-full pb-4 flex flex-col" ref={chatContainerRef}>
-              <MainContainer style={{ 
-                height: '100%',
-                paddingBottom: '20px'
-              }}>
-                <ChatContainer style={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  <MessageList 
-                    typingIndicator={isSending ? <TypingIndicator content="Sending..." /> : null}
-                    style={{ 
-                      height: '100%',
-                      flex: '1',
-                      marginBottom: '10px'
-                    }}
-                  >
-                    {isLoadingMessages ? (
-                      <div className="flex items-center justify-center p-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                      </div>
-                    ) : (
-                      renderMessages()
-                    )}
-                  </MessageList>
-                  
-                  <MessageInput 
-                    placeholder="Type a message..." 
-                    onSend={sendMessage}
-                    disabled={isSending}
-                    sendDisabled={isSending}
-                    attachButton={false}
-                    style={{
-                      flexShrink: 0,
-                      marginBottom: '10px'
-                    }}
-                  />
-                </ChatContainer>
-              </MainContainer>
-            </div>
+            // Mobile Chat View - Messaging App Layout
+            <>
+              {/* Scrollable Messages Area */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pt-32 pb-20" ref={chatContainerRef}>
+                <div className="px-4 py-2">
+                  {isLoadingMessages ? (
+                    <div className="flex items-center justify-center p-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {renderMessages()}
+                      {isSending && (
+                        <div className="flex justify-start">
+                          <div className="bg-gray-100 rounded-lg px-3 py-2">
+                            <TypingIndicator content="Sending..." />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fixed Message Input at Bottom */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-40">
+                <MainContainer>
+                  <ChatContainer>
+                    <MessageInput 
+                      placeholder="Type a message..." 
+                      onSend={sendMessage}
+                      disabled={isSending}
+                      sendDisabled={isSending}
+                      attachButton={false}
+                      style={{
+                        margin: 0,
+                        borderRadius: '20px'
+                      }}
+                    />
+                  </ChatContainer>
+                </MainContainer>
+              </div>
+            </>
           )}
         </div>
       </div>
