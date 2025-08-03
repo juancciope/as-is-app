@@ -57,6 +57,67 @@
   padding: 1rem !important;
 }
 
+/* Desktop only - ensure desktop styles aren't affected by mobile overrides */
+@media (min-width: 769px) {
+  .cs-message-list {
+    background-color: #f9fafb !important;
+    padding: 1rem !important;
+  }
+  
+  .cs-message--outgoing .cs-message__content {
+    background-color: #04325E !important;
+    color: white !important;
+    border-radius: 1rem !important;
+    padding: 0.75rem 1rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .cs-message--incoming .cs-message__content {
+    background-color: white !important;
+    color: #111827 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 1rem !important;
+    padding: 0.75rem 1rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .cs-message-input {
+    background-color: white !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding: 1rem !important;
+  }
+  
+  .cs-message-input__content-editor {
+    background-color: white !important;
+    border: 2px solid #d1d5db !important;
+    color: #111827 !important;
+    border-radius: 0.5rem !important;
+    padding: 0.75rem !important;
+    min-height: 2.5rem !important;
+    max-height: 6rem !important;
+  }
+  
+  .cs-message-input__content-editor:focus-within {
+    border-color: #FE8F00 !important;
+    box-shadow: 0 0 0 3px rgba(254, 143, 0, 0.1) !important;
+    outline: none !important;
+  }
+  
+  .cs-button--send {
+    background-color: #04325E !important;
+    color: white !important;
+    border-radius: 0.5rem !important;
+    font-weight: 500 !important;
+    padding: 0.75rem 1rem !important;
+    margin-left: 0.5rem !important;
+    transition: background-color 0.2s ease !important;
+  }
+  
+  .cs-button--send:hover:not(:disabled) {
+    background-color: #032847 !important;
+  }
+}
+
 /* Override outgoing messages (user messages) */
 .cs-message--outgoing .cs-message__content {
   background-color: #04325E !important;
@@ -274,112 +335,135 @@
   }
 }
 
-/* Minimalistic Apple-style mobile chat */
-.mobile-chat-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
+/* Minimalistic mobile chat with app colors - Mobile only */
+@media (max-width: 768px) {
+  .mobile-chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
 
-.mobile-chat.cs-main-container {
-  height: 100% !important;
-  border: none !important;
-  background: transparent !important;
-}
+  .mobile-chat.cs-main-container {
+    height: 100% !important;
+    border: none !important;
+    background: white !important;
+  }
 
-.mobile-chat .cs-chat-container {
-  height: 100% !important;
-  background: transparent !important;
-}
+  .mobile-chat .cs-chat-container {
+    height: 100% !important;
+    background: white !important;
+  }
 
-.mobile-chat .cs-message-list {
-  background-color: #f2f2f7 !important; /* iOS system background */
-  padding: 12px !important;
-  flex: 1 !important;
-  min-height: 0 !important;
-}
+  .mobile-chat .cs-message-list {
+    background-color: #f9fafb !important; /* Light gray background */
+    padding: 16px !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+  }
 
-.mobile-chat .cs-message-list__scroll-wrapper {
-  height: 100% !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  scroll-behavior: smooth !important;
-}
+  .mobile-chat .cs-message-list__scroll-wrapper {
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-behavior: smooth !important;
+  }
 
-/* Apple-style messages */
-.mobile-chat .cs-message--outgoing .cs-message__content {
-  background-color: #007AFF !important; /* iOS blue */
-  color: white !important;
-  border-radius: 18px !important;
-  padding: 8px 12px !important;
-  max-width: 75% !important;
-  box-shadow: none !important;
-  border: none !important;
-}
+  /* Minimalistic messages with app colors */
+  .mobile-chat .cs-message--outgoing .cs-message__content {
+    background-color: #04325E !important; /* App primary blue */
+    color: white !important;
+    border-radius: 16px !important;
+    padding: 10px 14px !important;
+    max-width: 80% !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    border: none !important;
+  }
 
-.mobile-chat .cs-message--incoming .cs-message__content {
-  background-color: #E5E5EA !important; /* iOS gray bubble */
-  color: black !important;
-  border-radius: 18px !important;
-  padding: 8px 12px !important;
-  max-width: 75% !important;
-  box-shadow: none !important;
-  border: none !important;
-}
+  .mobile-chat .cs-message--incoming .cs-message__content {
+    background-color: white !important;
+    color: #111827 !important;
+    border-radius: 16px !important;
+    padding: 10px 14px !important;
+    max-width: 80% !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e5e7eb !important;
+  }
 
-/* Clean input style */
-.mobile-chat .cs-message-input {
-  background-color: white !important;
-  border-top: 1px solid #E5E5EA !important;
-  padding: 8px 12px !important;
-  flex-shrink: 0 !important;
-}
+  /* Clean input style with proper visibility */
+  .mobile-chat .cs-message-input {
+    background-color: white !important;
+    border-top: 1px solid #e5e7eb !important;
+    padding: 12px 16px !important;
+    flex-shrink: 0 !important;
+    min-height: 60px !important;
+  }
 
-.mobile-chat .cs-message-input__content-editor {
-  background-color: #f2f2f7 !important;
-  border: 1px solid #E5E5EA !important;
-  border-radius: 20px !important;
-  padding: 8px 16px !important;
-  font-size: 16px !important;
-  min-height: 36px !important;
-  max-height: 100px !important;
-}
+  .mobile-chat .cs-message-input__content-editor-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
 
-.mobile-chat .cs-button--send {
-  background-color: #007AFF !important;
-  border-radius: 50% !important;
-  width: 32px !important;
-  height: 32px !important;
-  padding: 0 !important;
-  margin-left: 8px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-size: 0 !important;
-}
+  .mobile-chat .cs-message-input__content-editor {
+    background-color: #f9fafb !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 20px !important;
+    padding: 10px 16px !important;
+    font-size: 16px !important;
+    min-height: 40px !important;
+    max-height: 100px !important;
+    color: #111827 !important;
+    flex: 1 !important;
+  }
 
-.mobile-chat .cs-button--send::after {
-  content: "↑";
-  font-size: 18px !important;
-  color: white !important;
-  font-weight: bold !important;
-}
+  .mobile-chat .cs-message-input__content-editor:focus-within {
+    border-color: #FE8F00 !important;
+    outline: none !important;
+  }
 
-/* Remove unnecessary styling */
-.mobile-chat .cs-message__footer {
-  display: none !important;
-}
+  .mobile-chat .cs-button--send {
+    background-color: #04325E !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    margin-left: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background-color 0.2s ease !important;
+    flex-shrink: 0 !important;
+  }
 
-.mobile-chat .cs-message {
-  margin-bottom: 4px !important;
-}
+  .mobile-chat .cs-button--send:hover:not(:disabled) {
+    background-color: #032847 !important;
+  }
 
-/* Date separators - minimal */
-.mobile-chat .cs-message-separator__content {
-  background-color: transparent !important;
-  color: #8E8E93 !important;
-  font-size: 12px !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 4px 0 !important;
+  .mobile-chat .cs-button--send svg {
+    width: 18px !important;
+    height: 18px !important;
+    color: white !important;
+  }
+
+  /* Keep timestamps visible but subtle */
+  .mobile-chat .cs-message__footer {
+    font-size: 11px !important;
+    color: #6b7280 !important;
+    margin-top: 4px !important;
+  }
+
+  .mobile-chat .cs-message {
+    margin-bottom: 8px !important;
+  }
+
+  /* Date separators - minimal */
+  .mobile-chat .cs-message-separator__content {
+    background-color: white !important;
+    color: #6b7280 !important;
+    font-size: 12px !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    padding: 4px 12px !important;
+    border-radius: 12px !important;
+  }
 }
