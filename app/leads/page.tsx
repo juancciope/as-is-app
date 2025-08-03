@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { AddressAutocomplete } from '@/components/ui/google-places-autocomplete'
+// Removed deprecated AddressAutocomplete import
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css'
 import './chat-theme.css'
 import {
@@ -598,6 +598,59 @@ export default function LeadsPage() {
   }
 
   const AddPropertyForm = ({ isMobile = false }: { isMobile?: boolean }) => {
+    // Local state for the form
+    const [localAddress, setLocalAddress] = useState('')
+    
+    const handleSubmit = async () => {
+      if (!localAddress.trim()) {
+        alert('Please enter a property address')
+        return
+      }
+
+      if (!selectedLead?.contactId) {
+        alert('No contact selected')
+        return
+      }
+
+      try {
+        // Create new property with the complete address
+        const newProperty = {
+          id: `property-${Date.now()}`,
+          address: localAddress.trim(),
+          city: '',
+          state: '',
+          zipCode: '',
+          isPrimary: false,
+          analysis: null,
+          previousReports: []
+        }
+
+        console.log('✅ Adding property:', newProperty.address)
+
+        // Add to properties list
+        const updatedProperties = [...contactProperties, newProperty]
+        setContactProperties(updatedProperties)
+        
+        // Save to database
+        await saveContactProperties(selectedLead.contactId, updatedProperties)
+        
+        // Clear form and close
+        setLocalAddress('')
+        setIsAddingProperty(false)
+        setNewPropertyAddress('')
+        
+      } catch (error) {
+        console.error('❌ Error adding property:', error)
+        alert('Failed to add property. Please try again.')
+      }
+    }
+    
+    const handleCancel = () => {
+      setLocalAddress('')
+      setIsAddingProperty(false)
+      setNewPropertyAddress('')
+    }
+    
     return (
       <div className={`${isMobile ? 'mb-4 p-4 bg-gray-50 rounded-lg border' : 'bg-gray-50 rounded-lg p-4 border border-green-200'}`}>
         <div className="flex items-center justify-between mb-3">
@@ -605,11 +658,7 @@ export default function LeadsPage() {
             {isMobile ? 'Add Property' : 'Add New Property'}
           </h4>
           <button
-            onClick={() => {
-              setIsAddingProperty(false)
-              setNewPropertyAddress('')
-              setSelectedPlaceData(null)
-            }}
+            onClick={handleCancel}
             className="text-gray-400 hover:text-gray-600"
           >
             <X className="h-4 w-4" />
@@ -619,10 +668,11 @@ export default function LeadsPage() {
         <div className="space-y-3">
           <input
             type="text"
-            value={newPropertyAddress}
+            value={localAddress}
             onChange={(e) => {
-              console.log('📝 Address input changed:', e.target.value)
-              setNewPropertyAddress(e.target.value)
+              const newValue = e.target.value
+              console.log('📝 Address input changed:', newValue)
+              setLocalAddress(newValue)
             }}
             placeholder="Enter complete property address..."
             className={isMobile 
@@ -637,19 +687,15 @@ export default function LeadsPage() {
           
           <div className={`flex gap-2 ${isMobile ? '' : 'justify-end'}`}>
             <button
-              onClick={() => {
-                setIsAddingProperty(false)
-                setNewPropertyAddress('')
-                setSelectedPlaceData(null)
-              }}
+              onClick={handleCancel}
               className={`px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors ${isMobile ? 'flex items-center' : ''}`}
             >
               {isMobile && <X className="h-4 w-4 mr-1" />}
               Cancel
             </button>
             <button
-              onClick={createNewProperty}
-              disabled={!newPropertyAddress.trim()}
+              onClick={handleSubmit}
+              disabled={!localAddress.trim()}
               className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
             >
               <Check className="h-4 w-4 mr-1" />
