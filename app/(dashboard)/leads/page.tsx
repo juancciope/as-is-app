@@ -1375,7 +1375,7 @@ export default function LeadsPage() {
   // Mobile: Show chat when lead selected
   if (isMobile && selectedLead) {
     return (
-      <div className="h-screen w-screen bg-white flex flex-col overflow-hidden">
+      <div className="fixed inset-0 bg-white flex flex-col overflow-hidden z-50">
         {/* Fixed Mobile Chat Header */}
         <div className="flex-shrink-0 bg-gradient-to-r from-[#04325E] to-[#0a4976] text-white">
           <div className="px-4 py-3">
