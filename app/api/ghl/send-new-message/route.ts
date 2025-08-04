@@ -144,38 +144,64 @@ export async function POST(request: NextRequest) {
       console.log('SMS sent successfully:', messageResult);
 
       // Step 4: Auto-star the conversation in GHL so it appears in our inbox
+      console.log('🌟 Attempting to star conversation:', messageResult.conversationId);
       try {
+        // Add a small delay to ensure conversation exists in GHL
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await ghl.starConversation(messageResult.conversationId);
-        console.log('✅ Conversation starred in GHL automatically');
-      } catch (starError) {
-        console.error('❌ Failed to star conversation in GHL:', starError);
+        console.log('✅ Conversation starred in GHL successfully');
+        
+        // Verify the conversation is actually starred
+        try {
+          const conversation = await ghl.getConversation(messageResult.conversationId);
+          console.log('🔍 Conversation status after starring:', { 
+            id: conversation.id, 
+            starred: conversation.starred,
+            status: conversation.status 
+          });
+        } catch (verifyError) {
+          console.error('❌ Could not verify conversation starring:', verifyError);
+        }
+      } catch (starError: any) {
+        console.error('❌ Failed to star conversation in GHL:', {
+          conversationId: messageResult.conversationId,
+          error: starError?.message || starError,
+          stack: starError?.stack
+        });
         // Don't fail the whole operation if starring fails
       }
 
       // Step 5: Create conversation record in our database (without user_id for server-side)
+      console.log('💾 Creating conversation record in database...');
+      const conversationData = {
+        contact_id: dbContact.id,
+        ghl_conversation_id: messageResult.conversationId,
+        ghl_contact_id: ghlContact.id,
+        contact_name: dbContact.name_first || 'Unknown',
+        contact_email: ghlContact.email,
+        contact_phone: phoneNumber,
+        last_message_body: message,
+        last_message_date: new Date().toISOString(),
+        last_message_type: 'SMS',
+        unread_count: 0,
+        starred: false, // This will be overridden to true in the conversations API
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('📝 Conversation data to insert:', conversationData);
+      
       const { data: conversation, error: convError } = await supabaseAdmin
         .from('conversations')
-        .insert({
-          contact_id: dbContact.id,
-          ghl_conversation_id: messageResult.conversationId,
-          ghl_contact_id: ghlContact.id,
-          contact_name: dbContact.name_first || 'Unknown',
-          contact_email: ghlContact.email,
-          contact_phone: phoneNumber,
-          last_message_body: message,
-          last_message_date: new Date().toISOString(),
-          last_message_type: 'SMS',
-          unread_count: 0,
-          starred: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(conversationData)
         .select()
         .single();
 
       if (convError) {
-        console.error('Error creating conversation:', convError);
+        console.error('❌ Error creating conversation in database:', convError);
         // Don't fail the whole operation if conversation creation fails
+      } else {
+        console.log('✅ Conversation created in database successfully:', conversation?.id);
       }
 
       return NextResponse.json({

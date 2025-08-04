@@ -284,6 +284,7 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
   }
 
   async starConversation(conversationId: string): Promise<void> {
+    console.log(`🌟 Attempting to star conversation ${conversationId} via PUT request`);
     const response = await this.fetchWithRetry(
       `${this.config.baseUrl}/conversations/${conversationId}`,
       {
@@ -295,8 +296,15 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
       }
     )
 
+    console.log(`📊 Star conversation response status: ${response.status} ${response.statusText}`);
+    
     if (!response.ok) {
-      throw new Error(`Failed to star conversation: ${response.statusText}`)
+      const errorText = await response.text();
+      console.error(`❌ Star conversation failed: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(`Failed to star conversation: ${response.statusText} - ${errorText}`)
     }
+    
+    const responseData = await response.text();
+    console.log(`✅ Star conversation successful. Response: ${responseData}`);
   }
 }

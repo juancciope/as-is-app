@@ -81,6 +81,7 @@ export async function GET(request: NextRequest) {
         if (dbError) {
           console.error('Error fetching app conversations from database:', dbError)
         } else {
+          console.log('Raw database conversations:', JSON.stringify(dbConversations, null, 2));
           // Transform database conversations to match GHL format
           appConversations = (dbConversations || []).map(conv => ({
             id: conv.ghl_conversation_id || `app-${conv.id}`,
@@ -95,7 +96,8 @@ export async function GET(request: NextRequest) {
             starred: conv.starred || true, // Mark app conversations as starred
             source: 'app' // Identifier to know this came from our app
           }))
-          console.log('Fetched app conversations:', appConversations.length)
+          console.log('Transformed app conversations:', JSON.stringify(appConversations, null, 2));
+          console.log('Total app conversations fetched:', appConversations.length)
         }
       }
 
