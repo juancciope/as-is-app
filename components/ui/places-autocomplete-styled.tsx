@@ -198,17 +198,19 @@ export function PlacesAutocompleteStyled({
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🔧 Fallback input change:', e.target.value);
     onChange(e.target.value);
   };
 
-  if (error || !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+  // Force fallback mode for testing
+  if (true || error || !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
     return (
       <div className="relative">
         <input
           type="text"
           value={value}
           onChange={handleFallbackChange}
-          placeholder={error ? "Address autocomplete unavailable" : placeholder}
+          placeholder={error ? "Address autocomplete unavailable" : placeholder + " (FALLBACK MODE)"}
           disabled={disabled}
           className={`${className} ${error ? 'border-red-300' : ''}`}
           autoComplete="off"
