@@ -118,20 +118,14 @@ export default function AuctionsPage() {
       if (filters.priorities && filters.priorities.length > 0) queryParams.append('priorities', filters.priorities.join(','));
       if (filters.eventTypes && filters.eventTypes.length > 0) queryParams.append('eventTypes', filters.eventTypes.join(','));
 
-      const apiUrl = `/api/data?${queryParams.toString()}`;
-      console.log('Fetching data from:', apiUrl);
-      
-      const response = await fetch(apiUrl);
-      console.log('Response status:', response.status);
+      const response = await fetch(`/api/data?${queryParams.toString()}`);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch data');
       }
       
       const result = await response.json();
-      console.log('API Response:', result);
       
       setData(result.data || []);
       updateStats(result.data || []);
@@ -471,15 +465,6 @@ export default function AuctionsPage() {
 
       <StatsCards stats={stats} />
 
-      {/* Debug Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-        <h3 className="font-medium text-blue-800">Debug Info:</h3>
-        <p>Data count: {data.length}</p>
-        <p>Loading: {isLoadingData ? 'Yes' : 'No'}</p>
-        <p>Error: {error || 'None'}</p>
-        <p>User authenticated: {user ? 'Yes' : 'No'}</p>
-        <p>Stats total: {stats.total}</p>
-      </div>
 
       <Card>
         <CardHeader>
@@ -655,14 +640,16 @@ export default function AuctionsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {activeTab === 'properties' ? (
             isLoadingData ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <DataTable data={data} onDataUpdate={fetchData} />
+              <div className="max-h-[600px] overflow-auto">
+                <DataTable data={data} onDataUpdate={fetchData} />
+              </div>
             )
           ) : (
             isLoadingContacts ? (
@@ -670,7 +657,9 @@ export default function AuctionsPage() {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <ContactsTable contacts={contacts} />
+              <div className="max-h-[600px] overflow-auto">
+                <ContactsTable contacts={contacts} />
+              </div>
             )
           )}
         </CardContent>
