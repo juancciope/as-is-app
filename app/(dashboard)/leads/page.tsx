@@ -1640,6 +1640,14 @@ export default function LeadsPage() {
             </div>
           )}
         </div>
+
+        {/* Add Property Modal - Mobile */}
+        <AddPropertyModal
+          isOpen={showAddPropertyModal}
+          onClose={() => setShowAddPropertyModal(false)}
+          onAddProperty={createNewProperty}
+          isLoading={isAddingProperty}
+        />
       </div>
     )
   }
