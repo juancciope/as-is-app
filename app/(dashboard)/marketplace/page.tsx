@@ -206,7 +206,8 @@ export default function MarketplacePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="h-[calc(100dvh-4rem)] bg-white flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -568,6 +569,7 @@ export default function MarketplacePage() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }
