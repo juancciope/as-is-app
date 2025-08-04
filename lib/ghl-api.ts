@@ -371,4 +371,55 @@ export class GoHighLevelAPI {
       throw new Error(`Failed to get conversations from contacts: ${error}`)
     }
   }
+
+  async searchContacts(query: string): Promise<{ contacts: GHLContact[], total: number }> {
+    const queryParams = new URLSearchParams({
+      locationId: this.config.locationId,
+      query,
+      limit: '10'
+    })
+
+    const response = await fetch(
+      `${this.config.baseUrl}/contacts/?${queryParams.toString()}`,
+      {
+        method: 'GET',
+        headers: this.headers
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to search contacts: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return {
+      contacts: data.contacts || [],
+      total: data.meta?.total || 0
+    }
+  }
+
+  async createContact(contact: {
+    firstName: string
+    lastName?: string
+    phone?: string
+    email?: string
+    locationId: string
+  }): Promise<{ contact: GHLContact }> {
+    const response = await fetch(
+      `${this.config.baseUrl}/contacts/`,
+      {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(contact)
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create contact: ${response.statusText} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    return data
+  }
 }

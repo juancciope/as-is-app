@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { AddPropertyModal } from '@/components/ui/add-property-modal'
+import { NewMessageModal } from '@/components/ui/new-message-modal'
 
 // Helper function to format comparable sales data
 const formatComparableSales = (comparableSales: any) => {
@@ -366,6 +367,8 @@ export default function LeadsPage() {
     onCancel: () => void
   } | null>(null)
   const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('pending')
+  const [showNewMessageModal, setShowNewMessageModal] = useState(false)
+  const [isSendingNewMessage, setIsSendingNewMessage] = useState(false)
   
   // Use auth context for conversation status management
   const { conversationStatuses, updateConversationStatus, loadConversationStatuses } = useAuth()
@@ -540,6 +543,49 @@ export default function LeadsPage() {
       setError(error.message || 'Failed to load conversations')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSendNewMessage = async (phoneNumber: string, message: string, contactName?: string) => {
+    setIsSendingNewMessage(true)
+    try {
+      const response = await fetch('/api/ghl/send-new-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          message,
+          contactName
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to send message')
+      }
+
+      const result = await response.json()
+      
+      // Refresh conversations to show the new one
+      await fetchConversations()
+      
+      // Close the modal
+      setShowNewMessageModal(false)
+      
+      // If we have a conversation ID, select it
+      if (result.conversationId) {
+        const newLead = leads.find(l => l.id === result.conversationId)
+        if (newLead) {
+          setSelectedLead(newLead)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error sending new message:', error)
+      throw error
+    } finally {
+      setIsSendingNewMessage(false)
     }
   }
 
@@ -1025,8 +1071,19 @@ export default function LeadsPage() {
       <div className="h-[calc(100dvh-1rem)] bg-white flex flex-col overflow-hidden rounded-lg shadow-sm border">
         {/* Mobile Header */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-white w-full rounded-t-lg">
-          <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+              <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+            </div>
+            <button
+              onClick={() => setShowNewMessageModal(true)}
+              className="px-4 py-2 bg-[#04325E] text-white rounded-lg hover:bg-[#0a4976] transition-colors flex items-center text-sm font-medium"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New
+            </button>
+          </div>
         </div>
         
         {/* Filter Tabs */}
@@ -1648,6 +1705,13 @@ export default function LeadsPage() {
           onAddProperty={createNewProperty}
           isLoading={isAddingProperty}
         />
+        {/* New Message Modal - Mobile */}
+        <NewMessageModal
+          isOpen={showNewMessageModal}
+          onClose={() => setShowNewMessageModal(false)}
+          onSendMessage={handleSendNewMessage}
+          isLoading={isSendingNewMessage}
+        />
       </div>
     )
   }
@@ -1660,8 +1724,19 @@ export default function LeadsPage() {
       <div className="w-80 border-r border-gray-200 flex flex-col bg-white rounded-l-lg">
           {/* Conversations Header - Fixed */}
           <div className="flex-shrink-0 p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-            <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+                <p className="text-sm text-gray-600 mt-1">Starred conversations</p>
+              </div>
+              <button
+                onClick={() => setShowNewMessageModal(true)}
+                className="px-3 py-1.5 bg-[#04325E] text-white rounded-lg hover:bg-[#0a4976] transition-colors flex items-center text-sm font-medium"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New
+              </button>
+            </div>
           </div>
           
           {/* Filter Tabs - Desktop */}
@@ -2317,6 +2392,13 @@ export default function LeadsPage() {
         onClose={() => setShowAddPropertyModal(false)}
         onAddProperty={createNewProperty}
         isLoading={isAddingProperty}
+      />
+      {/* New Message Modal */}
+      <NewMessageModal
+        isOpen={showNewMessageModal}
+        onClose={() => setShowNewMessageModal(false)}
+        onSendMessage={handleSendNewMessage}
+        isLoading={isSendingNewMessage}
       />
     </>
   )
