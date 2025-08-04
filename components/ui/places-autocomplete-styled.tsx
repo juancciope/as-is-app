@@ -34,6 +34,7 @@ export function PlacesAutocompleteStyled({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [autocompleteKey, setAutocompleteKey] = useState(0);
 
   useEffect(() => {
     if (disabled) return;
@@ -65,10 +66,11 @@ export function PlacesAutocompleteStyled({
           includedRegionCodes: ['us']
         });
         
-        // FORCE LIGHT THEME - This fixes the invisible text issue!
-        autocomplete.style.colorScheme = 'light';
+        // FORCE LIGHT THEME - 2025 Google Places API Configuration
+        // Setting colorScheme to 'none' disables dark-mode adaptation, ensuring light theme always
+        autocomplete.style.colorScheme = 'none';
         
-        // Also set CSS variables for explicit white background and black text
+        // Override CSS variables for explicit white background and black text (2025 API)
         autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
         autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
 
@@ -93,60 +95,7 @@ export function PlacesAutocompleteStyled({
             if (fullAddress) {
               onChange(fullAddress);
 
-              // FORCE CSS UPDATES: Since Shadow DOM is closed, force CSS updates through style injection
-              
-              // Method 1: Inject styles into document head to override any Google styles
-              const injectForceStyles = () => {
-                const styleId = 'gmp-force-visible-text';
-                let existingStyle = document.getElementById(styleId);
-                
-                if (existingStyle) {
-                  existingStyle.remove();
-                }
-                
-                const style = document.createElement('style');
-                style.id = styleId;
-                style.textContent = `
-                  /* CRITICAL: Force text visibility in Google Places Autocomplete after selection */
-                  gmp-place-autocomplete {
-                    --gmp-mat-color-on-surface: #000000 !important;
-                    --gmp-mat-color-surface: #ffffff !important;
-                    color-scheme: light !important;
-                  }
-                  
-                  /* Target all possible input states with maximum specificity */
-                  gmp-place-autocomplete * {
-                    color: #000000 !important;
-                    background-color: #ffffff !important;
-                    -webkit-text-fill-color: #000000 !important;
-                  }
-                `;
-                
-                document.head.appendChild(style);
-              };
-              
-              // Method 2: Force the autocomplete element itself to update
-              const forceElementUpdate = () => {
-                // Trigger a reflow to force style recalculation
-                autocomplete.style.display = 'none';
-                autocomplete.offsetHeight; // Force reflow
-                autocomplete.style.display = 'block';
-                
-                // Set CSS custom properties directly on the element
-                autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000', 'important');
-                autocomplete.style.setProperty('--gmp-mat-color-surface', '#ffffff', 'important');
-                autocomplete.style.colorScheme = 'light';
-                
-              };
-              
-              // Execute immediately and with delays
-              [0, 10, 50, 100, 200, 500].forEach(delay => {
-                setTimeout(() => {
-                  injectForceStyles();
-                  forceElementUpdate();
-                }, delay);
-              });
-
+              // Call onPlaceSelected with comprehensive place data for property reports
               if (onPlaceSelected) {
                 const placeData = {
                   formatted_address: fullAddress,
@@ -166,12 +115,18 @@ export function PlacesAutocompleteStyled({
           }
         });
 
-        // Append to container
-        containerRef.current.appendChild(autocomplete);
+        // Store reference and mount element
         autocompleteElementRef.current = autocomplete;
+        
+        // Mount using JSX-compatible approach for better React integration
+        containerRef.current.appendChild(autocomplete);
+        
         setIsLoaded(true);
         setIsLoading(false);
         setError(null);
+        
+        // Force a re-render to ensure React stays in sync
+        setAutocompleteKey(prev => prev + 1);
 
       } catch (error) {
         console.error('Error initializing Places Autocomplete:', error);
@@ -225,18 +180,18 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* HYPER-FOCUSED: Make input text visible after address selection */}
+      {/* 2025 Google Places API Styling - Force Light Theme */}
       <style jsx global>{`
-        /* Force light theme and use CSS variables for consistent styling */
+        /* Force light theme and prevent dark mode adaptation (2025 API) */
         gmp-place-autocomplete {
-          /* Force light theme regardless of system settings */
-          color-scheme: light !important;
+          /* Setting to 'none' disables dark-mode adaptation, ensuring light theme always */
+          color-scheme: none !important;
           
-          /* CSS Variables provided by Google for customization */
+          /* CSS Variables provided by Google for 2025 Places API customization */
           --gmp-mat-color-surface: #FFFFFF !important;
           --gmp-mat-color-on-surface: #000000 !important;
           
-          /* Ensure full width */
+          /* Ensure full width and proper display */
           width: 100% !important;
           display: block !important;
         }
@@ -321,6 +276,7 @@ export function PlacesAutocompleteStyled({
         {/* Container for Google Places Autocomplete Element */}
         <div 
           ref={containerRef}
+          key={autocompleteKey}
           className={`${isLoaded ? 'block' : 'hidden'} w-full`}
         />
         
