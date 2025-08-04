@@ -1750,38 +1750,50 @@ export default function LeadsPage() {
                   scrollBehavior: 'smooth'
                 }}
                 onScroll={(e) => {
-                  // Handle sticky date header like WhatsApp
-                  const container = e.currentTarget;
-                  const stickyDate = document.getElementById('sticky-date');
-                  if (!stickyDate) return;
+                  // Throttle scroll handler to prevent performance issues
+                  if ((e.currentTarget as any).scrollTimeout) return;
+                  (e.currentTarget as any).scrollTimeout = setTimeout(() => {
+                    (e.currentTarget as any).scrollTimeout = null;
+                  }, 16); // ~60fps throttling
 
-                  const dateSeparators = container.querySelectorAll('[data-date-separator]');
-                  let currentDate = '';
-                  
-                  // Find the currently visible date based on scroll position
-                  for (let i = dateSeparators.length - 1; i >= 0; i--) {
-                    const separator = dateSeparators[i] as HTMLElement;
-                    const rect = separator.getBoundingClientRect();
-                    const containerRect = container.getBoundingClientRect();
+                  try {
+                    // Handle sticky date header like WhatsApp
+                    const container = e.currentTarget;
+                    const stickyDate = document.getElementById('sticky-date');
+                    if (!stickyDate) return;
+
+                    const dateSeparators = container.querySelectorAll('[data-date-separator]');
+                    if (dateSeparators.length === 0) return;
                     
-                    // Check if this date separator is above the current view
-                    if (rect.top <= containerRect.top + 80) { // 80px offset for proper positioning
-                      currentDate = separator.dataset.dateSeparator || '';
-                      break;
+                    let currentDate = '';
+                    
+                    // Find the currently visible date based on scroll position
+                    for (let i = dateSeparators.length - 1; i >= 0; i--) {
+                      const separator = dateSeparators[i] as HTMLElement;
+                      const rect = separator.getBoundingClientRect();
+                      const containerRect = container.getBoundingClientRect();
+                      
+                      // Check if this date separator is above the current view
+                      if (rect.top <= containerRect.top + 80) { // 80px offset for proper positioning
+                        currentDate = separator.dataset.dateSeparator || '';
+                        break;
+                      }
                     }
-                  }
-                  
-                  if (currentDate && dateSeparators.length > 0) {
-                    stickyDate.textContent = currentDate;
-                    stickyDate.style.opacity = '1';
                     
-                    // Hide after 1.5 seconds of no scrolling (like WhatsApp)
-                    clearTimeout((stickyDate as any).hideTimeout);
-                    (stickyDate as any).hideTimeout = setTimeout(() => {
+                    if (currentDate) {
+                      stickyDate.textContent = currentDate;
+                      stickyDate.style.opacity = '1';
+                      
+                      // Hide after 1.5 seconds of no scrolling (like WhatsApp)
+                      clearTimeout((stickyDate as any).hideTimeout);
+                      (stickyDate as any).hideTimeout = setTimeout(() => {
+                        stickyDate.style.opacity = '0';
+                      }, 1500);
+                    } else {
                       stickyDate.style.opacity = '0';
-                    }, 1500);
-                  } else {
-                    stickyDate.style.opacity = '0';
+                    }
+                  } catch (error) {
+                    // Silently handle scroll errors to prevent breaking the UI
                   }
                 }}
               >
