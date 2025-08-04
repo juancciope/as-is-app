@@ -58,16 +58,7 @@ export function PlacesAutocompleteStyled({
   const traditionalInputRef = useRef<HTMLInputElement>(null);
   const traditionalAutocompleteRef = useRef<any>(null);
 
-  // Stable callback to prevent useEffect re-runs
-  const handlePlaceSelect = useCallback((placeData: any) => {
-    if (onPlaceSelected) {
-      onPlaceSelected(placeData);
-    }
-  }, [onPlaceSelected]);
-
-  const handleAddressChange = useCallback((address: string) => {
-    onChange(address);
-  }, [onChange]);
+  // REMOVED: useCallback functions that were causing infinite re-initialization loops
 
   // Load Google Maps API once with comprehensive debugging
   useEffect(() => {
@@ -210,17 +201,19 @@ export function PlacesAutocompleteStyled({
             console.log('🏠 Full address:', fullAddress);
 
             if (fullAddress) {
-              handleAddressChange(fullAddress);
+              onChange(fullAddress);
 
-              const placeData = {
-                formatted_address: fullAddress,
-                display_name: place.displayName,
-                location: place.location,
-                address_components: place.addressComponents,
-                place: place
-              };
-              console.log('📤 Calling onPlaceSelected with:', placeData);
-              handlePlaceSelect(placeData);
+              if (onPlaceSelected) {
+                const placeData = {
+                  formatted_address: fullAddress,
+                  display_name: place.displayName,
+                  location: place.location,
+                  address_components: place.addressComponents,
+                  place: place
+                };
+                console.log('📤 Calling onPlaceSelected with:', placeData);
+                onPlaceSelected(placeData);
+              }
             } else {
               console.warn('❌ No formatted address found');
             }
@@ -254,7 +247,7 @@ export function PlacesAutocompleteStyled({
     
     const cleanup = setupAutocomplete();
     return cleanup;
-  }, [googleLoaded, handleAddressChange, handlePlaceSelect]);
+  }, [googleLoaded]); // FIXED: Remove callback dependencies that cause infinite loops
   
   // Fallback: Traditional Google Places Autocomplete approach
   useEffect(() => {
@@ -282,16 +275,18 @@ export function PlacesAutocompleteStyled({
           console.log('🏠 Traditional place selected:', place);
           
           if (place.formatted_address) {
-            handleAddressChange(place.formatted_address);
+            onChange(place.formatted_address);
             
-            const placeData = {
-              formatted_address: place.formatted_address,
-              display_name: place.name,
-              location: place.geometry?.location,
-              address_components: place.address_components,
-              place: place
-            };
-            handlePlaceSelect(placeData);
+            if (onPlaceSelected) {
+              const placeData = {
+                formatted_address: place.formatted_address,
+                display_name: place.name,
+                location: place.geometry?.location,
+                address_components: place.address_components,
+                place: place
+              };
+              onPlaceSelected(placeData);
+            }
           }
         });
         
@@ -311,7 +306,7 @@ export function PlacesAutocompleteStyled({
         window.google.maps.event.clearInstanceListeners(traditionalAutocompleteRef.current);
       }
     };
-  }, [useTraditionalApproach, googleLoaded, handleAddressChange, handlePlaceSelect]);
+  }, [useTraditionalApproach, googleLoaded]); // FIXED: Remove callback dependencies
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -530,7 +525,7 @@ export function PlacesAutocompleteStyled({
               ref={traditionalInputRef}
               type="text"
               value={value}
-              onChange={(e) => handleAddressChange(e.target.value)}
+              onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
               disabled={disabled}
               className={`${className} ${isLoaded ? 'border-blue-500' : 'border-gray-300'}`}
