@@ -583,9 +583,8 @@ export default function AuctionsPage() {
       />
       </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-hidden px-6 pb-6">
-        <Card className="h-full flex flex-col">
+      {/* Data Table Section */}
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -644,28 +643,26 @@ export default function AuctionsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 p-0 overflow-hidden">
-          {activeTab === 'properties' ? (
-            isLoadingData ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-            ) : (
-              <div className="h-full overflow-auto">
+        <CardContent className="p-0">
+          <div className="max-h-[60vh] overflow-auto">
+            {activeTab === 'properties' ? (
+              isLoadingData ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
                 <DataTable data={data} onDataUpdate={fetchData} />
-              </div>
-            )
-          ) : (
-            isLoadingContacts ? (
-              <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
+              )
             ) : (
-              <div className="h-full overflow-auto">
+              isLoadingContacts ? (
+                <div className="flex justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
                 <ContactsTable contacts={contacts} />
-              </div>
-            )
-          )}
+              )
+            )}
+          </div>
         </CardContent>
       </Card>
       </div>
