@@ -245,6 +245,23 @@ export class GoHighLevelAPI {
     }
   }
 
+  async starConversation(conversationId: string): Promise<void> {
+    const response = await fetch(
+      `${this.config.baseUrl}/conversations/${conversationId}`,
+      {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify({
+          starred: true
+        })
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to star conversation: ${response.statusText}`)
+    }
+  }
+
   async updateConversation(conversationId: string, updates: {
     starred?: boolean
     assignedTo?: string

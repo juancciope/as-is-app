@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoHighLevelAPIWithRefresh } from '@/lib/ghl-api-with-refresh'
 import { VercelEnvUpdater } from '@/lib/vercel-env-updater'
+import { supabaseAdmin } from '@/lib/supabase'
 
 
 export const dynamic = 'force-dynamic';
@@ -56,16 +57,75 @@ export async function GET(request: NextRequest) {
     })
 
     try {
-      // Use the new Search Conversations endpoint
-      console.log('Attempting to fetch conversations with limit:', limit, 'starred:', starred)
-      const result = await ghl.getConversations({ 
+      // Fetch starred conversations from GHL
+      console.log('Attempting to fetch starred conversations from GHL with limit:', limit)
+      const ghlResult = await ghl.getConversations({ 
         limit,
-        starred,
+        starred: true, // Always get starred conversations from GHL
         sort: 'desc',
         sortBy: 'last_message_date'
       })
       
-      console.log('Successfully fetched conversations:', result.total)
+      console.log('Successfully fetched GHL conversations:', ghlResult.total)
+
+      // Fetch app-created conversations from our database
+      let appConversations = []
+      if (supabaseAdmin) {
+        console.log('Fetching app-created conversations from database...')
+        const { data: dbConversations, error: dbError } = await supabaseAdmin
+          .from('conversations')
+          .select('*')
+          .order('last_message_date', { ascending: false })
+          .limit(50)
+
+        if (dbError) {
+          console.error('Error fetching app conversations from database:', dbError)
+        } else {
+          // Transform database conversations to match GHL format
+          appConversations = (dbConversations || []).map(conv => ({
+            id: conv.ghl_conversation_id || `app-${conv.id}`,
+            contactId: conv.ghl_contact_id,
+            contactName: conv.contact_name,
+            contactEmail: conv.contact_email,
+            contactPhone: conv.contact_phone,
+            lastMessageBody: conv.last_message_body,
+            lastMessageDate: conv.last_message_date,
+            lastMessageType: conv.last_message_type,
+            unreadCount: conv.unread_count || 0,
+            starred: conv.starred || true, // Mark app conversations as starred
+            source: 'app' // Identifier to know this came from our app
+          }))
+          console.log('Fetched app conversations:', appConversations.length)
+        }
+      }
+
+      // Combine and deduplicate conversations
+      const allConversations = [...(ghlResult.conversations || []), ...appConversations]
+      const uniqueConversations = allConversations.reduce((acc, conv) => {
+        // Use conversation ID as the key for deduplication
+        const key = conv.id
+        if (!acc.find(existing => existing.id === key)) {
+          acc.push(conv)
+        }
+        return acc
+      }, [] as any[])
+
+      // Sort by last message date and limit
+      const sortedConversations = uniqueConversations
+        .sort((a, b) => new Date(b.lastMessageDate || 0).getTime() - new Date(a.lastMessageDate || 0).getTime())
+        .slice(0, limit)
+
+      const result = {
+        conversations: sortedConversations,
+        total: sortedConversations.length,
+        sources: {
+          ghl: ghlResult.total,
+          app: appConversations.length,
+          combined: sortedConversations.length
+        }
+      }
+      
+      console.log('Combined conversation sources:', result.sources)
       return NextResponse.json(result)
       
     } catch (conversationError: any) {

@@ -282,4 +282,21 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
     const data = await response.json()
     return data
   }
+
+  async starConversation(conversationId: string): Promise<void> {
+    const response = await this.fetchWithRetry(
+      `${this.config.baseUrl}/conversations/${conversationId}`,
+      {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify({
+          starred: true
+        })
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to star conversation: ${response.statusText}`)
+    }
+  }
 }

@@ -143,7 +143,16 @@ export async function POST(request: NextRequest) {
 
       console.log('SMS sent successfully:', messageResult);
 
-      // Step 4: Create conversation record in our database (without user_id for server-side)
+      // Step 4: Auto-star the conversation in GHL so it appears in our inbox
+      try {
+        await ghl.starConversation(messageResult.conversationId);
+        console.log('✅ Conversation starred in GHL automatically');
+      } catch (starError) {
+        console.error('❌ Failed to star conversation in GHL:', starError);
+        // Don't fail the whole operation if starring fails
+      }
+
+      // Step 5: Create conversation record in our database (without user_id for server-side)
       const { data: conversation, error: convError } = await supabaseAdmin
         .from('conversations')
         .insert({
