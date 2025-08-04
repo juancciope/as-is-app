@@ -581,8 +581,7 @@ export default function AuctionsPage() {
         isLoading={isLoadingData}
         totalResults={data.length}
       />
-      </div>
-
+      
       {/* Data Table Section */}
       <Card>
         <CardHeader>
