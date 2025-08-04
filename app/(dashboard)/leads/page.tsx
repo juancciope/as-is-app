@@ -213,9 +213,42 @@ const PropertyAnalysisSection = ({
                 <h4 className="text-xs font-semibold text-emerald-800">💡 Investment Strategy</h4>
               </div>
               <div className="p-3">
-                <div className="text-xs text-emerald-900 leading-relaxed bg-emerald-50 rounded-lg p-3">
-                  {property.analysis.data.investment_recommendation}
+                {/* Decision */}
+                <div className={`text-sm font-bold mb-2 ${
+                  property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
+                  property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
                 </div>
+                
+                {/* Confidence Level */}
+                <div className="text-xs text-gray-600 mb-3">
+                  Confidence: {property.analysis.data.investment_recommendation.confidence_level}
+                </div>
+                
+                {/* Key Reasons */}
+                {property.analysis.data.investment_recommendation.key_reasons && property.analysis.data.investment_recommendation.key_reasons.length > 0 && (
+                  <div className="text-xs mb-3">
+                    <strong className="text-green-700">✅ Key Reasons:</strong>
+                    <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                      {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
+                        <li key={i} className="text-green-800">{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Concerns */}
+                {property.analysis.data.investment_recommendation.concerns && property.analysis.data.investment_recommendation.concerns.length > 0 && (
+                  <div className="text-xs">
+                    <strong className="text-red-700">⚠️ Concerns:</strong>
+                    <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                      {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
+                        <li key={i} className="text-red-800">{concern}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           )}
