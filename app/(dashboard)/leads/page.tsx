@@ -226,27 +226,27 @@ const PropertyAnalysisSection = ({
                   property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
                   property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
+                  {String(property.analysis.data.investment_recommendation.decision || '').replace(/_/g, ' ')}
                 </div>
                 <div className="text-xs text-gray-600 mb-2">
-                  Confidence: {property.analysis.data.investment_recommendation.confidence_level}
+                  Confidence: {String(property.analysis.data.investment_recommendation.confidence_level || 'N/A')}
                 </div>
-                {property.analysis.data.investment_recommendation.key_reasons && (
+                {property.analysis.data.investment_recommendation.key_reasons && Array.isArray(property.analysis.data.investment_recommendation.key_reasons) && (
                   <div className="text-xs">
                     <strong>✅ Reasons:</strong>
                     <ul className="list-disc list-inside mt-1 ml-2">
                       {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
-                        <li key={i}>{reason}</li>
+                        <li key={i}>{String(reason)}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-                {property.analysis.data.investment_recommendation.concerns && (
+                {property.analysis.data.investment_recommendation.concerns && Array.isArray(property.analysis.data.investment_recommendation.concerns) && (
                   <div className="text-xs mt-2">
                     <strong>⚠️ Concerns:</strong>
                     <ul className="list-disc list-inside mt-1 ml-2">
                       {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
-                        <li key={i}>{concern}</li>
+                        <li key={i}>{String(concern)}</li>
                       ))}
                     </ul>
                   </div>
@@ -1656,27 +1656,27 @@ export default function LeadsPage() {
                                         property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
                                         property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
                                       }`}>
-                                        {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
+                                        {String(property.analysis.data.investment_recommendation.decision || '').replace(/_/g, ' ')}
                                       </div>
                                       <div className="text-xs text-gray-600 mb-2">
-                                        Confidence: {property.analysis.data.investment_recommendation.confidence_level}
+                                        Confidence: {String(property.analysis.data.investment_recommendation.confidence_level || 'N/A')}
                                       </div>
-                                      {property.analysis.data.investment_recommendation.key_reasons && (
+                                      {property.analysis.data.investment_recommendation.key_reasons && Array.isArray(property.analysis.data.investment_recommendation.key_reasons) && (
                                         <div className="text-xs">
                                           <strong>✅ Reasons:</strong>
                                           <ul className="list-disc list-inside mt-1 ml-2">
                                             {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
-                                              <li key={i}>{reason}</li>
+                                              <li key={i}>{String(reason)}</li>
                                             ))}
                                           </ul>
                                         </div>
                                       )}
-                                      {property.analysis.data.investment_recommendation.concerns && (
+                                      {property.analysis.data.investment_recommendation.concerns && Array.isArray(property.analysis.data.investment_recommendation.concerns) && (
                                         <div className="text-xs mt-2">
                                           <strong>⚠️ Concerns:</strong>
                                           <ul className="list-disc list-inside mt-1 ml-2">
                                             {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
-                                              <li key={i}>{concern}</li>
+                                              <li key={i}>{String(concern)}</li>
                                             ))}
                                           </ul>
                                         </div>
