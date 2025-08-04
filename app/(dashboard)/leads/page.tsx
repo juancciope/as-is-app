@@ -395,23 +395,6 @@ export default function LeadsPage() {
     }
   }, [leads.length, loadConversationStatuses])
 
-  // Cleanup sticky date when leaving mobile conversation view
-  useEffect(() => {
-    const mobileStickyDate = document.getElementById('mobile-sticky-date')
-    if (mobileStickyDate && (!selectedLead || showMobileProperties || !isMobile)) {
-      mobileStickyDate.style.opacity = '0'
-      clearTimeout((mobileStickyDate as any).hideTimeout)
-    }
-  }, [selectedLead, showMobileProperties, isMobile])
-
-  // Cleanup desktop sticky date when leaving desktop conversation view
-  useEffect(() => {
-    const desktopStickyDate = document.getElementById('desktop-sticky-date')
-    if (desktopStickyDate && (!selectedLead || isMobile)) {
-      desktopStickyDate.style.opacity = '0'
-      clearTimeout((desktopStickyDate as any).hideTimeout)
-    }
-  }, [selectedLead, isMobile])
 
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
@@ -1751,14 +1734,7 @@ export default function LeadsPage() {
             </div>
           ) : (
             // Custom Mobile Chat - Built from scratch
-            <div className="flex flex-col h-full bg-white relative">
-              {/* Sticky Date Header - WhatsApp Style (Mobile Only) */}
-              <div className="absolute top-0 left-0 right-0 z-10 flex justify-center pointer-events-none">
-                <div className="px-3 py-1 bg-black/80 text-white text-xs rounded-full opacity-0 transition-opacity duration-200" id="mobile-sticky-date">
-                  {/* Date will be updated by mobile scroll handler */}
-                </div>
-              </div>
-              
+            <div className="flex flex-col h-full bg-white">
               {/* Messages Container - Scrollable */}
               <div 
                 ref={chatContainerRef}
@@ -1767,56 +1743,6 @@ export default function LeadsPage() {
                   height: 0, // Forces flex child to use available space
                   WebkitOverflowScrolling: 'touch',
                   scrollBehavior: 'smooth'
-                }}
-                onScroll={(e) => {
-                  // Only run in mobile view - check if we're in mobile chat context
-                  if (!selectedLead || showMobileProperties) return;
-                  
-                  // Throttle scroll handler to prevent performance issues
-                  if ((e.currentTarget as any).scrollTimeout) return;
-                  (e.currentTarget as any).scrollTimeout = setTimeout(() => {
-                    (e.currentTarget as any).scrollTimeout = null;
-                  }, 16); // ~60fps throttling
-
-                  try {
-                    // Handle sticky date header like WhatsApp (Mobile Only)
-                    const container = e.currentTarget;
-                    const stickyDate = document.getElementById('mobile-sticky-date');
-                    if (!stickyDate) return;
-
-                    const dateSeparators = container.querySelectorAll('[data-date-separator]');
-                    if (dateSeparators.length === 0) return;
-                    
-                    let currentDate = '';
-                    
-                    // Find the currently visible date based on scroll position
-                    for (let i = dateSeparators.length - 1; i >= 0; i--) {
-                      const separator = dateSeparators[i] as HTMLElement;
-                      const rect = separator.getBoundingClientRect();
-                      const containerRect = container.getBoundingClientRect();
-                      
-                      // Check if this date separator is above the current view
-                      if (rect.top <= containerRect.top + 40) { // 40px offset for mobile
-                        currentDate = separator.dataset.dateSeparator || '';
-                        break;
-                      }
-                    }
-                    
-                    if (currentDate) {
-                      stickyDate.textContent = currentDate;
-                      stickyDate.style.opacity = '1';
-                      
-                      // Hide after 1.5 seconds of no scrolling (like WhatsApp)
-                      clearTimeout((stickyDate as any).hideTimeout);
-                      (stickyDate as any).hideTimeout = setTimeout(() => {
-                        stickyDate.style.opacity = '0';
-                      }, 1500);
-                    } else {
-                      stickyDate.style.opacity = '0';
-                    }
-                  } catch (error) {
-                    // Silently handle scroll errors to prevent breaking the UI
-                  }
                 }}
               >
                 {isLoadingMessages ? (
@@ -1855,10 +1781,7 @@ export default function LeadsPage() {
                     return (
                       <div key={message.id}>
                         {showDateSeparator && (
-                          <div 
-                            className="flex justify-center my-4"
-                            data-date-separator={formattedDate}
-                          >
+                          <div className="flex justify-center my-4">
                             <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs text-gray-600 border border-gray-200 shadow-sm">
                               {formattedDate}
                             </span>
@@ -2085,14 +2008,7 @@ export default function LeadsPage() {
           {selectedLead ? (
             <>
               {/* Chat Container - Custom Desktop Chat */}
-              <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden relative">
-                {/* Sticky Date Header - WhatsApp Style (Desktop) */}
-                <div className="absolute top-6 left-0 right-0 z-10 flex justify-center pointer-events-none">
-                  <div className="px-3 py-1 bg-black/80 text-white text-xs rounded-full opacity-0 transition-opacity duration-200" id="desktop-sticky-date">
-                    {/* Date will be updated by desktop scroll handler */}
-                  </div>
-                </div>
-                
+              <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                 <div className="flex flex-col h-full">
                   {/* Messages Container - Scrollable */}
                   <div 
@@ -2101,56 +2017,6 @@ export default function LeadsPage() {
                     style={{
                       height: 0, // Forces flex child to use available space
                       scrollBehavior: 'smooth'
-                    }}
-                    onScroll={(e) => {
-                      // Desktop scroll handler for sticky date header
-                      if (!selectedLead) return;
-                      
-                      // Throttle scroll handler to prevent performance issues
-                      if ((e.currentTarget as any).scrollTimeout) return;
-                      (e.currentTarget as any).scrollTimeout = setTimeout(() => {
-                        (e.currentTarget as any).scrollTimeout = null;
-                      }, 16); // ~60fps throttling
-
-                      try {
-                        // Handle sticky date header like WhatsApp (Desktop)
-                        const container = e.currentTarget;
-                        const stickyDate = document.getElementById('desktop-sticky-date');
-                        if (!stickyDate) return;
-
-                        const dateSeparators = container.querySelectorAll('[data-date-separator]');
-                        if (dateSeparators.length === 0) return;
-                        
-                        let currentDate = '';
-                        
-                        // Find the currently visible date based on scroll position
-                        for (let i = dateSeparators.length - 1; i >= 0; i--) {
-                          const separator = dateSeparators[i] as HTMLElement;
-                          const rect = separator.getBoundingClientRect();
-                          const containerRect = container.getBoundingClientRect();
-                          
-                          // Check if this date separator is above the current view
-                          if (rect.top <= containerRect.top + 80) { // 80px offset for desktop
-                            currentDate = separator.dataset.dateSeparator || '';
-                            break;
-                          }
-                        }
-                        
-                        if (currentDate) {
-                          stickyDate.textContent = currentDate;
-                          stickyDate.style.opacity = '1';
-                          
-                          // Hide after 1.5 seconds of no scrolling (like WhatsApp)
-                          clearTimeout((stickyDate as any).hideTimeout);
-                          (stickyDate as any).hideTimeout = setTimeout(() => {
-                            stickyDate.style.opacity = '0';
-                          }, 1500);
-                        } else {
-                          stickyDate.style.opacity = '0';
-                        }
-                      } catch (error) {
-                        // Silently handle scroll errors to prevent breaking the UI
-                      }
                     }}
                   >
                     {isLoadingMessages ? (
@@ -2189,10 +2055,7 @@ export default function LeadsPage() {
                         return (
                           <div key={message.id}>
                             {showDateSeparator && (
-                              <div 
-                                className="flex justify-center my-4"
-                                data-date-separator={formattedDate}
-                              >
+                              <div className="flex justify-center my-4">
                                 <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs text-gray-600 border border-gray-200 shadow-sm">
                                   {formattedDate}
                                 </span>
