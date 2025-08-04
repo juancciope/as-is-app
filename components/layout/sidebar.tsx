@@ -13,7 +13,11 @@ import {
   LogOut,
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Gavel,
+  Store,
+  Settings
 } from 'lucide-react'
 
 const menuItems = [
@@ -26,6 +30,26 @@ const menuItems = [
     name: 'Leads',
     href: '/leads',
     icon: Users
+  },
+  {
+    name: 'Probates',
+    href: '/probates',
+    icon: FileText
+  },
+  {
+    name: 'Auctions',
+    href: '/auctions',
+    icon: Gavel
+  },
+  {
+    name: 'Marketplace',
+    href: '/marketplace',
+    icon: Store
+  },
+  {
+    name: 'Settings',
+    href: '/settings',
+    icon: Settings
   }
 ]
 
