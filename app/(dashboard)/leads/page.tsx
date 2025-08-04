@@ -1181,6 +1181,7 @@ export default function LeadsPage() {
                           placeholder="Search for property address..."
                           className="p-4 border border-gray-300 rounded-lg w-full text-base focus:outline-none focus:ring-2 focus:ring-green-500"
                           style={{ fontSize: '16px' }}
+                          usePortal={true}
                         />
                         
                         {/* Mobile-specific instructions */}
