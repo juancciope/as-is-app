@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       console.log('Successfully fetched GHL conversations:', ghlResult.total)
 
       // Fetch app-created conversations from our database
-      let appConversations = []
+      let appConversations: any[] = []
       if (supabaseAdmin) {
         console.log('Fetching app-created conversations from database...')
         const { data: dbConversations, error: dbError } = await supabaseAdmin
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       const uniqueConversations = allConversations.reduce((acc, conv) => {
         // Use conversation ID as the key for deduplication
         const key = conv.id
-        if (!acc.find(existing => existing.id === key)) {
+        if (!acc.find((existing: any) => existing.id === key)) {
           acc.push(conv)
         }
         return acc
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
 
       // Sort by last message date and limit
       const sortedConversations = uniqueConversations
-        .sort((a, b) => new Date(b.lastMessageDate || 0).getTime() - new Date(a.lastMessageDate || 0).getTime())
+        .sort((a: any, b: any) => new Date(b.lastMessageDate || 0).getTime() - new Date(a.lastMessageDate || 0).getTime())
         .slice(0, limit)
 
       const result = {

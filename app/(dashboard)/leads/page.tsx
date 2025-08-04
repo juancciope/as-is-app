@@ -1923,6 +1923,28 @@ export default function LeadsPage() {
                       
                       return smsMessages.map((message, index) => {
                         const isOutgoing = message.direction === 'outbound'
+                        
+                        // Determine message sender
+                        const getSenderInfo = (msg: any) => {
+                          if (msg.direction === 'inbound') {
+                            return { label: 'Lead', color: 'text-gray-500', bgColor: 'bg-gray-100' }
+                          }
+                          
+                          // For outbound messages, check if it's from AI, User, or App
+                          if (msg.userId) {
+                            // Check if it's from AI automation
+                            if (msg.source === 'workflow' || msg.source === 'automation' || msg.body?.includes('This is an automated message') || msg.type === 'conversation_ai') {
+                              return { label: 'AI', color: 'text-purple-600', bgColor: 'bg-purple-100' }
+                            }
+                            // Otherwise it's from a user
+                            return { label: 'User', color: 'text-blue-600', bgColor: 'bg-blue-100' }
+                          }
+                          
+                          // If no userId, likely sent from our app
+                          return { label: 'App', color: 'text-green-600', bgColor: 'bg-green-100' }
+                        }
+                        
+                        const senderInfo = getSenderInfo(message)
                         const prevMessage = index > 0 ? smsMessages[index - 1] : null
                         const messageDate = new Date(message.dateAdded).toDateString()
                         const prevMessageDate = prevMessage ? new Date(prevMessage.dateAdded).toDateString() : null
