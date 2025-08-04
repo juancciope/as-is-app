@@ -54,6 +54,9 @@ export function PlacesAutocompleteStyled({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [googleLoaded, setGoogleLoaded] = useState(false);
+  const [useTraditionalApproach, setUseTraditionalApproach] = useState(false);
+  const traditionalInputRef = useRef<HTMLInputElement>(null);
+  const traditionalAutocompleteRef = useRef<any>(null);
 
   // Stable callback to prevent useEffect re-runs
   const handlePlaceSelect = useCallback((placeData: any) => {
@@ -66,22 +69,36 @@ export function PlacesAutocompleteStyled({
     onChange(address);
   }, [onChange]);
 
-  // Load Google Maps API once
+  // Load Google Maps API once with comprehensive debugging
   useEffect(() => {
-    if (disabled) return;
+    if (disabled) {
+      console.log('🚫 Places Autocomplete disabled');
+      return;
+    }
+    
+    console.log('🚀 Starting Google Places API initialization...');
     
     const loadGoogleMaps = async () => {
       try {
-        // More robust API key check with better error messaging
+        // Debug API key
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        console.log('🔑 API Key check:', apiKey ? 'Present' : 'Missing');
+        
         if (!apiKey) {
-          console.warn('🔑 Google Maps API key not found in local environment. Component will work in production with Vercel environment variable.');
+          console.warn('⚠️ No API key - using fallback mode');
           setError('Google Maps API key not configured for local development');
           setIsLoading(false);
           return;
         }
 
-        console.log('🗺️ Loading Google Places API 2025...');
+        console.log('📦 Loading Google Maps JavaScript API...');
+        
+        // Check if Google is already loaded
+        if (window.google && window.google.maps) {
+          console.log('✅ Google Maps already loaded, importing Places library...');
+        } else {
+          console.log('⏳ Loading Google Maps API from scratch...');
+        }
 
         // Load Google Maps API with Places library
         const loader = new Loader({
@@ -90,15 +107,28 @@ export function PlacesAutocompleteStyled({
           libraries: ["places"]
         });
 
+        console.log('🔄 Calling loader.load()...');
         await loader.load();
-        await window.google.maps.importLibrary("places");
+        console.log('✅ Google Maps API loaded successfully');
+        
+        console.log('📍 Importing Places library...');
+        const placesLibrary = await window.google.maps.importLibrary("places");
+        console.log('✅ Places library imported:', !!placesLibrary);
+        
+        // Debug: Check if PlaceAutocompleteElement is available
+        console.log('🔍 PlaceAutocompleteElement available:', !!window.google.maps.places.PlaceAutocompleteElement);
         
         setGoogleLoaded(true);
         setIsLoading(false);
         setError(null);
+        console.log('🎉 Google Places API ready!');
         
       } catch (error) {
         console.error('💥 Error loading Google Maps API:', error);
+        console.error('📋 Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        });
         setError(error instanceof Error ? error.message : 'Failed to load Google Maps API');
         setIsLoading(false);
       }
@@ -107,47 +137,81 @@ export function PlacesAutocompleteStyled({
     loadGoogleMaps();
   }, [disabled]);
   
-  // Set up the autocomplete element when Google is loaded
+  // Set up the autocomplete element when Google is loaded with detailed debugging
   useEffect(() => {
-    if (!googleLoaded || !autocompleteRef.current) return;
+    console.log('🔧 Setup effect triggered:', {
+      googleLoaded,
+      hasAutocompleteRef: !!autocompleteRef.current
+    });
+    
+    if (!googleLoaded) {
+      console.log('⏳ Waiting for Google to load...');
+      return;
+    }
+    
+    if (!autocompleteRef.current) {
+      console.log('⏳ Waiting for autocomplete ref...');
+      return;
+    }
+    
+    console.log('🛠️ Setting up autocomplete element...');
     
     const setupAutocomplete = () => {
       try {
         const autocomplete = autocompleteRef.current;
+        console.log('📝 Autocomplete element:', autocomplete);
+        console.log('📝 Element type:', autocomplete.tagName);
+        
+        // Check if this is actually a gmp-place-autocomplete element
+        if (autocomplete.tagName !== 'GMP-PLACE-AUTOCOMPLETE') {
+          console.error('❌ Element is not gmp-place-autocomplete:', autocomplete.tagName);
+          setError('Invalid autocomplete element type');
+          return;
+        }
+        
+        console.log('🎨 Applying styling...');
         
         // FORCE LIGHT THEME - 2025 Google Places API Configuration
-        // Setting colorScheme to 'none' disables dark-mode adaptation, ensuring light theme always
         autocomplete.style.colorScheme = 'none';
-        
-        // Override CSS variables for explicit white background and black text (2025 API)
         autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
         autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
         
+        console.log('🌍 Setting region restriction...');
         // Set region restriction - 2025 API format
-        autocomplete.includedRegionCodes = ['us'];
+        try {
+          autocomplete.includedRegionCodes = ['us'];
+          console.log('✅ Region restriction set');
+        } catch (regionError) {
+          console.warn('⚠️ Could not set region restriction:', regionError);
+        }
         
+        console.log('👂 Adding event listener...');
         // Listen for place selection
         const handleGmpSelect = async (event: any) => {
+          console.log('🎯 Place selected event:', event);
           try {
             const { placePrediction } = event;
+            console.log('📍 Place prediction:', placePrediction);
             
             if (!placePrediction) {
               console.warn('❌ No place prediction in selection event');
               return;
             }
 
-            // Convert to Place object and fetch required fields
+            console.log('🔄 Converting to Place object...');
             const place = placePrediction.toPlace();
+            
+            console.log('📋 Fetching place fields...');
             await place.fetchFields({ 
               fields: ['formattedAddress', 'displayName', 'location', 'addressComponents'] 
             });
 
             const fullAddress = place.formattedAddress;
+            console.log('🏠 Full address:', fullAddress);
 
             if (fullAddress) {
               handleAddressChange(fullAddress);
 
-              // Call onPlaceSelected with comprehensive place data for property reports
               const placeData = {
                 formatted_address: fullAddress,
                 display_name: place.displayName,
@@ -155,6 +219,7 @@ export function PlacesAutocompleteStyled({
                 address_components: place.addressComponents,
                 place: place
               };
+              console.log('📤 Calling onPlaceSelected with:', placeData);
               handlePlaceSelect(placeData);
             } else {
               console.warn('❌ No formatted address found');
@@ -166,15 +231,23 @@ export function PlacesAutocompleteStyled({
         };
         
         autocomplete.addEventListener('gmp-select', handleGmpSelect);
+        console.log('✅ Event listener added');
+        
         setIsLoaded(true);
+        console.log('🎉 Autocomplete setup complete!');
         
         // Cleanup function
         return () => {
+          console.log('🧹 Cleaning up autocomplete...');
           autocomplete.removeEventListener('gmp-select', handleGmpSelect);
         };
         
       } catch (error) {
         console.error('💥 Error setting up autocomplete:', error);
+        console.error('📋 Setup error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        });
         setError('Failed to setup autocomplete');
       }
     };
@@ -182,6 +255,63 @@ export function PlacesAutocompleteStyled({
     const cleanup = setupAutocomplete();
     return cleanup;
   }, [googleLoaded, handleAddressChange, handlePlaceSelect]);
+  
+  // Fallback: Traditional Google Places Autocomplete approach
+  useEffect(() => {
+    if (!useTraditionalApproach || !googleLoaded || !traditionalInputRef.current) return;
+    
+    console.log('🔄 Setting up traditional Google Places Autocomplete...');
+    
+    const setupTraditionalAutocomplete = () => {
+      try {
+        // Check if old Autocomplete class is available
+        if (!window.google.maps.places.Autocomplete) {
+          console.error('❌ Traditional Autocomplete class not available');
+          return;
+        }
+        
+        const autocomplete = new window.google.maps.places.Autocomplete(traditionalInputRef.current!, {
+          componentRestrictions: { country: 'us' },
+          fields: ['formatted_address', 'name', 'geometry', 'address_components']
+        });
+        
+        traditionalAutocompleteRef.current = autocomplete;
+        
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          console.log('🏠 Traditional place selected:', place);
+          
+          if (place.formatted_address) {
+            handleAddressChange(place.formatted_address);
+            
+            const placeData = {
+              formatted_address: place.formatted_address,
+              display_name: place.name,
+              location: place.geometry?.location,
+              address_components: place.address_components,
+              place: place
+            };
+            handlePlaceSelect(placeData);
+          }
+        });
+        
+        setIsLoaded(true);
+        console.log('✅ Traditional autocomplete setup complete');
+        
+      } catch (error) {
+        console.error('💥 Error setting up traditional autocomplete:', error);
+      }
+    };
+    
+    setupTraditionalAutocomplete();
+    
+    return () => {
+      if (traditionalAutocompleteRef.current) {
+        // Clean up traditional autocomplete
+        window.google.maps.event.clearInstanceListeners(traditionalAutocompleteRef.current);
+      }
+    };
+  }, [useTraditionalApproach, googleLoaded, handleAddressChange, handlePlaceSelect]);
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -345,30 +475,93 @@ export function PlacesAutocompleteStyled({
       `}</style>
       
       <div className="relative" style={style}>
-        {/* Direct JSX rendering of Google Places Autocomplete - better for modals/portals */}
+        {/* Debug Controls */}
         {googleLoaded && (
-          <gmp-place-autocomplete
-            ref={autocompleteRef}
-            className={`${isLoaded ? 'block' : 'hidden'} w-full`}
-            includedRegionCodes={['us']}
-            style={{
-              display: isLoaded ? 'block' : 'none',
-              width: '100%'
-            }}
-          />
+          <div className="mb-2 p-2 bg-gray-100 rounded text-xs">
+            <div className="flex gap-2 items-center mb-1">
+              <span>DEBUG MODE:</span>
+              <button
+                onClick={() => setUseTraditionalApproach(false)}
+                className={`px-2 py-1 rounded text-xs ${
+                  !useTraditionalApproach ? 'bg-green-500 text-white' : 'bg-gray-300'
+                }`}
+              >
+                2025 Web Component
+              </button>
+              <button
+                onClick={() => setUseTraditionalApproach(true)}
+                className={`px-2 py-1 rounded text-xs ${
+                  useTraditionalApproach ? 'bg-blue-500 text-white' : 'bg-gray-300'
+                }`}
+              >
+                Traditional Autocomplete
+              </button>
+            </div>
+            <div className="text-gray-600">
+              Current: {useTraditionalApproach ? 'Traditional' : 'Web Component'} | 
+              Loaded: {isLoaded ? '✅' : '❌'}
+            </div>
+          </div>
         )}
         
-        {/* Loading fallback */}
+        {/* 2025 Web Component Approach */}
+        {googleLoaded && !useTraditionalApproach ? (
+          <>
+            <div className="text-xs text-green-600 mb-1">DEBUG: 2025 Web Component Mode</div>
+            <gmp-place-autocomplete
+              ref={autocompleteRef}
+              className={`${isLoaded ? 'block' : 'hidden'} w-full`}
+              includedRegionCodes={['us']}
+              style={{
+                display: isLoaded ? 'block' : 'none',
+                width: '100%',
+                border: '2px solid green' // DEBUG: Visual indicator
+              }}
+            />
+            {!isLoaded && <div className="text-xs text-yellow-600">DEBUG: Component rendered but not loaded yet...</div>}
+          </>
+        ) : null}
+        
+        {/* Traditional Approach */}
+        {googleLoaded && useTraditionalApproach ? (
+          <>
+            <div className="text-xs text-blue-600 mb-1">DEBUG: Traditional Autocomplete Mode</div>
+            <input
+              ref={traditionalInputRef}
+              type="text"
+              value={value}
+              onChange={(e) => handleAddressChange(e.target.value)}
+              placeholder={placeholder}
+              disabled={disabled}
+              className={`${className} ${isLoaded ? 'border-blue-500' : 'border-gray-300'}`}
+              style={{
+                width: '100%',
+                border: '2px solid blue' // DEBUG: Visual indicator
+              }}
+              autoComplete="off"
+            />
+          </>
+        ) : null}
+        
+        {/* Waiting state */}
+        {!googleLoaded && (
+          <div className="text-xs text-blue-600">DEBUG: Waiting for Google Maps API...</div>
+        )}
+        
+        {/* Loading fallback with debug info */}
         {isLoading && (
-          <input
-            type="text"
-            value={value}
-            onChange={handleFallbackChange}
-            placeholder="Loading address autocomplete..."
-            disabled={true}
-            className={`${className} animate-pulse`}
-            autoComplete="off"
-          />
+          <>
+            <input
+              type="text"
+              value={value}
+              onChange={handleFallbackChange}
+              placeholder="Loading address autocomplete..."
+              disabled={true}
+              className={`${className} animate-pulse`}
+              autoComplete="off"
+            />
+            <div className="text-xs text-blue-500 mt-1">DEBUG: Loading Google Maps API...</div>
+          </>
         )}
         
         {/* Icon overlay */}
