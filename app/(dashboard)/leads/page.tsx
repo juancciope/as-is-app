@@ -5,6 +5,269 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
 
+// Helper function to format comparable sales data
+const formatComparableSales = (comparableSales: any) => {
+  if (typeof comparableSales === 'string') {
+    // Try to parse JSON if it's a string
+    try {
+      const parsed = JSON.parse(comparableSales)
+      if (Array.isArray(parsed)) {
+        return parsed.map((comp: any, index: number) => (
+          <div key={index} className="p-2 bg-gray-50 rounded text-xs">
+            <div className="font-medium">{comp.address}</div>
+            <div className="text-gray-600 mt-1">
+              <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
+              {comp.square_footage && (
+                <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
+              )}
+              {comp.price_per_sqft && (
+                <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
+              )}
+            </div>
+          </div>
+        ))
+      }
+    } catch (e) {
+      // If parsing fails, display as text
+      return <div className="text-sm">{comparableSales}</div>
+    }
+  } else if (Array.isArray(comparableSales)) {
+    // If it's already an array
+    return comparableSales.map((comp: any, index: number) => (
+      <div key={index} className="p-2 bg-gray-50 rounded text-xs">
+        <div className="font-medium">{comp.address}</div>
+        <div className="text-gray-600 mt-1">
+          <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
+          {comp.square_footage && (
+            <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
+          )}
+          {comp.price_per_sqft && (
+            <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
+          )}
+        </div>
+      </div>
+    ))
+  }
+  
+  // Fallback to string display
+  return <div className="text-sm">{String(comparableSales)}</div>
+}
+
+// Property Analysis Section Component - Moved outside to prevent re-rendering
+const PropertyAnalysisSection = ({ 
+  property, 
+  isExpanded, 
+  onToggle 
+}: { 
+  property: any
+  isExpanded: boolean
+  onToggle: () => void 
+}) => {
+  return (
+    <div className="ml-4 pl-4 border-l-2 border-blue-200 bg-gradient-to-r from-blue-50 to-transparent">
+      {/* Foldable Header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between py-2 text-left hover:bg-blue-100 rounded px-2 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-900">Investment Analysis</span>
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+            {property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed'}
+          </span>
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="h-4 w-4 text-blue-600" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-blue-600" />
+        )}
+      </button>
+
+      {/* Expandable Content */}
+      {isExpanded && (
+        <div className="pb-3 space-y-4">
+          {/* Investment Overview */}
+          {property.analysis.data?.analysis_summary && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
+                <h4 className="text-xs font-semibold text-green-800">Investment Overview</h4>
+              </div>
+              <div className="p-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-blue-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Grade</div>
+                    <div className="text-sm font-bold text-blue-900">
+                      {property.analysis.data.analysis_summary?.investment_grade || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-green-600 font-medium uppercase tracking-wide">ROI</div>
+                    <div className="text-sm font-bold text-green-900">
+                      {property.analysis.data.analysis_summary?.roi_percentage || 'N/A'}%
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-2 text-center">
+                    <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Cap Rate</div>
+                    <div className="text-sm font-bold text-orange-900">
+                      {property.analysis.data.analysis_summary?.cap_rate_percentage || 'N/A'}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Investment Scores Grid */}
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-2">
+                    <div className="text-xs text-indigo-600 font-medium mb-1">📊 Deal Score</div>
+                    <div className="text-sm font-bold text-indigo-900">
+                      {property.analysis.data.analysis_summary?.deal_score || 'N/A'}/10
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-2">
+                    <div className="text-xs text-teal-600 font-medium mb-1">🏠 Property Score</div>
+                    <div className="text-sm font-bold text-teal-900">
+                      {property.analysis.data.analysis_summary?.property_score || 'N/A'}/10
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Metrics */}
+                {property.analysis.data.analysis_summary?.key_metrics && (
+                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-700 font-medium mb-2">📈 Key Metrics</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {Object.entries(property.analysis.data.analysis_summary.key_metrics).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}:</span>
+                          <span className="text-gray-900 font-medium">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Financial Analysis */}
+          {property.analysis.data?.financial_analysis && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+                <h4 className="text-xs font-semibold text-blue-800">💰 Financial Analysis</h4>
+              </div>
+              <div className="p-3">
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  {Object.entries(property.analysis.data.financial_analysis).map(([key, value]) => (
+                    <div key={key} className="bg-blue-50 rounded-lg p-2">
+                      <div className="text-blue-600 font-medium capitalize">{key.replace(/_/g, ' ')}</div>
+                      <div className="text-blue-900 font-semibold">{String(value)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Market Analysis */}
+          {property.analysis.data?.market_analysis && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-yellow-50 to-orange-50 border-b border-yellow-200">
+                <h4 className="text-xs font-semibold text-yellow-800">🏘️ Market Context</h4>
+              </div>
+              <div className="p-3">
+                <div className="grid grid-cols-1 gap-2 text-xs">
+                  {Object.entries(property.analysis.data.market_analysis).map(([key, value]) => (
+                    <div key={key} className="flex justify-between bg-yellow-50 rounded p-2">
+                      <span className="text-yellow-700 font-medium capitalize">{key.replace(/_/g, ' ')}:</span>
+                      <span className="text-yellow-900 font-semibold">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Risk Assessment */}
+          {property.analysis.data?.risk_assessment && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-red-50 to-pink-50 border-b border-red-200">
+                <h4 className="text-xs font-semibold text-red-800">⚠️ Risk Assessment</h4>
+              </div>
+              <div className="p-3">
+                <div className="space-y-2 text-xs">
+                  {Object.entries(property.analysis.data.risk_assessment).map(([key, value]) => (
+                    <div key={key} className="bg-red-50 rounded-lg p-2">
+                      <div className="text-red-600 font-medium capitalize mb-1">{key.replace(/_/g, ' ')}</div>
+                      <div className="text-red-900">{String(value)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Investment Recommendations */}
+          {property.analysis.data?.investment_recommendation && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200">
+                <h4 className="text-xs font-semibold text-emerald-800">💡 Investment Strategy</h4>
+              </div>
+              <div className="p-3">
+                <div className="text-xs text-emerald-900 leading-relaxed bg-emerald-50 rounded-lg p-3">
+                  {property.analysis.data.investment_recommendation}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Comparable Sales */}
+          {property.analysis.data?.comparable_sales && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
+                <h4 className="text-xs font-semibold text-gray-800">🏘️ Comparable Sales</h4>
+              </div>
+              <div className="p-3">
+                <div className="space-y-2">
+                  {formatComparableSales(property.analysis.data.comparable_sales)}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Items */}
+          {property.analysis.data?.action_items && (
+            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+              <div className="px-3 py-2 bg-purple-50 border-b border-purple-200">
+                <h4 className="text-xs font-semibold text-purple-800">✅ Next Steps</h4>
+              </div>
+              <div className="p-3">
+                <ul className="space-y-1 text-xs">
+                  {property.analysis.data.action_items.map((item: string, i: number) => (
+                    <li key={i} className="flex items-start">
+                      <span className="text-purple-600 mr-2">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Analysis Timestamp */}
+          <div className="text-xs text-gray-500 text-center pt-2 border-t border-blue-200">
+            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full">
+              🤖 AI Analysis Complete
+            </span>
+            <div className="mt-1">
+              Generated: {new Date(property.analysis.timestamp).toLocaleString()}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LeadsPage() {
   // Helper function to format address and avoid duplication
   const formatAddress = (contactDetails: any) => {
@@ -272,7 +535,6 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
-      console.log('Messages API response for conversation', conversationId, ':', data)
       
       let messagesArray = []
       if (Array.isArray(data)) {
@@ -329,7 +591,6 @@ export default function LeadsPage() {
   const fetchContactDetails = async (contactId: string) => {
     try {
       setIsLoadingProfile(true)
-      console.log('🔄 Loading contact:', contactId)
       
       // Step 1: Get contact details from GHL
       const response = await fetch(`/api/ghl/contact/${contactId}`)
@@ -352,14 +613,11 @@ export default function LeadsPage() {
 
   const loadPropertiesForContact = async (contactId: string, contactData: any) => {
     try {
-      console.log('📦 Loading properties for contact:', contactId)
       
       // Step 1: Try to load saved properties from database
       const savedProperties = await loadContactProperties(contactId)
       
       if (savedProperties && savedProperties.length > 0) {
-        console.log('✅ Loaded saved properties:', savedProperties.length)
-        console.log('📦 Saved properties data:', savedProperties)
         setContactProperties(savedProperties)
         setSelectedPropertyIndex(0)
         return
@@ -378,14 +636,12 @@ export default function LeadsPage() {
           previousReports: []
         }
         
-        console.log('🏠 Creating new property:', newProperty.address)
         setContactProperties([newProperty])
         setSelectedPropertyIndex(0)
         
         // Save immediately
         await saveContactProperties(contactId, [newProperty])
       } else {
-        console.log('❌ No address data for contact')
         setContactProperties([])
       }
       
@@ -442,9 +698,7 @@ export default function LeadsPage() {
     if (!contactId) return
     
     try {
-      console.log('💾 Saving properties for contact:', contactId, 'Properties:', properties.length)
       if (properties.length > 0) {
-        console.log('💾 First property address being saved:', properties[0].address)
       }
       
       const response = await fetch(`/api/contact-properties/${contactId}`, {
@@ -459,7 +713,6 @@ export default function LeadsPage() {
         throw new Error('Failed to save contact properties')
       }
 
-      console.log('✅ Contact properties saved to database for contact:', contactId)
     } catch (error) {
       console.error('❌ Error saving contact properties to database:', error)
     }
@@ -470,7 +723,6 @@ export default function LeadsPage() {
     if (!contactId) return []
     
     try {
-      console.log('🔍 Loading properties for contact:', contactId)
       // Add cache-busting timestamp to force fresh data
       const timestamp = new Date().getTime()
       const response = await fetch(`/api/contact-properties/${contactId}?t=${timestamp}`, {
@@ -485,7 +737,6 @@ export default function LeadsPage() {
       }
 
       const data = await response.json()
-      console.log('📦 Loaded properties data:', data)
       return data.properties || []
     } catch (error) {
       console.error('❌ Error loading contact properties from database:', error)
@@ -496,7 +747,6 @@ export default function LeadsPage() {
   // Removed dummy Zillow API call - now using AI assistant only
 
   const handleSelectLead = (lead: any) => {
-    console.log('🔄 Switching to contact:', lead.contactId)
     
     // Clear all state
     setPropertyAnalysis(null)
@@ -552,7 +802,6 @@ export default function LeadsPage() {
         setPropertyAnalysis(null)
       }
 
-      console.log('✅ Report deleted successfully')
     } catch (error) {
       console.error('Error deleting report:', error)
       alert('Failed to delete report. Please try again.')
@@ -560,7 +809,6 @@ export default function LeadsPage() {
   }
 
   const createNewProperty = async () => {
-    console.log('🏠 Creating new property with address:', newPropertyAddress)
     
     if (!newPropertyAddress.trim()) {
       alert('Please enter a property address')
@@ -585,7 +833,6 @@ export default function LeadsPage() {
         previousReports: []
       }
 
-      console.log('✅ New property created:', newProperty)
 
       // Add to state
       const updatedProperties = [...contactProperties, newProperty]
@@ -593,7 +840,6 @@ export default function LeadsPage() {
       
       // Save to database immediately
       await saveContactProperties(selectedLead.contactId, updatedProperties)
-      console.log('💾 Property saved to database')
       
       // Clear form
       setIsAddingProperty(false)
@@ -629,7 +875,6 @@ export default function LeadsPage() {
         if (selectedLead?.contactId) {
           try {
             await saveContactProperties(selectedLead.contactId, updatedProperties)
-            console.log('✅ Property removed and saved to database')
           } catch (error) {
             console.error('❌ Error saving after removal:', error)
             alert('Failed to save changes. Property may reappear on refresh.')
@@ -680,7 +925,6 @@ export default function LeadsPage() {
       }
     }
 
-    console.log('🏠 Generating report with parsed address data:', addressData)
 
     try {
       setGeneratingReportForProperty(propertyId)
@@ -698,7 +942,6 @@ export default function LeadsPage() {
 
       const data = await response.json()
       
-      console.log('📊 Generated report for property:', propertyId, data)
       
       // Update the specific property with its analysis
       const updatedProperties = contactProperties.map(p => 
@@ -745,7 +988,6 @@ export default function LeadsPage() {
       return
     }
 
-    console.log('🗑️ Deleting property:', propertyId)
 
     // Update state immediately
     const updatedProperties = contactProperties.filter(p => p.id !== propertyId)
@@ -754,7 +996,6 @@ export default function LeadsPage() {
     // IMMEDIATELY save to database
     try {
       await saveContactProperties(selectedLead.contactId, updatedProperties)
-      console.log('✅ Property deletion saved to database immediately')
     } catch (saveError) {
       console.error('❌ Failed to save property deletion to database:', saveError)
       alert('Failed to save changes to database. Changes may not persist.')
@@ -766,9 +1007,6 @@ export default function LeadsPage() {
     // const [localAddress, setLocalAddress] = useState('')
     
     // Debug logging
-    console.log('🏠 AddPropertyForm render - newPropertyAddress:', newPropertyAddress)
-    console.log('🏠 AddPropertyForm render - newPropertyAddress.trim():', newPropertyAddress.trim())
-    console.log('🏠 AddPropertyForm render - button disabled:', !newPropertyAddress.trim())
     
     const handleSubmit = async () => {
       if (!newPropertyAddress.trim()) {
@@ -908,11 +1146,9 @@ export default function LeadsPage() {
                         <PlacesAutocompleteStyled
                           value={newPropertyAddress}
                           onChange={(value) => {
-                            console.log('🔄 Mobile modal onChange:', value)
                             setNewPropertyAddress(value)
                           }}
                           onPlaceSelected={(place) => {
-                            console.log('🎯 Mobile modal onPlaceSelected:', place)
                             if (place?.formatted_address) {
                               setNewPropertyAddress(place.formatted_address)
                               setSelectedPlaceData(place)
@@ -942,17 +1178,12 @@ export default function LeadsPage() {
             <PlacesAutocompleteStyled
               value={newPropertyAddress}
               onChange={(value) => {
-                console.log('🔄 onChange called with value:', value)
                 setNewPropertyAddress(value)
-                console.log('✅ newPropertyAddress set to:', value)
               }}
               onPlaceSelected={(place) => {
-                console.log('🎯 onPlaceSelected called with place:', place)
                 if (place?.formatted_address) {
-                  console.log('🎯 Setting newPropertyAddress to:', place.formatted_address)
                   setNewPropertyAddress(place.formatted_address)
                   setSelectedPlaceData(place)
-                  console.log('✅ newPropertyAddress and place data set')
                 } else {
                   console.warn('❌ No formatted_address in place object')
                 }
@@ -973,8 +1204,6 @@ export default function LeadsPage() {
             </button>
             <button
               onClick={() => {
-                console.log('🚀 Add Property button clicked!')
-                console.log('🚀 newPropertyAddress at click:', newPropertyAddress)
                 handleSubmit()
               }}
               disabled={!newPropertyAddress.trim()}
@@ -989,299 +1218,7 @@ export default function LeadsPage() {
     )
   }
 
-  // Property Analysis Section Component
-  const PropertyAnalysisSection = ({ property }: { property: any }) => {
-    const [localIsExpanded, setLocalIsExpanded] = useState(isInvestmentAnalysisExpanded)
-    
-    return (
-      <div className="ml-4 pl-4 border-l-2 border-blue-200 bg-gradient-to-r from-blue-50 to-transparent">
-        {/* Foldable Header */}
-        <button
-          onClick={() => setLocalIsExpanded(!localIsExpanded)}
-          className="w-full flex items-center justify-between py-2 text-left hover:bg-blue-100 rounded px-2 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">Investment Analysis</span>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-              {property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed'}
-            </span>
-          </div>
-          {localIsExpanded ? (
-            <ChevronUp className="h-4 w-4 text-blue-600" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-blue-600" />
-          )}
-        </button>
 
-        {/* Expandable Content */}
-        {localIsExpanded && (
-          <div className="pb-3 space-y-4">
-            {/* Investment Overview */}
-            {property.analysis.data?.analysis_summary && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-200">
-                  <h4 className="text-xs font-semibold text-green-800">Investment Overview</h4>
-                </div>
-                <div className="p-3">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Grade</div>
-                      <div className="text-sm font-bold text-blue-900">
-                        {property.analysis.data.analysis_summary?.investment_grade || 'N/A'}
-                      </div>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-green-600 font-medium uppercase tracking-wide">ROI</div>
-                      <div className="text-sm font-bold text-green-900">
-                        {property.analysis.data.analysis_summary?.roi_percentage || 'N/A'}%
-                      </div>
-                    </div>
-                    <div className="bg-orange-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">ARV</div>
-                      <div className="text-sm font-bold text-orange-900">
-                        ${property.analysis.data.analysis_summary?.estimated_arv?.toLocaleString() || 'N/A'}
-                      </div>
-                    </div>
-                    <div className="bg-purple-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">Profit</div>
-                      <div className="text-sm font-bold text-purple-900">
-                        ${property.analysis.data.analysis_summary?.projected_profit?.toLocaleString() || 'N/A'}
-                      </div>
-                    </div>
-                    <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Max Offer</div>
-                      <div className="text-sm font-bold text-blue-900">
-                        ${property.analysis.data.analysis_summary?.max_offer?.toLocaleString() || 'N/A'}
-                      </div>
-                    </div>
-                    <div className="bg-red-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-red-600 font-medium uppercase tracking-wide">Repair Cost</div>
-                      <div className="text-sm font-bold text-red-900">
-                        ${property.analysis.data.analysis_summary?.estimated_repair_cost?.toLocaleString() || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Property Details */}
-            {property.analysis.data?.property_details && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
-                  <h4 className="text-xs font-semibold text-blue-800">Property Details</h4>
-                </div>
-                <div className="p-3">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {property.analysis.data.property_details.square_footage && (
-                      <div className="text-center">
-                        <div className="text-gray-500 uppercase tracking-wide">Area</div>
-                        <div className="font-semibold text-gray-900">
-                          {property.analysis.data.property_details.square_footage.toLocaleString()} sf
-                        </div>
-                      </div>
-                    )}
-                    {property.analysis.data.property_details.bedrooms && (
-                      <div className="text-center">
-                        <div className="text-gray-500 uppercase tracking-wide">Bedrooms</div>
-                        <div className="font-semibold text-gray-900">
-                          {property.analysis.data.property_details.bedrooms}
-                        </div>
-                      </div>
-                    )}
-                    {property.analysis.data.property_details.bathrooms && (
-                      <div className="text-center">
-                        <div className="text-gray-500 uppercase tracking-wide">Bathrooms</div>
-                        <div className="font-semibold text-gray-900">
-                          {property.analysis.data.property_details.bathrooms}
-                        </div>
-                      </div>
-                    )}
-                    {property.analysis.data.property_details.year_built && (
-                      <div className="text-center">
-                        <div className="text-gray-500 uppercase tracking-wide">Built</div>
-                        <div className="font-semibold text-gray-900">
-                          {property.analysis.data.property_details.year_built}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Financial Projections */}
-            {property.analysis.data?.financial_projections && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
-                  <h4 className="text-xs font-semibold text-blue-800">💰 Financial Analysis</h4>
-                </div>
-                <div className="p-3">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-gray-50 p-2 rounded">
-                      <span className="text-gray-500">Purchase Price</span>
-                      <div className="font-bold text-sm">${property.analysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gray-50 p-2 rounded">
-                      <span className="text-gray-500">Renovation</span>
-                      <div className="font-bold text-sm">${property.analysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-gray-50 p-2 rounded">
-                      <span className="text-gray-500">Total Investment</span>
-                      <div className="font-bold text-sm">${property.analysis.data.financial_projections.total_investment?.toLocaleString()}</div>
-                    </div>
-                    <div className="bg-green-100 p-2 rounded">
-                      <span className="text-gray-500">Expected Sale</span>
-                      <div className="font-bold text-sm text-green-700">${property.analysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Market Analysis */}
-            {property.analysis.data?.market_analysis && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-orange-50 border-b border-orange-200">
-                  <h4 className="text-xs font-semibold text-orange-800">🏘️ Market Analysis</h4>
-                </div>
-                <div className="p-3 space-y-2 text-xs">
-                  <div><span className="font-medium">Market Trend:</span> {property.analysis.data.market_analysis.market_trend || 'N/A'}</div>
-                  {property.analysis.data.market_analysis.days_on_market_average && (
-                    <div><span className="font-medium">Avg Days on Market:</span> {property.analysis.data.market_analysis.days_on_market_average} days</div>
-                  )}
-                  <div>
-                    <span className="font-medium">Comparable Sales:</span>
-                    <div className="mt-1">
-                      {formatComparableSales(property.analysis.data.market_analysis.comparable_sales)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Investment Recommendation */}
-            {property.analysis.data?.investment_recommendation && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
-                  <h4 className="text-xs font-semibold text-gray-800">📋 Investment Recommendation</h4>
-                </div>
-                <div className="p-3">
-                  <div className={`text-sm font-bold mb-1 ${
-                    property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
-                    property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
-                  </div>
-                  <div className="text-xs text-gray-600 mb-2">
-                    Confidence: {property.analysis.data.investment_recommendation.confidence_level}
-                  </div>
-                  {property.analysis.data.investment_recommendation.key_reasons && (
-                    <div className="text-xs">
-                      <strong>✅ Reasons:</strong>
-                      <ul className="list-disc list-inside mt-1 ml-2">
-                        {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
-                          <li key={i}>{reason}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {property.analysis.data.investment_recommendation.concerns && (
-                    <div className="text-xs mt-2">
-                      <strong>⚠️ Concerns:</strong>
-                      <ul className="list-disc list-inside mt-1 ml-2">
-                        {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
-                          <li key={i}>{concern}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Action Items */}
-            {property.analysis.data?.action_items && (
-              <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-                <div className="px-3 py-2 bg-purple-50 border-b border-purple-200">
-                  <h4 className="text-xs font-semibold text-purple-800">✅ Next Steps</h4>
-                </div>
-                <div className="p-3">
-                  <ul className="space-y-1 text-xs">
-                    {property.analysis.data.action_items.map((item: string, i: number) => (
-                      <li key={i} className="flex items-start">
-                        <span className="text-purple-600 mr-2">•</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Analysis Timestamp */}
-            <div className="text-xs text-gray-500 text-center pt-2 border-t border-blue-200">
-              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                🤖 AI Analysis Complete
-              </span>
-              <div className="mt-1">
-                Generated: {new Date(property.analysis.timestamp).toLocaleString()}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Helper function to format comparable sales data
-  const formatComparableSales = (comparableSales: any) => {
-    if (typeof comparableSales === 'string') {
-      // Try to parse JSON if it's a string
-      try {
-        const parsed = JSON.parse(comparableSales)
-        if (Array.isArray(parsed)) {
-          return parsed.map((comp: any, index: number) => (
-            <div key={index} className="p-2 bg-gray-50 rounded text-xs">
-              <div className="font-medium">{comp.address}</div>
-              <div className="text-gray-600 mt-1">
-                <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
-                {comp.square_footage && (
-                  <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
-                )}
-                {comp.price_per_sqft && (
-                  <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
-                )}
-              </div>
-            </div>
-          ))
-        }
-      } catch (e) {
-        // If parsing fails, display as text
-        return <div className="text-sm">{comparableSales}</div>
-      }
-    } else if (Array.isArray(comparableSales)) {
-      // If it's already an array
-      return comparableSales.map((comp: any, index: number) => (
-        <div key={index} className="p-2 bg-gray-50 rounded text-xs">
-          <div className="font-medium">{comp.address}</div>
-          <div className="text-gray-600 mt-1">
-            <span className="font-medium">${comp.sale_price?.toLocaleString()}</span>
-            {comp.square_footage && (
-              <span className="ml-2">• {comp.square_footage?.toLocaleString()} sf</span>
-            )}
-            {comp.price_per_sqft && (
-              <span className="ml-2">• ${comp.price_per_sqft}/sf</span>
-            )}
-          </div>
-        </div>
-      ))
-    }
-    
-    // Fallback to string display
-    return <div className="text-sm">{String(comparableSales)}</div>
-  }
 
 
   // Mobile: Show only leads list when no lead selected
@@ -1546,9 +1483,6 @@ export default function LeadsPage() {
                   {/* Properties List */}
                   <div className="space-y-3">
                     {contactProperties.map((property, index) => {
-                      console.log('🏠 MOBILE - Displaying property:', property)
-                      console.log('📍 MOBILE - Property address:', property.address)
-                      console.log('📏 MOBILE - Address length:', property.address?.length)
                       
                       return (
                       <div key={property.id} className="border border-gray-200 rounded-lg p-3">
@@ -2326,9 +2260,6 @@ export default function LeadsPage() {
                         </div>
                         <div className="p-4 space-y-4">
                           {contactProperties.map((property, index) => {
-                            console.log('🏠 DESKTOP - Displaying property:', property)
-                            console.log('📍 DESKTOP - Property address:', property.address)
-                            console.log('📏 DESKTOP - Address length:', property.address?.length)
                             
                             return (
                             <div key={property.id} className="space-y-3">
@@ -2445,7 +2376,11 @@ export default function LeadsPage() {
                               
                               {/* Comprehensive Analysis Section - Foldable */}
                               {property.analysis && (
-                                <PropertyAnalysisSection property={property} />
+                                <PropertyAnalysisSection 
+                                  property={property} 
+                                  isExpanded={isInvestmentAnalysisExpanded}
+                                  onToggle={() => setIsInvestmentAnalysisExpanded(!isInvestmentAnalysisExpanded)}
+                                />
                               )}
                             </div>
                           )})}

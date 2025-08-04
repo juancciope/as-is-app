@@ -75,7 +75,6 @@ export function PlacesAutocompleteStyled({
         // Listen for place selection
         autocomplete.addEventListener('gmp-select', async (event: any) => {
           try {
-            console.log('🔥 PLACE SELECTION EVENT:', event);
             const { placePrediction } = event;
             
             if (!placePrediction) {
@@ -90,15 +89,11 @@ export function PlacesAutocompleteStyled({
             });
 
             const fullAddress = place.formattedAddress;
-            console.log('✅ Selected address:', fullAddress);
-            console.log('📍 Place object:', place);
 
             if (fullAddress) {
-              console.log('🎯 Calling onChange with:', fullAddress);
               onChange(fullAddress);
 
               // FORCE CSS UPDATES: Since Shadow DOM is closed, force CSS updates through style injection
-              console.log('🚀 Forcing CSS updates for text visibility...');
               
               // Method 1: Inject styles into document head to override any Google styles
               const injectForceStyles = () => {
@@ -128,7 +123,6 @@ export function PlacesAutocompleteStyled({
                 `;
                 
                 document.head.appendChild(style);
-                console.log('🔧 Injected critical CSS styles');
               };
               
               // Method 2: Force the autocomplete element itself to update
@@ -143,13 +137,11 @@ export function PlacesAutocompleteStyled({
                 autocomplete.style.setProperty('--gmp-mat-color-surface', '#ffffff', 'important');
                 autocomplete.style.colorScheme = 'light';
                 
-                console.log('🔧 Forced element style update');
               };
               
               // Execute immediately and with delays
               [0, 10, 50, 100, 200, 500].forEach(delay => {
                 setTimeout(() => {
-                  console.log(`🔍 Applying CSS force update after ${delay}ms`);
                   injectForceStyles();
                   forceElementUpdate();
                 }, delay);
@@ -163,7 +155,6 @@ export function PlacesAutocompleteStyled({
                   address_components: place.addressComponents,
                   place: place
                 };
-                console.log('📦 Calling onPlaceSelected with:', placeData);
                 onPlaceSelected(placeData);
               }
             } else {
