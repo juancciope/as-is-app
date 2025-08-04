@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { SimpleAddressInput } from '@/components/ui/simple-address-input'
+import { AddPropertyModal } from '@/components/ui/add-property-modal'
 
 // Helper function to format comparable sales data
 const formatComparableSales = (comparableSales: any) => {
@@ -349,14 +349,13 @@ export default function LeadsPage() {
   const [isPreviousReportsExpanded, setIsPreviousReportsExpanded] = useState(false)
   const [contactProperties, setContactProperties] = useState<any[]>([])
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState(0)
+  const [showAddPropertyModal, setShowAddPropertyModal] = useState(false)
   const [isAddingProperty, setIsAddingProperty] = useState(false)
-  const [newPropertyAddress, setNewPropertyAddress] = useState('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [generatingReportForProperty, setGeneratingReportForProperty] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(400) // Default 400px width
   const [isResizing, setIsResizing] = useState(false)
   const [showMobileProperties, setShowMobileProperties] = useState(false)
-  const [selectedPlaceData, setSelectedPlaceData] = useState<any>(null)
   const [isLoadingContactData, setIsLoadingContactData] = useState(false)
   const [forceRefreshKey, setForceRefreshKey] = useState(0)
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -366,7 +365,6 @@ export default function LeadsPage() {
     onConfirm: () => void
     onCancel: () => void
   } | null>(null)
-  const [showMobileAddressModal, setShowMobileAddressModal] = useState(false)
   const [conversationFilter, setConversationFilter] = useState<'all' | 'pending' | 'replied'>('pending')
   
   // Use auth context for conversation status management
@@ -773,10 +771,8 @@ export default function LeadsPage() {
     setPreviousReports([])
     setContactProperties([])
     setSelectedPropertyIndex(0)
-    setIsAddingProperty(false)
+    setShowAddPropertyModal(false)
     setContactDetails(null)
-    setNewPropertyAddress('')
-    setSelectedPlaceData(null)
     setGeneratingReportForProperty(null)
     
     // Set new lead and load data
@@ -828,9 +824,8 @@ export default function LeadsPage() {
     }
   }
 
-  const createNewProperty = async () => {
-    
-    if (!newPropertyAddress.trim()) {
+  const createNewProperty = async (address: string) => {
+    if (!address.trim()) {
       alert('Please enter a property address')
       return
     }
@@ -840,11 +835,13 @@ export default function LeadsPage() {
       return
     }
 
+    setIsAddingProperty(true)
+
     try {
-      // SIMPLE: Use the complete address exactly as entered/selected
+      // Use the complete address exactly as provided from the modal
       const newProperty = {
         id: `property-${Date.now()}`,
-        address: newPropertyAddress.trim(), // Use COMPLETE address as-is
+        address: address.trim(),
         city: '', // We don't need to parse these for the analysis to work
         state: '',
         zipCode: '',
@@ -853,7 +850,6 @@ export default function LeadsPage() {
         previousReports: []
       }
 
-
       // Add to state
       const updatedProperties = [...contactProperties, newProperty]
       setContactProperties(updatedProperties)
@@ -861,14 +857,11 @@ export default function LeadsPage() {
       // Save to database immediately
       await saveContactProperties(selectedLead.contactId, updatedProperties)
       
-      // Clear form
-      setIsAddingProperty(false)
-      setNewPropertyAddress('')
-      setSelectedPlaceData(null)
-      
     } catch (error) {
       console.error('❌ Error creating property:', error)
       alert('Failed to add property. Please try again.')
+    } finally {
+      setIsAddingProperty(false)
     }
   }
 
@@ -1022,189 +1015,6 @@ export default function LeadsPage() {
     }
   }
 
-  const AddPropertyForm = ({ isMobile = false }: { isMobile?: boolean }) => {
-    // Use the existing newPropertyAddress state instead of local state to prevent resets
-    // const [localAddress, setLocalAddress] = useState('')
-    
-    // Debug logging
-    
-    const handleSubmit = async () => {
-      if (!newPropertyAddress.trim()) {
-        alert('Please enter a property address')
-        return
-      }
-
-      if (!selectedLead?.contactId) {
-        alert('No contact selected')
-        return
-      }
-
-      try {
-        // Extract address components from Google Places API data if available
-        let city = ''
-        let state = ''
-        let zipCode = ''
-        
-        if (selectedPlaceData?.address_components) {
-          // Use Google Places API address components
-          const components = selectedPlaceData.address_components
-          for (const component of components) {
-            const types = component.types
-            if (types.includes('locality')) {
-              city = component.long_name
-            } else if (types.includes('administrative_area_level_1')) {
-              state = component.short_name
-            } else if (types.includes('postal_code')) {
-              zipCode = component.long_name
-            }
-          }
-        } else {
-          // Fallback: Parse address components from the full address string
-          const addressParts = newPropertyAddress.trim().split(',').map(part => part.trim())
-          
-          if (addressParts.length >= 3) {
-            // Format: "Street, City, State ZIP, Country" or "Street, City, State ZIP"
-            city = addressParts[1] || ''
-            
-            // Parse state and zip from the last relevant part
-            const stateZipPart = addressParts[2] || ''
-            const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5}(-\d{4})?)/)
-            if (stateZipMatch) {
-              state = stateZipMatch[1]
-              zipCode = stateZipMatch[2]
-            } else {
-              // Fallback: just use the part as state
-              state = stateZipPart.split(' ')[0] || ''
-            }
-          }
-        }
-
-        // Create new property with parsed address components
-        const newProperty = {
-          id: `property-${Date.now()}`,
-          address: newPropertyAddress.trim(),
-          city: city,
-          state: state,
-          zipCode: zipCode,
-          isPrimary: false,
-          analysis: null,
-          previousReports: []
-        }
-
-        // Add to properties list
-        const updatedProperties = [...contactProperties, newProperty]
-        setContactProperties(updatedProperties)
-        
-        // Save to database
-        await saveContactProperties(selectedLead.contactId, updatedProperties)
-        
-        // Clear form and close
-        setNewPropertyAddress('')
-        setSelectedPlaceData(null)
-        setIsAddingProperty(false)
-        
-      } catch (error) {
-        console.error('Error adding property:', error)
-        alert('Failed to add property. Please try again.')
-      }
-    }
-    
-    const handleCancel = () => {
-      setNewPropertyAddress('')
-      setSelectedPlaceData(null)
-      setIsAddingProperty(false)
-    }
-    
-    return (
-      <div className={`${isMobile ? 'mb-4 p-4 bg-gray-50 rounded-lg border' : 'bg-gray-50 rounded-lg p-4 border border-green-200'}`}>
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-gray-700">
-            {isMobile ? 'Add Property' : 'Add New Property'}
-          </h4>
-          <button
-            onClick={handleCancel}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        
-        <div className="space-y-3">
-          {isMobile ? (
-            // Mobile-specific: Simple text input that opens full-screen modal
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={newPropertyAddress}
-                onClick={() => setShowMobileAddressModal(true)}
-                readOnly
-                placeholder="Tap to enter property address..."
-                className="p-4 border border-gray-300 rounded-lg w-full text-base bg-white cursor-pointer"
-                style={{ fontSize: '16px' }}
-              />
-              
-              {/* Simple Address Modal */}
-              {showMobileAddressModal && (
-                <div className="fixed inset-0 z-50 bg-white">
-                  <div className="h-full flex flex-col">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                      <button
-                        onClick={() => setShowMobileAddressModal(false)}
-                        className="flex items-center text-gray-600"
-                      >
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        Back
-                      </button>
-                      <h1 className="text-lg font-medium">Add Address</h1>
-                      <div className="w-16"></div>
-                    </div>
-                    <div className="flex-1 p-4">
-                      <SimpleAddressInput
-                        value={newPropertyAddress}
-                        onChange={setNewPropertyAddress}
-                        onAddressSelected={() => setShowMobileAddressModal(false)}
-                        placeholder="Type address..."
-                        className="p-4 border border-gray-300 rounded-lg w-full text-base"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Desktop version - Simple
-            <SimpleAddressInput
-              value={newPropertyAddress}
-              onChange={setNewPropertyAddress}
-              placeholder="Enter property address..."
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
-            />
-          )}
-          
-          
-          <div className={`flex gap-2 ${isMobile ? '' : 'justify-end'}`}>
-            <button
-              onClick={handleCancel}
-              className={`px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors ${isMobile ? 'flex items-center' : ''}`}
-            >
-              {isMobile && <X className="h-4 w-4 mr-1" />}
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                handleSubmit()
-              }}
-              disabled={!newPropertyAddress.trim()}
-              className={`px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${isMobile ? 'flex items-center' : 'flex items-center'}`}
-            >
-              <Check className="h-4 w-4 mr-1" />
-              Add Property
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
 
 
@@ -1454,7 +1264,7 @@ export default function LeadsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-[#04325E]">Properties</h3>
                     <button
-                      onClick={() => setIsAddingProperty(!isAddingProperty)}
+                      onClick={() => setShowAddPropertyModal(true)}
                       className="flex items-center px-3 py-2 bg-[#04325E] text-white rounded-lg text-sm font-medium hover:bg-[#0a4976] transition-colors"
                     >
                       <Plus className="h-4 w-4 mr-1" />
@@ -1462,12 +1272,6 @@ export default function LeadsPage() {
                     </button>
                   </div>
 
-                  {/* Add Property Form - Mobile optimized */}
-                  {isAddingProperty && (
-                    <div className="sticky top-0 z-10 bg-gray-50 -mx-4 px-4 py-4 border-b border-gray-200 mb-4">
-                      <AddPropertyForm isMobile={true} />
-                    </div>
-                  )}
 
                   {/* Properties List */}
                   <div className="space-y-3">
@@ -2407,17 +2211,13 @@ export default function LeadsPage() {
                         </h3>
                       </div>
                       <div className="p-4 space-y-3">
-                        {!isAddingProperty ? (
-                          <button
-                            onClick={() => setIsAddingProperty(true)}
-                            className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add New Property
-                          </button>
-                        ) : (
-                          <AddPropertyForm isMobile={false} />
-                        )}
+                        <button
+                          onClick={() => setShowAddPropertyModal(true)}
+                          className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add New Property
+                        </button>
                         
                         
                         {/* Next Steps for Active Property */}
@@ -2502,6 +2302,14 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
+
+      {/* Add Property Modal */}
+      <AddPropertyModal
+        isOpen={showAddPropertyModal}
+        onClose={() => setShowAddPropertyModal(false)}
+        onAddProperty={createNewProperty}
+        isLoading={isAddingProperty}
+      />
     </>
   )
 }
