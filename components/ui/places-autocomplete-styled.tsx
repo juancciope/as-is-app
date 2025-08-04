@@ -8,6 +8,12 @@ declare global {
   interface Window {
     google: any;
   }
+  
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmp-place-autocomplete': any;
+    }
+  }
 }
 
 interface PlacesAutocompleteStyledProps {
@@ -29,12 +35,11 @@ export function PlacesAutocompleteStyled({
   disabled = false,
   style
 }: PlacesAutocompleteStyledProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const autocompleteElementRef = useRef<any>(null);
+  const autocompleteRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autocompleteKey, setAutocompleteKey] = useState(0);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
 
   // Stable callback to prevent useEffect re-runs
   const handlePlaceSelect = useCallback((placeData: any) => {
@@ -47,10 +52,11 @@ export function PlacesAutocompleteStyled({
     onChange(address);
   }, [onChange]);
 
+  // Load Google Maps API once
   useEffect(() => {
     if (disabled) return;
-
-    const initAutocomplete = async () => {
+    
+    const loadGoogleMaps = async () => {
       try {
         // More robust API key check with better error messaging
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -61,7 +67,7 @@ export function PlacesAutocompleteStyled({
           return;
         }
 
-        console.log('🗺️ Initializing Google Places Autocomplete 2025...');
+        console.log('🗺️ Loading Google Places API 2025...');
 
         // Load Google Maps API with Places library
         const loader = new Loader({
@@ -71,18 +77,29 @@ export function PlacesAutocompleteStyled({
         });
 
         await loader.load();
-
-        // Import Places library and create PlaceAutocompleteElement
-        const { PlaceAutocompleteElement } = await window.google.maps.importLibrary("places");
-
-        if (!containerRef.current || autocompleteElementRef.current) {
-          return;
-        }
-
-        // Create the autocomplete element with US region restriction
-        const autocomplete = new PlaceAutocompleteElement({
-          includedRegionCodes: ['us']
-        });
+        await window.google.maps.importLibrary("places");
+        
+        setGoogleLoaded(true);
+        setIsLoading(false);
+        setError(null);
+        
+      } catch (error) {
+        console.error('💥 Error loading Google Maps API:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load Google Maps API');
+        setIsLoading(false);
+      }
+    };
+    
+    loadGoogleMaps();
+  }, [disabled]);
+  
+  // Set up the autocomplete element when Google is loaded
+  useEffect(() => {
+    if (!googleLoaded || !autocompleteRef.current) return;
+    
+    const setupAutocomplete = () => {
+      try {
+        const autocomplete = autocompleteRef.current;
         
         // FORCE LIGHT THEME - 2025 Google Places API Configuration
         // Setting colorScheme to 'none' disables dark-mode adaptation, ensuring light theme always
@@ -91,9 +108,12 @@ export function PlacesAutocompleteStyled({
         // Override CSS variables for explicit white background and black text (2025 API)
         autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
         autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
-
+        
+        // Set region restriction
+        autocomplete.setAttribute('included-region-codes', 'US');
+        
         // Listen for place selection
-        autocomplete.addEventListener('gmp-select', async (event: any) => {
+        const handleGmpSelect = async (event: any) => {
           try {
             const { placePrediction } = event;
             
@@ -129,43 +149,25 @@ export function PlacesAutocompleteStyled({
             console.error('💥 Error handling place selection:', error);
             setError('Error selecting place');
           }
-        });
-
-        // Store reference and mount element
-        autocompleteElementRef.current = autocomplete;
+        };
         
-        // Mount using JSX-compatible approach for better React integration
-        containerRef.current.appendChild(autocomplete);
-        
+        autocomplete.addEventListener('gmp-select', handleGmpSelect);
         setIsLoaded(true);
-        setIsLoading(false);
-        setError(null);
         
-        // Force a re-render to ensure React stays in sync
-        setAutocompleteKey(prev => prev + 1);
-
+        // Cleanup function
+        return () => {
+          autocomplete.removeEventListener('gmp-select', handleGmpSelect);
+        };
+        
       } catch (error) {
-        console.error('💥 Error initializing Places Autocomplete:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load autocomplete');
-        setIsLoading(false);
-        setIsLoaded(false);
+        console.error('💥 Error setting up autocomplete:', error);
+        setError('Failed to setup autocomplete');
       }
     };
-
-    initAutocomplete();
-
-    // Cleanup
-    return () => {
-      if (autocompleteElementRef.current && containerRef.current) {
-        try {
-          containerRef.current.removeChild(autocompleteElementRef.current);
-          autocompleteElementRef.current = null;
-        } catch (error) {
-          console.warn('Cleanup error:', error);
-        }
-      }
-    };
-  }, [handleAddressChange, handlePlaceSelect, disabled]); // Fixed dependencies to prevent re-initialization
+    
+    const cleanup = setupAutocomplete();
+    return cleanup;
+  }, [googleLoaded, handleAddressChange, handlePlaceSelect]);
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,7 +220,7 @@ export function PlacesAutocompleteStyled({
 
   return (
     <>
-      {/* 2025 Google Places API Styling - Force Light Theme */}
+      {/* 2025 Google Places API Styling - Optimized for Modals/Portals */}
       <style jsx global>{`
         /* Force light theme and prevent dark mode adaptation (2025 API) */
         gmp-place-autocomplete {
@@ -232,6 +234,16 @@ export function PlacesAutocompleteStyled({
           /* Ensure full width and proper display */
           width: 100% !important;
           display: block !important;
+          
+          /* CRITICAL: Ensure proper z-index for modals/portals */
+          position: relative !important;
+          z-index: 1 !important;
+        }
+        
+        /* MODAL/PORTAL FIX: Ensure dropdown appears above modal overlays */
+        gmp-place-autocomplete [role=\"listbox\"] {
+          z-index: 9999 !important;
+          position: fixed !important;
         }
         
         /* NUCLEAR OPTION: Force input text to be visible in ALL possible states */
@@ -311,12 +323,17 @@ export function PlacesAutocompleteStyled({
       `}</style>
       
       <div className="relative" style={style}>
-        {/* Container for Google Places Autocomplete Element */}
-        <div 
-          ref={containerRef}
-          key={autocompleteKey}
-          className={`${isLoaded ? 'block' : 'hidden'} w-full`}
-        />
+        {/* Direct JSX rendering of Google Places Autocomplete - better for modals/portals */}
+        {googleLoaded && (
+          <gmp-place-autocomplete
+            ref={autocompleteRef}
+            className={`${isLoaded ? 'block' : 'hidden'} w-full`}
+            style={{
+              display: isLoaded ? 'block' : 'none',
+              width: '100%'
+            }}
+          />
+        )}
         
         {/* Loading fallback */}
         {isLoading && (
