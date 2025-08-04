@@ -62,6 +62,9 @@ export function SimpleAddressInput({
     }
   };
 
+  // Show token status visually
+  const hasToken = !!process.env.NEXT_PUBLIC_LOCATIONIQ_TOKEN;
+  
   return (
     <div className="relative">
       <div className="relative">
@@ -69,13 +72,23 @@ export function SimpleAddressInput({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={hasToken ? placeholder : "⚠️ NO LOCATIONIQ TOKEN - " + placeholder}
           disabled={disabled}
           className={className}
           autoComplete="off"
+          style={{ 
+            backgroundColor: hasToken ? undefined : '#fef3cd',
+            borderColor: hasToken ? undefined : '#f59e0b'
+          }}
         />
         <MapPin className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
       </div>
+      
+      {!hasToken && (
+        <p className="text-xs text-red-600 mt-1">
+          LocationIQ token missing! Add NEXT_PUBLIC_LOCATIONIQ_TOKEN to environment.
+        </p>
+      )}
 
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
