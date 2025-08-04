@@ -137,141 +137,139 @@ const PropertyAnalysisSection = ({
             </div>
           )}
 
-          {/* Financial Analysis */}
-          {property.analysis.data?.financial_analysis && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
-                <h4 className="text-xs font-semibold text-blue-800">💰 Financial Analysis</h4>
-              </div>
-              <div className="p-3">
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  {Object.entries(property.analysis.data.financial_analysis).map(([key, value]) => (
-                    <div key={key} className="bg-blue-50 rounded-lg p-2">
-                      <div className="text-blue-600 font-medium capitalize">{key.replace(/_/g, ' ')}</div>
-                      <div className="text-blue-900 font-semibold">{String(value)}</div>
+          {/* Property Details - Same as Mobile */}
+          {property.analysis.data?.property_details && (
+            <details className="bg-gray-50 rounded p-2">
+              <summary className="text-xs font-medium text-gray-700 cursor-pointer">Property Details</summary>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                {property.analysis.data.property_details.square_footage && (
+                  <div className="text-center bg-white p-2 rounded">
+                    <div className="text-gray-500 uppercase tracking-wide">Area</div>
+                    <div className="font-semibold text-gray-900">
+                      {property.analysis.data.property_details.square_footage.toLocaleString()} sf
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+                {property.analysis.data.property_details.bedrooms && (
+                  <div className="text-center bg-white p-2 rounded">
+                    <div className="text-gray-500 uppercase tracking-wide">Bedrooms</div>
+                    <div className="font-semibold text-gray-900">
+                      {property.analysis.data.property_details.bedrooms}
+                    </div>
+                  </div>
+                )}
+                {property.analysis.data.property_details.bathrooms && (
+                  <div className="text-center bg-white p-2 rounded">
+                    <div className="text-gray-500 uppercase tracking-wide">Bathrooms</div>
+                    <div className="font-semibold text-gray-900">
+                      {property.analysis.data.property_details.bathrooms}
+                    </div>
+                  </div>
+                )}
+                {property.analysis.data.property_details.year_built && (
+                  <div className="text-center bg-white p-2 rounded">
+                    <div className="text-gray-500 uppercase tracking-wide">Built</div>
+                    <div className="font-semibold text-gray-900">
+                      {property.analysis.data.property_details.year_built}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </details>
           )}
 
-          {/* Market Analysis */}
+          {/* Financial Analysis - Same as Mobile */}
+          {property.analysis.data?.financial_projections && (
+            <details className="bg-gray-50 rounded p-2">
+              <summary className="text-xs font-medium text-gray-700 cursor-pointer">💰 Financial Analysis</summary>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-white p-2 rounded">
+                  <span className="text-gray-500">Purchase Price</span>
+                  <div className="font-bold text-sm">${property.analysis.data.financial_projections.purchase_price?.toLocaleString()}</div>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <span className="text-gray-500">Renovation</span>
+                  <div className="font-bold text-sm">${property.analysis.data.financial_projections.renovation_costs?.toLocaleString()}</div>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <span className="text-gray-500">Total Investment</span>
+                  <div className="font-bold text-sm">${property.analysis.data.financial_projections.total_investment?.toLocaleString()}</div>
+                </div>
+                <div className="bg-green-100 p-2 rounded">
+                  <span className="text-gray-500">Expected Sale</span>
+                  <div className="font-bold text-sm text-green-700">${property.analysis.data.financial_projections.estimated_sale_price?.toLocaleString()}</div>
+                </div>
+              </div>
+            </details>
+          )}
+
+          {/* Market Analysis - Same as Mobile */}
           {property.analysis.data?.market_analysis && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-gradient-to-r from-yellow-50 to-orange-50 border-b border-yellow-200">
-                <h4 className="text-xs font-semibold text-yellow-800">🏘️ Market Context</h4>
+            <details className="bg-gray-50 rounded p-2">
+              <summary className="text-xs font-medium text-gray-700 cursor-pointer">🏘️ Market Analysis</summary>
+              <div className="mt-2 text-xs text-gray-600 space-y-1 bg-white p-2 rounded">
+                <div><span className="font-medium">Market Trend:</span> {property.analysis.data.market_analysis.market_trend || 'N/A'}</div>
+                {property.analysis.data.market_analysis.days_on_market_average && (
+                  <div><span className="font-medium">Avg Days on Market:</span> {property.analysis.data.market_analysis.days_on_market_average} days</div>
+                )}
+                <div><span className="font-medium">Neighborhood:</span> {property.analysis.data.market_analysis.neighborhood_grade || 'N/A'}</div>
               </div>
-              <div className="p-3">
-                <div className="grid grid-cols-1 gap-2 text-xs">
-                  {Object.entries(property.analysis.data.market_analysis).map(([key, value]) => (
-                    <div key={key} className="flex justify-between bg-yellow-50 rounded p-2">
-                      <span className="text-yellow-700 font-medium capitalize">{key.replace(/_/g, ' ')}:</span>
-                      <span className="text-yellow-900 font-semibold">{String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </details>
           )}
 
-          {/* Risk Assessment */}
-          {property.analysis.data?.risk_assessment && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-gradient-to-r from-red-50 to-pink-50 border-b border-red-200">
-                <h4 className="text-xs font-semibold text-red-800">⚠️ Risk Assessment</h4>
-              </div>
-              <div className="p-3">
-                <div className="space-y-2 text-xs">
-                  {Object.entries(property.analysis.data.risk_assessment).map(([key, value]) => (
-                    <div key={key} className="bg-red-50 rounded-lg p-2">
-                      <div className="text-red-600 font-medium capitalize mb-1">{key.replace(/_/g, ' ')}</div>
-                      <div className="text-red-900">{String(value)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Investment Recommendations */}
+          {/* Investment Recommendation - Same as Mobile */}
           {property.analysis.data?.investment_recommendation && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-200">
-                <h4 className="text-xs font-semibold text-emerald-800">💡 Investment Strategy</h4>
-              </div>
-              <div className="p-3">
-                {/* Decision */}
-                <div className={`text-sm font-bold mb-2 ${
+            <details className="bg-gray-50 rounded p-2">
+              <summary className="text-xs font-medium text-gray-700 cursor-pointer">📋 Investment Recommendation</summary>
+              <div className="mt-2 bg-white p-2 rounded">
+                <div className={`text-sm font-bold mb-1 ${
                   property.analysis.data.investment_recommendation.decision === 'PROCEED' ? 'text-green-600' :
                   property.analysis.data.investment_recommendation.decision === 'PROCEED_WITH_CAUTION' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
                   {property.analysis.data.investment_recommendation.decision?.replace(/_/g, ' ')}
                 </div>
-                
-                {/* Confidence Level */}
-                <div className="text-xs text-gray-600 mb-3">
+                <div className="text-xs text-gray-600 mb-2">
                   Confidence: {property.analysis.data.investment_recommendation.confidence_level}
                 </div>
-                
-                {/* Key Reasons */}
-                {property.analysis.data.investment_recommendation.key_reasons && property.analysis.data.investment_recommendation.key_reasons.length > 0 && (
-                  <div className="text-xs mb-3">
-                    <strong className="text-green-700">✅ Key Reasons:</strong>
-                    <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
-                      {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
-                        <li key={i} className="text-green-800">{reason}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {/* Concerns */}
-                {property.analysis.data.investment_recommendation.concerns && property.analysis.data.investment_recommendation.concerns.length > 0 && (
+                {property.analysis.data.investment_recommendation.key_reasons && (
                   <div className="text-xs">
-                    <strong className="text-red-700">⚠️ Concerns:</strong>
-                    <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                    <strong>✅ Reasons:</strong>
+                    <ul className="list-disc list-inside mt-1 ml-2">
+                      {property.analysis.data.investment_recommendation.key_reasons.map((reason: string, i: number) => (
+                        <li key={i}>{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {property.analysis.data.investment_recommendation.concerns && (
+                  <div className="text-xs mt-2">
+                    <strong>⚠️ Concerns:</strong>
+                    <ul className="list-disc list-inside mt-1 ml-2">
                       {property.analysis.data.investment_recommendation.concerns.map((concern: string, i: number) => (
-                        <li key={i} className="text-red-800">{concern}</li>
+                        <li key={i}>{concern}</li>
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-            </div>
+            </details>
           )}
 
-          {/* Comparable Sales */}
-          {property.analysis.data?.comparable_sales && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
-                <h4 className="text-xs font-semibold text-gray-800">🏘️ Comparable Sales</h4>
-              </div>
-              <div className="p-3">
-                <div className="space-y-2">
-                  {formatComparableSales(property.analysis.data.comparable_sales)}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Action Items */}
+          {/* Action Items - Same as Mobile */}
           {property.analysis.data?.action_items && (
-            <div className="bg-white rounded-lg border border-blue-200 overflow-hidden">
-              <div className="px-3 py-2 bg-purple-50 border-b border-purple-200">
-                <h4 className="text-xs font-semibold text-purple-800">✅ Next Steps</h4>
-              </div>
-              <div className="p-3">
-                <ul className="space-y-1 text-xs">
+            <details className="bg-gray-50 rounded p-2">
+              <summary className="text-xs font-medium text-gray-700 cursor-pointer">📝 Action Items</summary>
+              <div className="mt-2 bg-white p-2 rounded">
+                <ul className="text-xs space-y-1">
                   {property.analysis.data.action_items.map((item: string, i: number) => (
-                    <li key={i} className="flex items-start">
-                      <span className="text-purple-600 mr-2">•</span>
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-            </div>
+            </details>
           )}
 
           {/* Analysis Timestamp */}
