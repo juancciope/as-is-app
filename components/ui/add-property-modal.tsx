@@ -1,7 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, MapPin, Plus, Loader2 } from 'lucide-react';
+
+// Declare Google Places types
+declare global {
+  interface Window {
+    google: any;
+    initGooglePlaces: () => void;
+  }
+}
 
 interface AddPropertyModalProps {
   isOpen: boolean;
@@ -15,6 +23,36 @@ export function AddPropertyModal({ isOpen, onClose, onAddProperty, isLoading = f
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const autocompleteService = useRef<any>(null);
+  const placesService = useRef<any>(null);
+
+  // Load Google Places API
+  useEffect(() => {
+    const loadGooglePlaces = () => {
+      if (window.google?.maps?.places) {
+        autocompleteService.current = new window.google.maps.places.AutocompleteService();
+        placesService.current = new window.google.maps.places.PlacesService(document.createElement('div'));
+        setIsGoogleLoaded(true);
+        return;
+      }
+
+      if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=3.61`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          autocompleteService.current = new window.google.maps.places.AutocompleteService();
+          placesService.current = new window.google.maps.places.PlacesService(document.createElement('div'));
+          setIsGoogleLoaded(true);
+        };
+        document.head.appendChild(script);
+      }
+    };
+
+    loadGooglePlaces();
+  }, []);
 
   // Reset when modal opens/closes
   useEffect(() => {
@@ -25,44 +63,60 @@ export function AddPropertyModal({ isOpen, onClose, onAddProperty, isLoading = f
     }
   }, [isOpen]);
 
-  // Search LocationIQ
+  // Search Google Places
   useEffect(() => {
-    if (!address || address.length < 3) {
+    if (!address || address.length < 3 || !isGoogleLoaded || !autocompleteService.current) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
-    const searchTimer = setTimeout(async () => {
-      const token = process.env.NEXT_PUBLIC_LOCATIONIQ_TOKEN;
-      if (!token) {
-        console.error('LocationIQ token missing');
-        return;
-      }
-
+    const searchTimer = setTimeout(() => {
       setIsSearching(true);
-      try {
-        const response = await fetch(
-          `https://api.locationiq.com/v1/autocomplete?key=${token}&q=${encodeURIComponent(address)}&limit=5&countrycodes=us&format=json`
-        );
-        
-        if (response.ok) {
-          const results = await response.json();
-          setSuggestions(results || []);
-          setShowSuggestions(true);
+      
+      autocompleteService.current.getPlacePredictions(
+        {
+          input: address,
+          componentRestrictions: { country: 'us' },
+          types: ['address']
+        },
+        (predictions: any[], status: any) => {
+          setIsSearching(false);
+          
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+            setSuggestions(predictions.slice(0, 5));
+            setShowSuggestions(true);
+          } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
         }
-      } catch (error) {
-        console.error('LocationIQ search failed:', error);
-      } finally {
-        setIsSearching(false);
-      }
+      );
     }, 300);
 
     return () => clearTimeout(searchTimer);
-  }, [address]);
+  }, [address, isGoogleLoaded]);
 
   const handleSelectAddress = (suggestion: any) => {
-    setAddress(suggestion.display_name);
+    // Get full address from Google Places details
+    if (placesService.current && suggestion.place_id) {
+      placesService.current.getDetails(
+        {
+          placeId: suggestion.place_id,
+          fields: ['formatted_address', 'address_components', 'geometry']
+        },
+        (place: any, status: any) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+            setAddress(place.formatted_address);
+          } else {
+            setAddress(suggestion.description);
+          }
+        }
+      );
+    } else {
+      setAddress(suggestion.description);
+    }
+    
     setSuggestions([]);
     setShowSuggestions(false);
   };
@@ -143,10 +197,10 @@ export function AddPropertyModal({ isOpen, onClose, onAddProperty, isLoading = f
                         className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
                       >
                         <div className="font-medium text-sm text-gray-900">
-                          {suggestion.display_place || suggestion.address?.name || 'Address'}
+                          {suggestion.structured_formatting?.main_text || 'Address'}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
-                          {suggestion.display_address}
+                          {suggestion.structured_formatting?.secondary_text || suggestion.description}
                         </div>
                       </button>
                     ))}
@@ -155,9 +209,9 @@ export function AddPropertyModal({ isOpen, onClose, onAddProperty, isLoading = f
               </div>
 
               {/* No token warning */}
-              {!process.env.NEXT_PUBLIC_LOCATIONIQ_TOKEN && (
+              {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
                 <p className="text-xs text-red-600 mt-1">
-                  LocationIQ token not configured. Address suggestions unavailable.
+                  Google Maps API key not configured. Address suggestions unavailable.
                 </p>
               )}
             </div>
