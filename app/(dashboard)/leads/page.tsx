@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
-import { AddressAutocompleteModal } from '@/components/ui/address-autocomplete-modal'
+import { LocationIQAutocomplete } from '@/components/ui/locationiq-autocomplete'
+import { LocationIQAddressModal } from '@/components/ui/locationiq-address-modal'
 
 // Helper function to format comparable sales data
 const formatComparableSales = (comparableSales: any) => {
@@ -1144,8 +1144,8 @@ export default function LeadsPage() {
                 style={{ fontSize: '16px' }}
               />
               
-              {/* Address Autocomplete Modal */}
-              <AddressAutocompleteModal
+              {/* LocationIQ Address Modal */}
+              <LocationIQAddressModal
                 show={showMobileAddressModal}
                 onClose={() => setShowMobileAddressModal(false)}
                 onAddressSelected={(address, placeData) => {
@@ -1157,19 +1157,15 @@ export default function LeadsPage() {
               />
             </div>
           ) : (
-            // Desktop version - unchanged
-            <PlacesAutocompleteStyled
+            // Desktop version - LocationIQ
+            <LocationIQAutocomplete
               value={newPropertyAddress}
               onChange={(value) => {
                 setNewPropertyAddress(value)
               }}
               onPlaceSelected={(place) => {
-                if (place?.formatted_address) {
-                  setNewPropertyAddress(place.formatted_address)
-                  setSelectedPlaceData(place)
-                } else {
-                  console.warn('❌ No formatted_address in place object')
-                }
+                setNewPropertyAddress(place.display_name)
+                setSelectedPlaceData(place)
               }}
               placeholder="Enter property address..."
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
