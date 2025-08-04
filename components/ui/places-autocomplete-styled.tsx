@@ -11,7 +11,13 @@ declare global {
   
   namespace JSX {
     interface IntrinsicElements {
-      'gmp-place-autocomplete': any;
+      'gmp-place-autocomplete': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        // 2025 Google Places API properties
+        includedRegionCodes?: string[];
+        locationBias?: any;
+        locationRestriction?: any;
+        includedPrimaryTypes?: string[];
+      };
     }
   }
 }
@@ -26,6 +32,14 @@ interface PlacesAutocompleteStyledProps {
   style?: React.CSSProperties;
 }
 
+/**
+ * Google Places Autocomplete component implementing 2025 API best practices
+ * - Uses new PlaceAutocompleteElement web component (not deprecated Autocomplete class)
+ * - Direct JSX rendering instead of appendChild for better React/modal integration
+ * - Handles gmp-select events with proper Place object fetching
+ * - Optimized for modal/portal contexts with proper z-index handling
+ * - Follows Google's 2025 migration guide recommendations
+ */
 export function PlacesAutocompleteStyled({
   value,
   onChange,
@@ -109,8 +123,8 @@ export function PlacesAutocompleteStyled({
         autocomplete.style.setProperty('--gmp-mat-color-surface', '#FFFFFF');
         autocomplete.style.setProperty('--gmp-mat-color-on-surface', '#000000');
         
-        // Set region restriction
-        autocomplete.setAttribute('included-region-codes', 'US');
+        // Set region restriction - 2025 API format
+        autocomplete.includedRegionCodes = ['us'];
         
         // Listen for place selection
         const handleGmpSelect = async (event: any) => {
@@ -242,8 +256,16 @@ export function PlacesAutocompleteStyled({
         
         /* MODAL/PORTAL FIX: Ensure dropdown appears above modal overlays */
         gmp-place-autocomplete [role=\"listbox\"] {
-          z-index: 9999 !important;
+          z-index: 9999923 !important;
           position: fixed !important;
+        }
+        
+        /* MOBILE OPTIMIZATION: 2025 API automatically handles mobile-friendly display */
+        @media (max-width: 640px) {
+          gmp-place-autocomplete [role=\"listbox\"] {
+            /* Let Google's component handle mobile full-screen display */
+            max-width: 100vw !important;
+          }
         }
         
         /* NUCLEAR OPTION: Force input text to be visible in ALL possible states */
@@ -328,6 +350,7 @@ export function PlacesAutocompleteStyled({
           <gmp-place-autocomplete
             ref={autocompleteRef}
             className={`${isLoaded ? 'block' : 'hidden'} w-full`}
+            includedRegionCodes={['us']}
             style={{
               display: isLoaded ? 'block' : 'none',
               width: '100%'
