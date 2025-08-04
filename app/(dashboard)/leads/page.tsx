@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
-import { LocationIQAutocomplete } from '@/components/ui/locationiq-autocomplete'
-import { LocationIQAddressModal } from '@/components/ui/locationiq-address-modal'
+import { SimpleAddressInput } from '@/components/ui/simple-address-input'
 
 // Helper function to format comparable sales data
 const formatComparableSales = (comparableSales: any) => {
@@ -1144,29 +1143,39 @@ export default function LeadsPage() {
                 style={{ fontSize: '16px' }}
               />
               
-              {/* LocationIQ Address Modal */}
-              <LocationIQAddressModal
-                show={showMobileAddressModal}
-                onClose={() => setShowMobileAddressModal(false)}
-                onAddressSelected={(address, placeData) => {
-                  setNewPropertyAddress(address)
-                  setSelectedPlaceData(placeData)
-                }}
-                title="Add Property Address"
-                isMobile={true}
-              />
+              {/* Simple Address Modal */}
+              {showMobileAddressModal && (
+                <div className="fixed inset-0 z-50 bg-white">
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                      <button
+                        onClick={() => setShowMobileAddressModal(false)}
+                        className="flex items-center text-gray-600"
+                      >
+                        <ArrowLeft className="w-5 h-5 mr-2" />
+                        Back
+                      </button>
+                      <h1 className="text-lg font-medium">Add Address</h1>
+                      <div className="w-16"></div>
+                    </div>
+                    <div className="flex-1 p-4">
+                      <SimpleAddressInput
+                        value={newPropertyAddress}
+                        onChange={setNewPropertyAddress}
+                        onAddressSelected={() => setShowMobileAddressModal(false)}
+                        placeholder="Type address..."
+                        className="p-4 border border-gray-300 rounded-lg w-full text-base"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            // Desktop version - LocationIQ
-            <LocationIQAutocomplete
+            // Desktop version - Simple
+            <SimpleAddressInput
               value={newPropertyAddress}
-              onChange={(value) => {
-                setNewPropertyAddress(value)
-              }}
-              onPlaceSelected={(place) => {
-                setNewPropertyAddress(place.display_name)
-                setSelectedPlaceData(place)
-              }}
+              onChange={setNewPropertyAddress}
               placeholder="Enter property address..."
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full"
             />
