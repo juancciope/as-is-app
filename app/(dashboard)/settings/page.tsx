@@ -52,12 +52,12 @@ export default function SettingsPage() {
     if (user?.email) {
       setProfile(prev => ({
         ...prev,
-        email: user.email,
+        email: user.email || '',
         // Mock data - replace with actual user data
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phone: user.phone || '',
-        company: user.company || ''
+        firstName: (user as any).firstName || '',
+        lastName: (user as any).lastName || '',
+        phone: (user as any).phone || '',
+        company: (user as any).company || ''
       }));
     }
   }, [user]);
