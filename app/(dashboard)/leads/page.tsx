@@ -94,57 +94,45 @@ const PropertyAnalysisSection = ({
                 <h4 className="text-xs font-semibold text-green-800">Investment Overview</h4>
               </div>
               <div className="p-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-blue-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Grade</div>
-                    <div className="text-sm font-bold text-blue-900">
-                      {property.analysis.data.analysis_summary?.investment_grade || 'N/A'}
+                {/* Quick Metrics - Same as Mobile */}
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="bg-blue-50 p-2 rounded">
+                    <div className="text-blue-600 font-medium">ARV</div>
+                    <div className="text-blue-800">
+                      ${property.analysis.data?.analysis_summary?.estimated_arv?.toLocaleString() || 'N/A'}
                     </div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-green-600 font-medium uppercase tracking-wide">ROI</div>
-                    <div className="text-sm font-bold text-green-900">
-                      {property.analysis.data.analysis_summary?.roi_percentage || 'N/A'}%
+                  <div className="bg-green-50 p-2 rounded">
+                    <div className="text-green-600 font-medium">Investment Grade</div>
+                    <div className="text-green-800">
+                      {property.analysis.data?.analysis_summary?.investment_grade || 'N/A'}
                     </div>
                   </div>
-                  <div className="bg-orange-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Cap Rate</div>
-                    <div className="text-sm font-bold text-orange-900">
-                      {property.analysis.data.analysis_summary?.cap_rate_percentage || 'N/A'}%
+                  <div className="bg-red-50 p-2 rounded">
+                    <div className="text-red-600 font-medium">Repair Cost</div>
+                    <div className="text-red-800">
+                      ${property.analysis.data?.analysis_summary?.estimated_repair_cost?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 p-2 rounded">
+                    <div className="text-purple-600 font-medium">Max Offer</div>
+                    <div className="text-purple-800">
+                      ${property.analysis.data?.analysis_summary?.max_offer?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 p-2 rounded">
+                    <div className="text-yellow-600 font-medium">Profit</div>
+                    <div className="text-yellow-800">
+                      ${property.analysis.data?.analysis_summary?.projected_profit?.toLocaleString() || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-indigo-50 p-2 rounded">
+                    <div className="text-indigo-600 font-medium">ROI</div>
+                    <div className="text-indigo-800">
+                      {property.analysis.data?.analysis_summary?.roi_percentage || 'N/A'}%
                     </div>
                   </div>
                 </div>
-
-                {/* Investment Scores Grid */}
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-2">
-                    <div className="text-xs text-indigo-600 font-medium mb-1">📊 Deal Score</div>
-                    <div className="text-sm font-bold text-indigo-900">
-                      {property.analysis.data.analysis_summary?.deal_score || 'N/A'}/10
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-2">
-                    <div className="text-xs text-teal-600 font-medium mb-1">🏠 Property Score</div>
-                    <div className="text-sm font-bold text-teal-900">
-                      {property.analysis.data.analysis_summary?.property_score || 'N/A'}/10
-                    </div>
-                  </div>
-                </div>
-
-                {/* Key Metrics */}
-                {property.analysis.data.analysis_summary?.key_metrics && (
-                  <div className="mt-3 bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-700 font-medium mb-2">📈 Key Metrics</div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {Object.entries(property.analysis.data.analysis_summary.key_metrics).map(([key, value]) => (
-                        <div key={key} className="flex justify-between">
-                          <span className="text-gray-600 capitalize">{key.replace(/_/g, ' ')}:</span>
-                          <span className="text-gray-900 font-medium">{String(value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           )}
