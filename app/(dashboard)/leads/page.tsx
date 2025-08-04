@@ -1439,6 +1439,13 @@ export default function LeadsPage() {
           </div>
         </div>
 
+        {/* Sticky Date Header - WhatsApp Style */}
+        <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
+          <div className="px-3 py-1 bg-black/80 text-white text-xs rounded-full opacity-0 transition-opacity duration-200" id="sticky-date">
+            {/* Date will be updated by scroll handler */}
+          </div>
+        </div>
+
         {/* Mobile Content - Chat or Properties */}
         <div className="flex-1 min-h-0 w-full overflow-hidden">
           {showMobileProperties ? (
@@ -1742,6 +1749,41 @@ export default function LeadsPage() {
                   WebkitOverflowScrolling: 'touch',
                   scrollBehavior: 'smooth'
                 }}
+                onScroll={(e) => {
+                  // Handle sticky date header like WhatsApp
+                  const container = e.currentTarget;
+                  const stickyDate = document.getElementById('sticky-date');
+                  if (!stickyDate) return;
+
+                  const dateSeparators = container.querySelectorAll('[data-date-separator]');
+                  let currentDate = '';
+                  
+                  // Find the currently visible date based on scroll position
+                  for (let i = dateSeparators.length - 1; i >= 0; i--) {
+                    const separator = dateSeparators[i] as HTMLElement;
+                    const rect = separator.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Check if this date separator is above the current view
+                    if (rect.top <= containerRect.top + 80) { // 80px offset for proper positioning
+                      currentDate = separator.dataset.dateSeparator || '';
+                      break;
+                    }
+                  }
+                  
+                  if (currentDate && dateSeparators.length > 0) {
+                    stickyDate.textContent = currentDate;
+                    stickyDate.style.opacity = '1';
+                    
+                    // Hide after 1.5 seconds of no scrolling (like WhatsApp)
+                    clearTimeout((stickyDate as any).hideTimeout);
+                    (stickyDate as any).hideTimeout = setTimeout(() => {
+                      stickyDate.style.opacity = '0';
+                    }, 1500);
+                  } else {
+                    stickyDate.style.opacity = '0';
+                  }
+                }}
               >
                 {isLoadingMessages ? (
                   <div className="flex items-center justify-center py-8">
@@ -1763,15 +1805,28 @@ export default function LeadsPage() {
                   return smsMessages.map((message, index) => {
                     const isOutgoing = message.direction === 'outbound'
                     const prevMessage = index > 0 ? smsMessages[index - 1] : null
-                    const showDateSeparator = prevMessage && 
-                      new Date(message.dateAdded).toDateString() !== new Date(prevMessage.dateAdded).toDateString()
+                    const messageDate = new Date(message.dateAdded).toDateString()
+                    const prevMessageDate = prevMessage ? new Date(prevMessage.dateAdded).toDateString() : null
+                    
+                    // Show date separator for first message or when date changes
+                    const showDateSeparator = index === 0 || (prevMessage && messageDate !== prevMessageDate)
+                    
+                    const formattedDate = new Date(message.dateAdded).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric', 
+                      month: 'long',
+                      day: 'numeric'
+                    })
 
                     return (
                       <div key={message.id}>
                         {showDateSeparator && (
-                          <div className="flex justify-center my-4">
-                            <span className="px-3 py-1 bg-white rounded-full text-xs text-gray-500 border">
-                              {new Date(message.dateAdded).toLocaleDateString()}
+                          <div 
+                            className="flex justify-center my-4"
+                            data-date-separator={formattedDate}
+                          >
+                            <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs text-gray-600 border border-gray-200 shadow-sm">
+                              {formattedDate}
                             </span>
                           </div>
                         )}
