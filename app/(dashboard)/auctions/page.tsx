@@ -106,17 +106,17 @@ export default function AuctionsPage() {
       if (filters.counties.length > 0) queryParams.append('counties', filters.counties.join(','));
       if (filters.sources.length > 0) queryParams.append('sources', filters.sources.join(','));
       if (filters.within30Min) queryParams.append('within30Min', 'true');
-      if (filters.targetCounties.length > 0) queryParams.append('targetCounties', filters.targetCounties.join(','));
+      if (filters.targetCounties && filters.targetCounties.length > 0) queryParams.append('targetCounties', filters.targetCounties.join(','));
       if (filters.maxDistanceMiles !== 30) queryParams.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
       if (filters.enrichmentStatus !== 'all') queryParams.append('enrichmentStatus', filters.enrichmentStatus);
       if (filters.saleDateFrom) queryParams.append('saleDateFrom', filters.saleDateFrom);
       if (filters.saleDateTo) queryParams.append('saleDateTo', filters.saleDateTo);
       if (filters.createdDateFrom) queryParams.append('createdDateFrom', filters.createdDateFrom);
       if (filters.createdDateTo) queryParams.append('createdDateTo', filters.createdDateTo);
-      if (filters.stages.length > 0) queryParams.append('stages', filters.stages.join(','));
-      if (filters.propertyTypes.length > 0) queryParams.append('propertyTypes', filters.propertyTypes.join(','));
-      if (filters.priorities.length > 0) queryParams.append('priorities', filters.priorities.join(','));
-      if (filters.eventTypes.length > 0) queryParams.append('eventTypes', filters.eventTypes.join(','));
+      if (filters.stages && filters.stages.length > 0) queryParams.append('stages', filters.stages.join(','));
+      if (filters.propertyTypes && filters.propertyTypes.length > 0) queryParams.append('propertyTypes', filters.propertyTypes.join(','));
+      if (filters.priorities && filters.priorities.length > 0) queryParams.append('priorities', filters.priorities.join(','));
+      if (filters.eventTypes && filters.eventTypes.length > 0) queryParams.append('eventTypes', filters.eventTypes.join(','));
 
       const response = await fetch(`/api/data?${queryParams.toString()}`);
       
