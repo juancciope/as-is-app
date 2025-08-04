@@ -107,7 +107,7 @@ export default function AuctionsPage() {
       if (filters.sources.length > 0) queryParams.append('sources', filters.sources.join(','));
       if (filters.within30Min) queryParams.append('within30Min', 'true');
       if (filters.targetCounties && filters.targetCounties.length > 0) queryParams.append('targetCounties', filters.targetCounties.join(','));
-      if (filters.maxDistanceMiles !== 30) queryParams.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
+      if (filters.maxDistanceMiles !== undefined && filters.maxDistanceMiles !== 30) queryParams.append('maxDistanceMiles', filters.maxDistanceMiles.toString());
       if (filters.enrichmentStatus !== 'all') queryParams.append('enrichmentStatus', filters.enrichmentStatus);
       if (filters.saleDateFrom) queryParams.append('saleDateFrom', filters.saleDateFrom);
       if (filters.saleDateTo) queryParams.append('saleDateTo', filters.saleDateTo);
