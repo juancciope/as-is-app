@@ -120,7 +120,7 @@ export function ContactsTable({ contacts, isLoading = false }: ContactsTableProp
   }
   
   return (
-    <div className="relative overflow-x-auto bg-white rounded-lg border border-gray-200">
+    <div className="relative overflow-auto bg-white rounded-lg border border-gray-200">
       <table className="w-full text-sm text-left text-gray-900 bg-white">
         <thead className="text-xs uppercase bg-gradient-to-r from-green-50 to-emerald-50 text-green-900">
           <tr>

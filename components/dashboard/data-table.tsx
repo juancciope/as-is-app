@@ -155,7 +155,7 @@ export function DataTable({ data, onDataUpdate }: DataTableProps) {
         </div>
       )}
       
-      <div className="relative overflow-x-auto bg-white rounded-lg border border-gray-200">
+      <div className="relative overflow-auto bg-white rounded-lg border border-gray-200">
         <table className="w-full text-sm text-left text-gray-900 bg-white">
         <thead className="text-xs uppercase bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-900">
           <tr>
