@@ -100,15 +100,28 @@ export class VercelEnvUpdater {
   }
 
   async updateGHLTokens(accessToken: string, refreshToken: string) {
+    console.log('💾 Starting Vercel env vars update...')
+    console.log('🔧 Update config:', {
+      hasApiToken: !!this.apiToken,
+      hasProjectId: !!this.projectId,
+      hasTeamId: !!this.teamId,
+      accessTokenLength: accessToken?.length,
+      refreshTokenLength: refreshToken?.length
+    })
+
     try {
-      await Promise.all([
-        this.updateEnvironmentVariable('GHL_API_KEY', accessToken),
-        this.updateEnvironmentVariable('GHL_REFRESH_TOKEN', refreshToken)
-      ])
-      console.log('✅ Successfully updated GHL tokens in Vercel')
+      // Update tokens sequentially to avoid rate limits
+      console.log('📝 Updating GHL_API_KEY...')
+      await this.updateEnvironmentVariable('GHL_API_KEY', accessToken)
+      
+      console.log('📝 Updating GHL_REFRESH_TOKEN...')  
+      await this.updateEnvironmentVariable('GHL_REFRESH_TOKEN', refreshToken)
+      
+      console.log('✅ Successfully updated all GHL tokens in Vercel')
     } catch (error) {
       console.error('❌ Failed to update GHL tokens in Vercel:', error)
-      throw error
+      // Don't throw the error - token refresh worked, just persistence failed
+      console.warn('⚠️ Token refresh succeeded but persistence to Vercel failed. Manual update may be required.')
     }
   }
 }

@@ -1,5 +1,5 @@
 import { GoHighLevelAPI, GHLConfig } from './ghl-api'
-import { GHLOAuthManager } from './ghl-oauth'
+import { GHLOAuthManager, GHLTokenResponse } from './ghl-oauth'
 
 export interface GHLConfigWithRefresh extends GHLConfig {
   clientId?: string
@@ -11,6 +11,12 @@ export interface GHLConfigWithRefresh extends GHLConfig {
 export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
   private oauthManager?: GHLOAuthManager
   private onTokenRefresh?: (newAccessToken: string, newRefreshToken: string) => Promise<void>
+  private refreshPromise?: Promise<GHLTokenResponse>
+  
+  // Make config accessible for testing
+  public get apiConfig() {
+    return super['config']
+  }
 
   constructor(config: GHLConfigWithRefresh) {
     super(config)
@@ -30,38 +36,61 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
 
   // Override the base fetch method to handle 401 errors
   private async fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
-    let response = await fetch(url, options)
+    // Clone the options to avoid mutating the original
+    const clonedOptions = { ...options }
+    let response = await fetch(url, clonedOptions)
     
     // If we get a 401 and have OAuth manager, try to refresh the token
     if (response.status === 401 && this.oauthManager) {
       console.log('🔄 Access token expired, attempting to refresh...')
       
       try {
-        const newTokens = await this.oauthManager.refreshAccessToken()
-        console.log('✅ Token refreshed successfully')
-        
-        // Update the headers with new token
-        const headers = options.headers as HeadersInit
-        if (headers && typeof headers === 'object' && 'Authorization' in headers) {
-          headers['Authorization'] = `Bearer ${newTokens.access_token}`
+        // Use a single refresh promise to prevent race conditions
+        if (!this.refreshPromise) {
+          this.refreshPromise = this.oauthManager.refreshAccessToken()
         }
         
-        // Update internal config
-        this.config.apiKey = newTokens.access_token
+        const newTokens = await this.refreshPromise
+        console.log('✅ Token refreshed successfully:', {
+          hasAccessToken: !!newTokens.access_token,
+          hasRefreshToken: !!newTokens.refresh_token,
+          expiresIn: newTokens.expires_in
+        })
+        
+        // Update internal config and OAuth manager
+        super['config'].apiKey = newTokens.access_token
+        this.oauthManager.config.accessToken = newTokens.access_token
+        this.oauthManager.config.refreshToken = newTokens.refresh_token
         
         // Update headers with new token
         this.updateHeaders()
         
-        // Call the callback to persist the new tokens
+        // Call the callback to persist the new tokens to environment variables
         if (this.onTokenRefresh) {
+          console.log('💾 Persisting new tokens to environment variables...')
           await this.onTokenRefresh(newTokens.access_token, newTokens.refresh_token)
+          console.log('✅ Tokens persisted successfully')
+        }
+        
+        // Clear the refresh promise
+        this.refreshPromise = undefined
+        
+        // Create new options with updated headers
+        const newOptions = {
+          ...clonedOptions,
+          headers: {
+            ...this.headers
+          }
         }
         
         // Retry the request with new token
-        response = await fetch(url, options)
+        response = await fetch(url, newOptions)
+        console.log('🔄 Retry with new token - Status:', response.status)
+        
       } catch (error) {
         console.error('❌ Token refresh failed:', error)
-        throw error
+        this.refreshPromise = undefined
+        throw new Error(`Token refresh failed: ${error instanceof Error ? error.message : String(error)}`)
       }
     }
     
@@ -218,7 +247,7 @@ export class GoHighLevelAPIWithRefresh extends GoHighLevelAPI {
   }
 
   // Update headers with new token
-  private updateHeaders() {
+  public updateHeaders() {
     this.headers = {
       'Authorization': `Bearer ${this.config.apiKey}`,
       'Content-Type': 'application/json',
