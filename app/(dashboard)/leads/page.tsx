@@ -74,7 +74,7 @@ const PropertyAnalysisSection = ({
           <TrendingUp className="h-4 w-4 text-blue-600" />
           <span className="text-sm font-medium text-blue-900">Investment Analysis</span>
           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-            {property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed'}
+            {String(property.analysis.data?.analysis_summary?.investment_grade || 'Analyzed')}
           </span>
         </div>
         {isExpanded ? (
@@ -105,7 +105,7 @@ const PropertyAnalysisSection = ({
                   <div className="bg-green-50 p-2 rounded">
                     <div className="text-green-600 font-medium">Investment Grade</div>
                     <div className="text-green-800">
-                      {property.analysis.data?.analysis_summary?.investment_grade || 'N/A'}
+                      {String(property.analysis.data?.analysis_summary?.investment_grade || 'N/A')}
                     </div>
                   </div>
                   <div className="bg-red-50 p-2 rounded">
@@ -129,7 +129,7 @@ const PropertyAnalysisSection = ({
                   <div className="bg-indigo-50 p-2 rounded">
                     <div className="text-indigo-600 font-medium">ROI</div>
                     <div className="text-indigo-800">
-                      {property.analysis.data?.analysis_summary?.roi_percentage || 'N/A'}%
+                      {String(property.analysis.data?.analysis_summary?.roi_percentage || 'N/A')}%
                     </div>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ const PropertyAnalysisSection = ({
                   <div className="text-center bg-white p-2 rounded">
                     <div className="text-gray-500 uppercase tracking-wide">Area</div>
                     <div className="font-semibold text-gray-900">
-                      {property.analysis.data.property_details.square_footage.toLocaleString()} sf
+                      {Number(property.analysis.data.property_details.square_footage || 0).toLocaleString()} sf
                     </div>
                   </div>
                 )}
@@ -154,7 +154,7 @@ const PropertyAnalysisSection = ({
                   <div className="text-center bg-white p-2 rounded">
                     <div className="text-gray-500 uppercase tracking-wide">Bedrooms</div>
                     <div className="font-semibold text-gray-900">
-                      {property.analysis.data.property_details.bedrooms}
+                      {String(property.analysis.data.property_details.bedrooms || 'N/A')}
                     </div>
                   </div>
                 )}
@@ -162,7 +162,7 @@ const PropertyAnalysisSection = ({
                   <div className="text-center bg-white p-2 rounded">
                     <div className="text-gray-500 uppercase tracking-wide">Bathrooms</div>
                     <div className="font-semibold text-gray-900">
-                      {property.analysis.data.property_details.bathrooms}
+                      {String(property.analysis.data.property_details.bathrooms || 'N/A')}
                     </div>
                   </div>
                 )}
@@ -170,7 +170,7 @@ const PropertyAnalysisSection = ({
                   <div className="text-center bg-white p-2 rounded">
                     <div className="text-gray-500 uppercase tracking-wide">Built</div>
                     <div className="font-semibold text-gray-900">
-                      {property.analysis.data.property_details.year_built}
+                      {String(property.analysis.data.property_details.year_built || 'N/A')}
                     </div>
                   </div>
                 )}
@@ -208,11 +208,11 @@ const PropertyAnalysisSection = ({
             <details className="bg-gray-50 rounded p-2">
               <summary className="text-xs font-medium text-gray-700 cursor-pointer">🏘️ Market Analysis</summary>
               <div className="mt-2 text-xs text-gray-600 space-y-1 bg-white p-2 rounded">
-                <div><span className="font-medium">Market Trend:</span> {property.analysis.data.market_analysis.market_trend || 'N/A'}</div>
+                <div><span className="font-medium">Market Trend:</span> {String(property.analysis.data.market_analysis.market_trend || 'N/A')}</div>
                 {property.analysis.data.market_analysis.days_on_market_average && (
-                  <div><span className="font-medium">Avg Days on Market:</span> {property.analysis.data.market_analysis.days_on_market_average} days</div>
+                  <div><span className="font-medium">Avg Days on Market:</span> {String(property.analysis.data.market_analysis.days_on_market_average || 'N/A')} days</div>
                 )}
-                <div><span className="font-medium">Neighborhood:</span> {property.analysis.data.market_analysis.neighborhood_grade || 'N/A'}</div>
+                <div><span className="font-medium">Neighborhood:</span> {String(property.analysis.data.market_analysis.neighborhood_grade || 'N/A')}</div>
               </div>
             </details>
           )}
@@ -256,7 +256,7 @@ const PropertyAnalysisSection = ({
           )}
 
           {/* Action Items - Same as Mobile */}
-          {property.analysis.data?.action_items && (
+          {property.analysis.data?.action_items && Array.isArray(property.analysis.data.action_items) && (
             <details className="bg-gray-50 rounded p-2">
               <summary className="text-xs font-medium text-gray-700 cursor-pointer">📝 Action Items</summary>
               <div className="mt-2 bg-white p-2 rounded">
@@ -264,7 +264,7 @@ const PropertyAnalysisSection = ({
                   {property.analysis.data.action_items.map((item: string, i: number) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-blue-600 mt-0.5">•</span>
-                      <span>{item}</span>
+                      <span>{String(item)}</span>
                     </li>
                   ))}
                 </ul>
@@ -1538,7 +1538,7 @@ export default function LeadsPage() {
                                   <div className="bg-green-50 p-2 rounded">
                                     <div className="text-green-600 font-medium">Investment Grade</div>
                                     <div className="text-green-800">
-                                      {property.analysis.data?.analysis_summary?.investment_grade || 'N/A'}
+                                      {String(property.analysis.data?.analysis_summary?.investment_grade || 'N/A')}
                                     </div>
                                   </div>
                                   <div className="bg-red-50 p-2 rounded">
@@ -1562,7 +1562,7 @@ export default function LeadsPage() {
                                   <div className="bg-indigo-50 p-2 rounded">
                                     <div className="text-indigo-600 font-medium">ROI</div>
                                     <div className="text-indigo-800">
-                                      {property.analysis.data?.analysis_summary?.roi_percentage || 'N/A'}%
+                                      {String(property.analysis.data?.analysis_summary?.roi_percentage || 'N/A')}%
                                     </div>
                                   </div>
                                 </div>
@@ -1576,7 +1576,7 @@ export default function LeadsPage() {
                                         <div className="text-center bg-white p-2 rounded">
                                           <div className="text-gray-500 uppercase tracking-wide">Area</div>
                                           <div className="font-semibold text-gray-900">
-                                            {property.analysis.data.property_details.square_footage.toLocaleString()} sf
+                                            {Number(property.analysis.data.property_details.square_footage || 0).toLocaleString()} sf
                                           </div>
                                         </div>
                                       )}
@@ -1584,7 +1584,7 @@ export default function LeadsPage() {
                                         <div className="text-center bg-white p-2 rounded">
                                           <div className="text-gray-500 uppercase tracking-wide">Bedrooms</div>
                                           <div className="font-semibold text-gray-900">
-                                            {property.analysis.data.property_details.bedrooms}
+                                            {String(property.analysis.data.property_details.bedrooms || 'N/A')}
                                           </div>
                                         </div>
                                       )}
@@ -1592,7 +1592,7 @@ export default function LeadsPage() {
                                         <div className="text-center bg-white p-2 rounded">
                                           <div className="text-gray-500 uppercase tracking-wide">Bathrooms</div>
                                           <div className="font-semibold text-gray-900">
-                                            {property.analysis.data.property_details.bathrooms}
+                                            {String(property.analysis.data.property_details.bathrooms || 'N/A')}
                                           </div>
                                         </div>
                                       )}
@@ -1600,7 +1600,7 @@ export default function LeadsPage() {
                                         <div className="text-center bg-white p-2 rounded">
                                           <div className="text-gray-500 uppercase tracking-wide">Built</div>
                                           <div className="font-semibold text-gray-900">
-                                            {property.analysis.data.property_details.year_built}
+                                            {String(property.analysis.data.property_details.year_built || 'N/A')}
                                           </div>
                                         </div>
                                       )}
@@ -1638,11 +1638,11 @@ export default function LeadsPage() {
                                   <details className="bg-gray-50 rounded p-2">
                                     <summary className="text-xs font-medium text-gray-700 cursor-pointer">🏘️ Market Analysis</summary>
                                     <div className="mt-2 text-xs text-gray-600 space-y-1 bg-white p-2 rounded">
-                                      <div><span className="font-medium">Market Trend:</span> {property.analysis.data.market_analysis.market_trend || 'N/A'}</div>
+                                      <div><span className="font-medium">Market Trend:</span> {String(property.analysis.data.market_analysis.market_trend || 'N/A')}</div>
                                       {property.analysis.data.market_analysis.days_on_market_average && (
-                                        <div><span className="font-medium">Avg Days on Market:</span> {property.analysis.data.market_analysis.days_on_market_average} days</div>
+                                        <div><span className="font-medium">Avg Days on Market:</span> {String(property.analysis.data.market_analysis.days_on_market_average || 'N/A')} days</div>
                                       )}
-                                      <div><span className="font-medium">Neighborhood:</span> {property.analysis.data.market_analysis.neighborhood_grade || 'N/A'}</div>
+                                      <div><span className="font-medium">Neighborhood:</span> {String(property.analysis.data.market_analysis.neighborhood_grade || 'N/A')}</div>
                                     </div>
                                   </details>
                                 )}
@@ -1686,7 +1686,7 @@ export default function LeadsPage() {
                                 )}
                                 
                                 {/* Action Items */}
-                                {property.analysis.data?.action_items && (
+                                {property.analysis.data?.action_items && Array.isArray(property.analysis.data.action_items) && (
                                   <details className="bg-gray-50 rounded p-2">
                                     <summary className="text-xs font-medium text-gray-700 cursor-pointer">📝 Action Items</summary>
                                     <div className="mt-2 bg-white p-2 rounded">
@@ -1694,7 +1694,7 @@ export default function LeadsPage() {
                                         {property.analysis.data.action_items.map((item: string, i: number) => (
                                           <li key={i} className="flex items-start gap-2">
                                             <span className="text-blue-600 mt-0.5">•</span>
-                                            <span>{item}</span>
+                                            <span>{String(item)}</span>
                                           </li>
                                         ))}
                                       </ul>
