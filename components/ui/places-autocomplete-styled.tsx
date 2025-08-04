@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
 
@@ -36,18 +36,36 @@ export function PlacesAutocompleteStyled({
   const [error, setError] = useState<string | null>(null);
   const [autocompleteKey, setAutocompleteKey] = useState(0);
 
+  // Stable callback to prevent useEffect re-runs
+  const handlePlaceSelect = useCallback((placeData: any) => {
+    if (onPlaceSelected) {
+      onPlaceSelected(placeData);
+    }
+  }, [onPlaceSelected]);
+
+  const handleAddressChange = useCallback((address: string) => {
+    onChange(address);
+  }, [onChange]);
+
   useEffect(() => {
     if (disabled) return;
 
     const initAutocomplete = async () => {
       try {
-        if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-          throw new Error('Google Maps API key not found');
+        // More robust API key check with better error messaging
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          console.warn('🔑 Google Maps API key not found in local environment. Component will work in production with Vercel environment variable.');
+          setError('Google Maps API key not configured for local development');
+          setIsLoading(false);
+          return;
         }
+
+        console.log('🗺️ Initializing Google Places Autocomplete 2025...');
 
         // Load Google Maps API with Places library
         const loader = new Loader({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+          apiKey: apiKey,
           version: "weekly",
           libraries: ["places"]
         });
@@ -93,19 +111,17 @@ export function PlacesAutocompleteStyled({
             const fullAddress = place.formattedAddress;
 
             if (fullAddress) {
-              onChange(fullAddress);
+              handleAddressChange(fullAddress);
 
               // Call onPlaceSelected with comprehensive place data for property reports
-              if (onPlaceSelected) {
-                const placeData = {
-                  formatted_address: fullAddress,
-                  display_name: place.displayName,
-                  location: place.location,
-                  address_components: place.addressComponents,
-                  place: place
-                };
-                onPlaceSelected(placeData);
-              }
+              const placeData = {
+                formatted_address: fullAddress,
+                display_name: place.displayName,
+                location: place.location,
+                address_components: place.addressComponents,
+                place: place
+              };
+              handlePlaceSelect(placeData);
             } else {
               console.warn('❌ No formatted address found');
             }
@@ -129,8 +145,8 @@ export function PlacesAutocompleteStyled({
         setAutocompleteKey(prev => prev + 1);
 
       } catch (error) {
-        console.error('Error initializing Places Autocomplete:', error);
-        setError('Failed to load autocomplete');
+        console.error('💥 Error initializing Places Autocomplete:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load autocomplete');
         setIsLoading(false);
         setIsLoaded(false);
       }
@@ -149,14 +165,36 @@ export function PlacesAutocompleteStyled({
         }
       }
     };
-  }, [onChange, onPlaceSelected, disabled]);
+  }, [handleAddressChange, handlePlaceSelect, disabled]); // Fixed dependencies to prevent re-initialization
 
   // Fallback input for when Google Maps fails to load or while loading
   const handleFallbackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
 
-  if (error || !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+  // For local development, show a working input when API key is missing
+  if (error && error.includes('local development')) {
+    return (
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={handleFallbackChange}
+          placeholder="Development mode - Google Places API key needed for autocomplete"
+          disabled={disabled}
+          className={`${className} border-yellow-300 bg-yellow-50`}
+          autoComplete="off"
+        />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 text-yellow-600">
+          <MapPin className="h-4 w-4" />
+        </div>
+        <p className="text-xs text-yellow-600 mt-1">Local development mode - full functionality available in production</p>
+      </div>
+    );
+  }
+
+  // Show fallback only if there's an actual API error
+  if (error && !error.includes('local development')) {
     return (
       <div className="relative">
         <input
