@@ -390,7 +390,8 @@ export default function AuctionsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="h-[calc(100dvh-4rem)] bg-white flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -580,8 +581,11 @@ export default function AuctionsPage() {
         isLoading={isLoadingData}
         totalResults={data.length}
       />
+      </div>
 
-      <Card>
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-hidden px-6 pb-6">
+        <Card className="h-full flex flex-col">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -640,14 +644,14 @@ export default function AuctionsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="flex-1 p-0 overflow-hidden">
           {activeTab === 'properties' ? (
             isLoadingData ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <div className="max-h-[600px] overflow-auto">
+              <div className="h-full overflow-auto">
                 <DataTable data={data} onDataUpdate={fetchData} />
               </div>
             )
@@ -657,13 +661,14 @@ export default function AuctionsPage() {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : (
-              <div className="max-h-[600px] overflow-auto">
+              <div className="h-full overflow-auto">
                 <ContactsTable contacts={contacts} />
               </div>
             )
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
