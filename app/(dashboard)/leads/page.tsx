@@ -395,6 +395,15 @@ export default function LeadsPage() {
     }
   }, [leads.length, loadConversationStatuses])
 
+  // Cleanup sticky date when leaving mobile conversation view
+  useEffect(() => {
+    const stickyDate = document.getElementById('mobile-sticky-date')
+    if (stickyDate && (!selectedLead || showMobileProperties || !isMobile)) {
+      stickyDate.style.opacity = '0'
+      clearTimeout((stickyDate as any).hideTimeout)
+    }
+  }, [selectedLead, showMobileProperties, isMobile])
+
   // Format time like WhatsApp (Today, Yesterday, or date)
   const formatMessageTime = (dateString: string | null) => {
     if (!dateString) return ''
@@ -1439,12 +1448,6 @@ export default function LeadsPage() {
           </div>
         </div>
 
-        {/* Sticky Date Header - WhatsApp Style */}
-        <div className="absolute top-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
-          <div className="px-3 py-1 bg-black/80 text-white text-xs rounded-full opacity-0 transition-opacity duration-200" id="sticky-date">
-            {/* Date will be updated by scroll handler */}
-          </div>
-        </div>
 
         {/* Mobile Content - Chat or Properties */}
         <div className="flex-1 min-h-0 w-full overflow-hidden">
@@ -1739,7 +1742,14 @@ export default function LeadsPage() {
             </div>
           ) : (
             // Custom Mobile Chat - Built from scratch
-            <div className="flex flex-col h-full bg-white">
+            <div className="flex flex-col h-full bg-white relative">
+              {/* Sticky Date Header - WhatsApp Style (Mobile Only) */}
+              <div className="absolute top-0 left-0 right-0 z-10 flex justify-center pointer-events-none">
+                <div className="px-3 py-1 bg-black/80 text-white text-xs rounded-full opacity-0 transition-opacity duration-200" id="mobile-sticky-date">
+                  {/* Date will be updated by mobile scroll handler */}
+                </div>
+              </div>
+              
               {/* Messages Container - Scrollable */}
               <div 
                 ref={chatContainerRef}
@@ -1750,6 +1760,9 @@ export default function LeadsPage() {
                   scrollBehavior: 'smooth'
                 }}
                 onScroll={(e) => {
+                  // Only run in mobile view - check if we're in mobile chat context
+                  if (!selectedLead || showMobileProperties) return;
+                  
                   // Throttle scroll handler to prevent performance issues
                   if ((e.currentTarget as any).scrollTimeout) return;
                   (e.currentTarget as any).scrollTimeout = setTimeout(() => {
@@ -1757,9 +1770,9 @@ export default function LeadsPage() {
                   }, 16); // ~60fps throttling
 
                   try {
-                    // Handle sticky date header like WhatsApp
+                    // Handle sticky date header like WhatsApp (Mobile Only)
                     const container = e.currentTarget;
-                    const stickyDate = document.getElementById('sticky-date');
+                    const stickyDate = document.getElementById('mobile-sticky-date');
                     if (!stickyDate) return;
 
                     const dateSeparators = container.querySelectorAll('[data-date-separator]');
@@ -1774,7 +1787,7 @@ export default function LeadsPage() {
                       const containerRect = container.getBoundingClientRect();
                       
                       // Check if this date separator is above the current view
-                      if (rect.top <= containerRect.top + 80) { // 80px offset for proper positioning
+                      if (rect.top <= containerRect.top + 40) { // 40px offset for mobile
                         currentDate = separator.dataset.dateSeparator || '';
                         break;
                       }
