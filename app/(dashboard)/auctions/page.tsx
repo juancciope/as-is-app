@@ -118,14 +118,21 @@ export default function AuctionsPage() {
       if (filters.priorities && filters.priorities.length > 0) queryParams.append('priorities', filters.priorities.join(','));
       if (filters.eventTypes && filters.eventTypes.length > 0) queryParams.append('eventTypes', filters.eventTypes.join(','));
 
-      const response = await fetch(`/api/data?${queryParams.toString()}`);
+      const apiUrl = `/api/data?${queryParams.toString()}`;
+      console.log('Fetching data from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      console.log('Response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch data');
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
       
       const result = await response.json();
+      console.log('API Response:', result);
+      
       setData(result.data || []);
       updateStats(result.data || []);
     } catch (error) {
@@ -448,7 +455,31 @@ export default function AuctionsPage() {
         </div>
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-red-800 font-medium">Error loading data:</h3>
+          <p className="text-red-700 text-sm mt-1">{error}</p>
+          <button 
+            onClick={fetchData}
+            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <StatsCards stats={stats} />
+
+      {/* Debug Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+        <h3 className="font-medium text-blue-800">Debug Info:</h3>
+        <p>Data count: {data.length}</p>
+        <p>Loading: {isLoadingData ? 'Yes' : 'No'}</p>
+        <p>Error: {error || 'None'}</p>
+        <p>User authenticated: {user ? 'Yes' : 'No'}</p>
+        <p>Stats total: {stats.total}</p>
+      </div>
 
       <Card>
         <CardHeader>
