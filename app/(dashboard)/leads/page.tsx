@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Star, Phone, Mail, Loader2, AlertCircle, MessageCircle, ArrowLeft, MapPin, Home, Calendar, DollarSign, User, FileText, TrendingUp, ChevronDown, ChevronUp, Trash2, Plus, X, Check, Zap, BarChart, Building } from 'lucide-react'
 import { PlacesAutocompleteStyled } from '@/components/ui/places-autocomplete-styled'
+import { AddressAutocompleteModal } from '@/components/ui/address-autocomplete-modal'
 
 // Helper function to format comparable sales data
 const formatComparableSales = (comparableSales: any) => {
@@ -1143,56 +1144,17 @@ export default function LeadsPage() {
                 style={{ fontSize: '16px' }}
               />
               
-              {/* Full-screen mobile address modal */}
-              {showMobileAddressModal && (
-                <div className="fixed inset-0 z-50 bg-white">
-                  <div className="h-full flex flex-col">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-                      <button
-                        onClick={() => setShowMobileAddressModal(false)}
-                        className="flex items-center text-gray-600"
-                      >
-                        <ArrowLeft className="w-5 h-5 mr-2" />
-                        Back
-                      </button>
-                      <h1 className="text-lg font-medium text-gray-900">Add Property Address</h1>
-                      <div className="w-16"></div>
-                    </div>
-                    
-                    {/* Address input - contained in modal */}
-                    <div className="flex-1 p-4 bg-gray-50">
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <PlacesAutocompleteStyled
-                          value={newPropertyAddress}
-                          onChange={(value) => {
-                            setNewPropertyAddress(value)
-                          }}
-                          onPlaceSelected={(place) => {
-                            if (place?.formatted_address) {
-                              setNewPropertyAddress(place.formatted_address)
-                              setSelectedPlaceData(place)
-                              // Close modal after selection
-                              setTimeout(() => {
-                                setShowMobileAddressModal(false)
-                              }, 500)
-                            }
-                          }}
-                          placeholder="Search for property address..."
-                          className="p-4 border border-gray-300 rounded-lg w-full text-base focus:outline-none focus:ring-2 focus:ring-green-500"
-                          style={{ fontSize: '16px' }}
-                          usePortal={true}
-                        />
-                        
-                        {/* Mobile-specific instructions */}
-                        <p className="text-sm text-gray-500 mt-2">
-                          Type to search for addresses in the United States
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Address Autocomplete Modal */}
+              <AddressAutocompleteModal
+                show={showMobileAddressModal}
+                onClose={() => setShowMobileAddressModal(false)}
+                onAddressSelected={(address, placeData) => {
+                  setNewPropertyAddress(address)
+                  setSelectedPlaceData(placeData)
+                }}
+                title="Add Property Address"
+                isMobile={true}
+              />
             </div>
           ) : (
             // Desktop version - unchanged
